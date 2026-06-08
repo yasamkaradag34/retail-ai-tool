@@ -1,0 +1,110 @@
+SECTOR_PROFILES = {
+    "consumer_electronics": {
+        "name": "Consumer Electronics / Technology Retail",
+        "key_metrics": [
+            "pdp_views",
+            "a2c",
+            "transactions",
+            "revenue",
+            "c2d",
+            "b2d",
+            "stock_coverage",
+            "price_delta",
+        ],
+        "business_drivers": [
+            "price_sensitivity",
+            "stock_availability",
+            "device_channel_shift",
+            "traffic_mix",
+            "seasonality",
+            "checkout_friction",
+        ],
+        "insight_rules": {
+            "high_price_sensitive": "Fiyat artarken B2D ve transaction düşüyorsa pahalı elektronik talebinde daralma olabilir.",
+            "mobile_resilience": "App veya Mobile kanalı Desktop'a göre daha dirençliyse mobil-first dönemsel davranış olabilir.",
+            "stock_risk": "C2D/B2D güçlü ama stok düşükse revenue kaybı riski yüksektir.",
+            "checkout_problem": "C2D artarken B2D düşüyorsa kullanıcı ilgisi var ama satın alma bariyeri oluşmuş olabilir.",
+        },
+    },
+
+    "fashion": {
+        "name": "Fashion / Textile",
+        "key_metrics": [
+            "product_views",
+            "favorites",
+            "a2c",
+            "orders",
+            "returns",
+            "discount_rate",
+            "size_availability",
+            "revenue",
+        ],
+        "business_drivers": [
+            "discount",
+            "size_stock",
+            "trend",
+            "seasonality",
+            "return_rate",
+            "delivery_time",
+        ],
+        "insight_rules": {
+            "size_problem": "Görüntüleme ve sepete ekleme güçlü ama satış düşükse beden stok problemi olabilir.",
+            "discount_dependency": "İndirim azaldığında conversion düşüyorsa kategori fiyat/promosyon hassas olabilir.",
+            "trend_decay": "PDP ve A2C birlikte düşüyorsa ürün trend etkisini kaybediyor olabilir.",
+        },
+    },
+
+    "fmcg": {
+        "name": "FMCG / Grocery",
+        "key_metrics": [
+            "orders",
+            "unit_sales",
+            "basket_size",
+            "repeat_purchase",
+            "promo_lift",
+            "stockout_rate",
+            "revenue",
+        ],
+        "business_drivers": [
+            "availability",
+            "price_promo",
+            "repeat_behavior",
+            "basket_affinity",
+            "delivery_slot",
+        ],
+        "insight_rules": {
+            "availability_problem": "Satış hızı yüksek ama stok coverage düşükse bulunabilirlik problemi vardır.",
+            "promo_sensitivity": "Promosyon bittiğinde transaction düşüyorsa kategori kampanya bağımlı olabilir.",
+        },
+    },
+
+    "marketplace_general": {
+        "name": "Marketplace General",
+        "key_metrics": [
+            "gmv",
+            "product_views",
+            "favorites",
+            "a2c",
+            "orders",
+            "conversion_rate",
+            "rating",
+            "delivery_time",
+            "return_rate",
+            "stock",
+        ],
+        "business_drivers": [
+            "price",
+            "rating",
+            "delivery",
+            "campaign",
+            "stock",
+            "review_quality",
+            "seller_competitiveness",
+        ],
+        "insight_rules": {
+            "price_competition": "View yüksek ama order düşükse fiyat rekabeti veya teslimat avantajı zayıf olabilir.",
+            "rating_issue": "Trafik ve fiyat iyi ama conversion düşükse rating/review etkisi incelenmelidir.",
+            "delivery_issue": "Sepete ekleme var ama satın alma düşükse teslimat süresi veya kargo bariyeri olabilir.",
+        },
+    },
+}

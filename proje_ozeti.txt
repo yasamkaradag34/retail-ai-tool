@@ -1,0 +1,202 @@
+====================================================
+RETAIL AI TOOL — PROJE ÖZETİ (GÜNCELLENDİ)
+Tarih: 16 Mayıs 2026
+====================================================
+
+PROJE AMACI
+-----------
+Kullanıcının doğal dilde (metin veya sesle) sorduğu soruları anlayıp
+doğru fonksiyonu çağıran, Excel'den gerçek veri döndüren ve
+doğal dilde Türkçe yanıt veren bir AI chat sistemi kurmak.
+Hedef: Global B2B satış, GDPR uyumlu, internet bağlantısı gerektirmez.
+
+
+KULLANILAN TEKNOLOJİLER
+-----------------------
+- Python 3.9
+- Ollama 0.24.0 (local LLM sunucusu) — http://localhost:11434
+- Model: llama3.1 (tool calling destekliyor)
+- Kütüphaneler: fastapi, uvicorn, requests, pandas, openpyxl, openai-whisper, python-multipart
+- VS Code (editor)
+
+
+PROJE KLASÖRÜ
+-------------
+~/Desktop/retail-ai-tool/
+├── main.py              ← FastAPI sunucusu + Chat UI + ses entegrasyonu
+├── router.py            ← terminal tabanlı eski versiyon
+├── stok.xlsx            ← ürün veritabanı
+├── orders.xlsx          ← sipariş veritabanı
+├── requirements.txt
+├── functions/
+│   ├── __init__.py
+│   ├── stock.py         ← 8 stok fonksiyonu
+│   ├── orders.py        ← 6 sipariş fonksiyonu
+│   ├── reports.py       ← 5 rapor fonksiyonu
+│   ├── voice.py         ← Whisper ses tanıma
+│   ├── customers.py     ← (henüz boş)
+│   └── catalog.py       ← (henüz boş)
+└── schemas/
+    ├── __init__.py
+    └── tools.py         ← tüm tool şemaları (19 tool)
+
+
+EXCEL DOSYALARI
+---------------
+stok.xlsx:
+  Sütunlar: product_id | name | stock | price
+  SKU-001 | Elma   | 42  | 5.5
+  SKU-002 | Armut  | 7   | 7.0
+  SKU-003 | Muz    | 0   | 9.9
+  SKU-004 | Çilek  | 120 | 25.0
+  SKU-005 | Üzüm   | 33  | 18.5
+
+orders.xlsx:
+  Sütunlar: order_id | customer | product_id | quantity | status | date
+  ORD-001 | Ali Yılmaz    | SKU-001 | 5  | Beklemede     | 2026-05-15
+  ORD-002 | Ayşe Kaya     | SKU-003 | 2  | Kargoda       | 2026-05-14
+  ORD-003 | Mehmet Demir  | SKU-002 | 10 | Teslim Edildi | 2026-05-13
+  ORD-004 | Fatma Çelik   | SKU-004 | 3  | Beklemede     | 2026-05-15
+  ORD-005 | Hasan Öztürk  | SKU-005 | 7  | İptal         | 2026-05-12
+
+
+AKTİF FONKSİYONLAR
+-------------------
+functions/stock.py (8 fonksiyon):
+  - get_stock_level(product_id)
+  - get_all_stock()
+  - get_daily_sales_report()
+  - check_low_stock(threshold=10)
+  - get_out_of_stock()
+  - search_product_by_name(name)
+  - get_stock_value()
+  - update_stock(product_id, quantity)
+
+functions/orders.py (6 fonksiyon):
+  - get_order_status(order_id)
+  - get_all_orders()
+  - get_pending_orders()
+  - get_orders_by_customer(customer)
+  - update_order_status(order_id, status)
+  - get_todays_orders()
+
+functions/reports.py (5 fonksiyon):
+  - get_total_revenue()
+  - get_best_selling_product()
+  - get_sales_summary()
+  - get_low_stock_report()
+  - get_stock_turnover()
+
+functions/voice.py:
+  - transcribe_audio(audio_bytes) — Whisper base model
+
+
+MAIN.PY — GÜNCEL ROUTE FONKSİYONU YAPISI
+-----------------------------------------
+- tool_choice: "required" → model her zaman tool çağırır
+- İkinci Ollama çağrısı (use_tools=False) → tool sonucunu doğal dile çevirir
+- JSON kontrolü → final boşsa veya JSON içeriyorsa direkt tool sonucu gösterilir
+- history temiz tutulur (role: assistant, tool sırasıyla)
+
+
+SUNUCUYU BAŞLATMA
+-----------------
+# Eski sunucuyu öldür
+lsof -ti:8000 | xargs kill -9
+
+# FastAPI sunucusu başlat
+cd ~/Desktop/retail-ai-tool
+python3 -m uvicorn main:app --reload
+
+# Tarayıcıda aç
+http://localhost:8000
+
+# Terminal versiyonu
+python3 router.py
+
+# Ollama çalışmıyorsa
+ollama serve
+
+
+REQUIREMENTS.TXT
+----------------
+fastapi
+uvicorn
+requests
+pandas
+openpyxl
+openai-whisper
+python-multipart
+
+
+MEVCUT DURUM
+------------
+✅ Aşama 1 — Temel iskelet tamamen bitti
+✅ Tool calling çalışıyor (tool_choice: required)
+✅ Excel'den gerçek veri okunuyor (stok + sipariş)
+✅ FastAPI + Chat UI çalışıyor (http://localhost:8000)
+✅ 19 tool aktif
+✅ Ses entegrasyonu var (Whisper — ffmpeg gerekli)
+⚠️  JSON gösterme sorunu — kısmen çözüldü, devam ediyor
+⚠️  Model bazen hallüsinasyon yapıyor (Excel yerine kendi uyduruyor)
+
+
+SIRADAKI ADIMLAR
+----------------
+1. 200 soru listesi çıkarılacak (kız arkadaşıyla birlikte)
+   - Kategoriler: Stok, Sipariş, Satış, Müşteri, Katalog, ERP
+   - Her soru için Python fonksiyon + tool şeması yazılacak
+
+2. functions/customers.py — müşteri işlemleri
+3. functions/catalog.py — ürün kataloğu
+
+4. UI iyileştirme
+   - Markdown render (bold, liste)
+   - Daha profesyonel görünüm
+
+5. Ses iyileştirme
+   - Whisper small model (Türkçe daha doğru)
+
+6. Çoklu dil desteği (TR/EN otomatik algılama)
+
+7. Logging — hangi tool çağrıldı kayıt altına al
+
+8. Docker — şirket sunucusuna kolay kurulum
+
+9. Aşama 3 — Demo Paketi
+   - Electron ile masaüstü uygulama
+   - PyInstaller ile installer (.exe / .dmg)
+
+
+KARŞILAŞILAN SORUNLAR VE ÇÖZÜMLER
+-----------------------------------
+1. KeyError: 'message'
+   → result.get("message", {}) kullanıldı
+
+2. llama3 does not support tools
+   → llama3 → llama3.1 olarak değiştirildi
+
+3. Model tool kullanmak yerine kendi cevap üretti
+   → tool_choice: "required" eklendi
+
+4. Model hallüsinasyon yaptı
+   → get_all_stock eklendi, sistem prompt güçlendirildi
+   → JSON kontrolü: final boşsa tool sonucu direkt gösterilir
+
+5. Form data requires python-multipart
+   → pip3 install python-multipart
+
+6. ffmpeg bulunamadı (ses için)
+   → brew install ffmpeg
+
+7. Address already in use
+   → lsof -ti:8000 | xargs kill -9
+
+8. Ollama güncelleme (brew çalışmadı)
+   → curl -fsSL https://ollama.com/install.sh | sh
+
+9. JSON ekrana yansıdı
+   → route() içinde JSON kontrolü eklendi
+   → final içinde { varsa direkt fn_results göster
+
+====================================================

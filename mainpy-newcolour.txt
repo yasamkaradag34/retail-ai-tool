@@ -1,0 +1,777 @@
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
+import requests
+import pandas as pd
+import json
+
+from functions.analytics import analyze_ecommerce_sample
+
+from functions.stock import (
+    get_stock_level, get_all_stock, get_daily_sales_report,
+    check_low_stock, get_out_of_stock, search_product_by_name,
+    get_stock_value, update_stock
+)
+from functions.orders import (
+    get_order_status, get_all_orders, get_pending_orders,
+    get_orders_by_customer, update_order_status, get_todays_orders
+)
+from functions.reports import (
+    get_total_revenue, get_best_selling_product, get_sales_summary,
+    get_low_stock_report, get_stock_turnover
+)
+from functions.voice import transcribe_audio
+from schemas.tools import TOOLS
+
+app = FastAPI()
+
+OLLAMA_URL = "http://localhost:11434/api/chat"
+MODEL = "llama3.1"
+
+SYSTEM_PROMPT = {
+    "role": "system",
+    "content": """
+Sen bir e-ticaret / retail şirketinin ileri düzey AI analistsin.
+Kullanıcılar sana stok, satış, kategori, SKU, funnel performansı, fiyat etkisi,
+revenue, C2D, B2D, PDP View, A2C, checkout ve kullanıcı davranışı hakkında sorular sorar.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENEL KURALLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Stok, satış, kategori, SKU, funnel, C2D, B2D, revenue, fiyat veya kullanıcı davranışı sorularında MUTLAKA tool çağır.
+2. Geniş analiz sorularında varsayılan tool: analyze_ecommerce_sample(question)
+3. Asla SQL, kod veya ham hesaplama döndürme.
+4. Sonucu Türkçe, net ve aksiyon odaklı özetle.
+5. Sayısal değerleri belirt.
+6. Cevapta mümkünse kısa tablo veya 3-5 madde kullan.
+7. Tool sonucu boşsa veya hata içeriyorsa bunu açıkça söyle.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ANA ANALİTİK SAMPLE DATA TOOL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Kullanıcının sorusu aşağıdaki konulardan biriyse varsayılan olarak
+analyze_ecommerce_sample(question) tool'unu çağır:
+
+- stok riski
+- stok coverage
+- OOS / out of stock
+- overstock
+- kategori performansı
+- marka performansı
+- SKU performansı
+- revenue / ciro
+- product price
+- fiyat etkisi
+- C2D
+- B2D
+- PDP View
+- A2C
+- Cart View
+- Shipping View
+- Payment View
+- Summary View
+- Checkout Submit
+- Transactions
+- funnel drop
+- kullanıcı kaybı
+- satış kaybı
+- satış etkisi
+- kategori / marka / SKU karşılaştırmaları
+
+Bu tool 200 satırlık sample e-ticaret datası üzerinde çalışır.
+
+Metrik tanımları:
+C2D = total_unique_add_to_carts_sum / total_unique_pdp_views_sum * 100
+B2D = total_transactions_sum / total_unique_pdp_views_sum * 100
+Delta = previous period comparison
+Stock Coverage = stock_qty / daily_sales_qty_7d
+OOS = stock_qty = 0 veya availability = out_of_stock
+
+Örnek yönlendirmeler:
+"C2D yüksek ama stoğu az SKU'lar hangileri?" → analyze_ecommerce_sample(question)
+"Funnel'da en büyük kullanıcı kaybı hangi adımda?" → analyze_ecommerce_sample(question)
+"Revenue düşen kategorilerde stok problemi var mı?" → analyze_ecommerce_sample(question)
+"PDP view yüksek ama transaction düşük ürünleri göster." → analyze_ecommerce_sample(question)
+"Overstock olup B2D düşük ürünler hangileri?" → analyze_ecommerce_sample(question)
+"Stokta olmayan ama PDP view alan ürünler hangileri?" → analyze_ecommerce_sample(question)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BASİT STOK / SİPARİŞ TOOL'LARI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Aşağıdaki tool'ları sadece çok basit operasyonel sorularda kullan:
+
+• Tek ürün stok sorgusu            → get_stock_level(product_id)
+• Tüm basit stok listesi           → get_all_stock()
+• İsme göre basit ürün arama       → search_product_by_name(name)
+• Basit az stok listesi            → check_low_stock(threshold)
+• Basit tükenen ürün listesi       → get_out_of_stock()
+• Basit toplam stok değeri         → get_stock_value()
+• Stok güncelleme                  → update_stock(product_id, quantity)
+
+• Tek sipariş durumu               → get_order_status(order_id)
+• Tüm siparişler                   → get_all_orders()
+• Bekleyen siparişler              → get_pending_orders()
+• Müşteri bazlı siparişler         → get_orders_by_customer(customer)
+• Sipariş durumu güncelle          → update_order_status(order_id, status)
+• Bugünkü siparişler               → get_todays_orders()
+
+• Toplam gelir / revenue           → get_total_revenue()
+• En çok satan ürün                → get_best_selling_product()
+• Satış özeti                      → get_sales_summary()
+• Kritik stok raporu               → get_low_stock_report()
+• Stok devir hızı                  → get_stock_turnover()
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YANIT FORMATI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Önce kısa sonuç ver.
+2. Sonra varsa en önemli SKU/kategori/markaları listele.
+3. Sonunda aksiyon önerisi ekle.
+4. "yüksek / düşük" gibi belirsiz ifadeler yerine mümkünse sayı kullan.
+5. Kullanıcıya SQL gösterme.
+
+Türkçe konuş.
+"""
+}
+
+history = [SYSTEM_PROMPT]
+
+
+def call_ollama(messages, use_tools=True):
+    payload = {
+        "model": MODEL,
+        "messages": messages,
+        "stream": False
+    }
+
+    if use_tools:
+        payload["tools"] = TOOLS
+        payload["tool_choice"] = "required"
+
+    try:
+        r = requests.post(OLLAMA_URL, json=payload, timeout=120)
+        r.raise_for_status()
+        return r.json()
+    except Exception as e:
+        print("❌ OLLAMA HATASI:", str(e), flush=True)
+        return {
+            "message": {
+                "content": f"Ollama bağlantı hatası: {str(e)}"
+            }
+        }
+
+
+def route(user_message: str):
+    global history
+
+    print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", flush=True)
+    print("👤 USER MESSAGE:", user_message, flush=True)
+
+    history.append({"role": "user", "content": user_message})
+
+    result = call_ollama(history)
+    message = result.get("message", {})
+    tool_calls = message.get("tool_calls", [])
+
+    print("🤖 OLLAMA RAW MESSAGE:", message, flush=True)
+    print("🧰 TOOL CALLS:", tool_calls, flush=True)
+
+    if tool_calls:
+        history.append({
+            "role": "assistant",
+            "content": "",
+            "tool_calls": tool_calls
+        })
+
+        fn_results = []
+
+        for tool_call in tool_calls:
+            fn = tool_call.get("function", {})
+            fn_name = fn.get("name")
+            fn_args = fn.get("arguments", {})
+
+            print("🛠️ ÇAĞRILAN TOOL:", fn_name, flush=True)
+            print("📦 TOOL ARGUMENTS RAW:", fn_args, flush=True)
+
+            if isinstance(fn_args, str):
+                try:
+                    fn_args = json.loads(fn_args)
+                except json.JSONDecodeError:
+                    fn_args = {}
+
+            print("📦 TOOL ARGUMENTS PARSED:", fn_args, flush=True)
+
+            try:
+                if fn_name == "analyze_ecommerce_sample":
+                    fn_result = analyze_ecommerce_sample(
+                        fn_args.get("question", user_message)
+                    )
+
+                elif fn_name == "get_stock_level":
+                    fn_result = get_stock_level(fn_args["product_id"])
+
+                elif fn_name == "get_all_stock":
+                    fn_result = get_all_stock()
+
+                elif fn_name == "get_daily_sales_report":
+                    fn_result = get_daily_sales_report()
+
+                elif fn_name == "check_low_stock":
+                    fn_result = check_low_stock(fn_args.get("threshold", 10))
+
+                elif fn_name == "get_out_of_stock":
+                    fn_result = get_out_of_stock()
+
+                elif fn_name == "search_product_by_name":
+                    fn_result = search_product_by_name(fn_args["name"])
+
+                elif fn_name == "get_stock_value":
+                    fn_result = get_stock_value()
+
+                elif fn_name == "update_stock":
+                    fn_result = update_stock(
+                        fn_args["product_id"],
+                        fn_args["quantity"]
+                    )
+
+                elif fn_name == "get_order_status":
+                    fn_result = get_order_status(fn_args["order_id"])
+
+                elif fn_name == "get_all_orders":
+                    fn_result = get_all_orders()
+
+                elif fn_name == "get_pending_orders":
+                    fn_result = get_pending_orders()
+
+                elif fn_name == "get_orders_by_customer":
+                    fn_result = get_orders_by_customer(fn_args["customer"])
+
+                elif fn_name == "update_order_status":
+                    fn_result = update_order_status(
+                        fn_args["order_id"],
+                        fn_args["status"]
+                    )
+
+                elif fn_name == "get_todays_orders":
+                    fn_result = get_todays_orders()
+
+                elif fn_name == "get_total_revenue":
+                    fn_result = get_total_revenue()
+
+                elif fn_name == "get_best_selling_product":
+                    fn_result = get_best_selling_product()
+
+                elif fn_name == "get_sales_summary":
+                    fn_result = get_sales_summary()
+
+                elif fn_name == "get_low_stock_report":
+                    fn_result = get_low_stock_report()
+
+                elif fn_name == "get_stock_turnover":
+                    fn_result = get_stock_turnover()
+
+                else:
+                    fn_result = "Bilinmeyen fonksiyon"
+
+            except Exception as e:
+                fn_result = f"Tool çalışırken hata oluştu: {str(e)}"
+
+            print("✅ TOOL RESULT PREVIEW:", str(fn_result)[:1000], flush=True)
+
+            fn_results.append(str(fn_result))
+            history.append({"role": "tool", "content": str(fn_result)})
+
+      # result2 = call_ollama(history, use_tools=False)
+      #  message2 = result2.get("message", {})
+      #  final = message2.get("content", "").strip()
+
+      #  print("📝 FINAL ANSWER:", final[:1000], flush=True)
+
+       # if not final or "{" in final[:20]:
+       #     final = "\n".join(fn_results)
+
+       # history.append({"role": "assistant", "content": final})
+       # return final 
+            final = "\n".join(fn_results)
+
+            print("📝 FINAL TOOL RESULT:", final[:1000], flush=True)
+
+            history.append({"role": "assistant", "content": final})
+            return final 
+
+
+
+
+
+
+    else:
+        content = message.get("content", "").strip()
+
+        if not content or "{" in content[:20]:
+            content = "Yanıt alınamadı, lütfen tekrar deneyin."
+
+        history.append({"role": "assistant", "content": content})
+        return content
+
+
+class ChatRequest(BaseModel):
+    message: str
+
+
+@app.post("/chat")
+def chat(req: ChatRequest):
+    reply = route(req.message)
+    return {"reply": reply}
+
+
+@app.post("/reset")
+def reset():
+    global history
+    history = [SYSTEM_PROMPT]
+    return {"status": "ok"}
+
+
+@app.post("/transcribe")
+async def transcribe(audio: UploadFile = File(...)):
+    audio_bytes = await audio.read()
+    text = transcribe_audio(audio_bytes)
+    return {"text": text}
+
+
+@app.get("/", response_class=HTMLResponse)
+def index():
+    return """
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retail AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --blue-deep:   #0f3a8a;
+      --blue-mid:    #1a56db;
+      --blue-bright: #3b82f6;
+      --blue-light:  #bfdbfe;
+      --blue-pale:   #eff6ff;
+      --white:       #ffffff;
+      --text-dark:   #0f172a;
+      --text-mid:    #475569;
+      --text-muted:  #94a3b8;
+      --border:      rgba(59,130,246,0.15);
+    }
+
+    body {
+      font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+      background: linear-gradient(160deg, var(--blue-deep) 0%, var(--blue-mid) 40%, var(--blue-bright) 75%, #93c5fd 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Decorative orbs */
+    body::before, body::after {
+      content: "";
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::before {
+      width: 520px; height: 520px;
+      top: -140px; left: -100px;
+      background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+    }
+    body::after {
+      width: 400px; height: 400px;
+      bottom: -100px; right: -80px;
+      background: radial-gradient(circle, rgba(147,197,253,0.20) 0%, transparent 70%);
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 980px;
+      height: 100vh;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 64px rgba(15,58,138,0.22), 0 0 0 1px rgba(255,255,255,0.6) inset;
+    }
+
+    /* ── HEADER ── */
+    header {
+      height: 68px;
+      padding: 0 28px;
+      background: linear-gradient(90deg, var(--blue-deep) 0%, var(--blue-mid) 100%);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+
+    header h1 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.2px;
+    }
+
+    header h1 small {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.60);
+      letter-spacing: 0;
+      margin-top: 1px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 11.5px;
+      color: rgba(255,255,255,0.80);
+      font-weight: 500;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(74,222,128,0.7);
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.4; }
+    }
+
+    /* ── MESSAGES ── */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: var(--blue-pale);
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(59,130,246,0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(26,86,219,0.04) 0%, transparent 50%);
+    }
+
+    #messages::-webkit-scrollbar { width: 5px; }
+    #messages::-webkit-scrollbar-track { background: transparent; }
+    #messages::-webkit-scrollbar-thumb { background: var(--blue-light); border-radius: 4px; }
+
+    .msg {
+      max-width: 76%;
+      padding: 13px 17px;
+      border-radius: 18px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      animation: msg-in 0.22s ease both;
+    }
+    @keyframes msg-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--blue-mid) 0%, var(--blue-deep) 100%);
+      color: #ffffff;
+      border-bottom-right-radius: 5px;
+      box-shadow: 0 4px 18px rgba(26,86,219,0.28);
+    }
+
+    .ai {
+      align-self: flex-start;
+      background: var(--white);
+      color: var(--text-dark);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 5px;
+      box-shadow: 0 2px 10px rgba(15,58,138,0.06);
+    }
+
+    .typing {
+      align-self: flex-start;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      border-bottom-left-radius: 5px;
+      padding: 13px 17px;
+      font-size: 13.5px;
+      color: var(--text-muted);
+      box-shadow: 0 2px 10px rgba(15,58,138,0.06);
+    }
+
+    /* ── INPUT AREA ── */
+    #input-area {
+      padding: 16px 24px 20px;
+      background: var(--white);
+      border-top: 1px solid rgba(59,130,246,0.12);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    #input {
+      flex: 1;
+      background: var(--blue-pale);
+      border: 1.5px solid var(--blue-light);
+      color: var(--text-dark);
+      padding: 13px 16px;
+      border-radius: 14px;
+      font-size: 13.5px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    #input::placeholder { color: var(--text-muted); }
+    #input:focus {
+      border-color: var(--blue-mid);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(26,86,219,0.12);
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      border-radius: 13px;
+      transition: background 0.15s, transform 0.08s, box-shadow 0.15s;
+    }
+    button:active { transform: translateY(1px); }
+
+    #send-btn {
+      background: linear-gradient(135deg, var(--blue-mid) 0%, var(--blue-deep) 100%);
+      color: #ffffff;
+      padding: 0 22px;
+      height: 46px;
+      min-width: 90px;
+      box-shadow: 0 4px 14px rgba(26,86,219,0.30);
+    }
+    #send-btn:hover {
+      box-shadow: 0 6px 20px rgba(26,86,219,0.42);
+      transform: translateY(-1px);
+    }
+
+    #reset-btn {
+      background: var(--blue-pale);
+      color: var(--blue-mid);
+      border: 1.5px solid var(--blue-light);
+      padding: 0 16px;
+      height: 46px;
+      min-width: 80px;
+    }
+    #reset-btn:hover {
+      background: var(--blue-light);
+      color: var(--blue-deep);
+    }
+
+    #mic-btn {
+      background: var(--blue-pale);
+      color: var(--blue-mid);
+      border: 1.5px solid var(--blue-light);
+      width: 46px;
+      height: 46px;
+      padding: 0;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #mic-btn:hover { background: var(--blue-light); }
+    #mic-btn.recording {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #dc2626;
+      box-shadow: 0 0 0 3px rgba(220,38,38,0.15);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      body { background: var(--blue-mid); }
+      .app-shell {
+        max-width: 100%;
+        box-shadow: none;
+      }
+      header { padding: 0 18px; }
+      #messages { padding: 20px 16px; }
+      .msg { max-width: 88%; }
+      #input-area { padding: 12px 14px 16px; gap: 7px; }
+      #reset-btn { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <header>
+      <div class="header-left">
+        <div class="logo-icon">🛒</div>
+        <h1>Retail AI
+          <small>Perakende Analitik Asistanı</small>
+        </h1>
+      </div>
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        LLaMA 3.1 — Yerel
+      </div>
+    </header>
+
+    <div id="messages">
+      <div class="msg ai">Merhaba! Stok, satış, kategori, funnel ve ürün performansı hakkında soru sorabilirsiniz.</div>
+    </div>
+
+    <div id="input-area">
+      <input id="input" placeholder="Mesajınızı yazın..." autocomplete="off" />
+      <button id="mic-btn" onclick="toggleRecording()">🎤</button>
+      <button id="reset-btn" onclick="resetChat()">Sıfırla</button>
+      <button id="send-btn" onclick="sendMessage()">Gönder</button>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById("input");
+    const messages = document.getElementById("messages");
+
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    function addMsg(text, cls) {
+      const div = document.createElement("div");
+      div.className = "msg " + cls;
+      div.textContent = text;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+      return div;
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.value = "";
+      addMsg(text, "user");
+
+      const typing = document.createElement("div");
+      typing.className = "typing";
+      typing.textContent = "⏳ Düşünüyor...";
+      messages.appendChild(typing);
+      messages.scrollTop = messages.scrollHeight;
+
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      });
+
+      const data = await res.json();
+      typing.remove();
+      addMsg(data.reply, "ai");
+    }
+
+    async function resetChat() {
+      await fetch("/reset", { method: "POST" });
+      messages.innerHTML = '<div class="msg ai">Sohbet sıfırlandı. Nasıl yardımcı olabilirim?</div>';
+    }
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+
+    async function toggleRecording() {
+      const btn = document.getElementById("mic-btn");
+
+      if (!isRecording) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(audioChunks, { type: "audio/wav" });
+          const formData = new FormData();
+          formData.append("audio", blob, "voice.wav");
+
+          const typing = document.createElement("div");
+          typing.className = "typing";
+          typing.textContent = "🎤 Ses işleniyor...";
+          messages.appendChild(typing);
+          messages.scrollTop = messages.scrollHeight;
+
+          const res = await fetch("/transcribe", {
+            method: "POST",
+            body: formData
+          });
+
+          const data = await res.json();
+          typing.remove();
+
+          if (data.text) {
+            document.getElementById("input").value = data.text;
+            sendMessage();
+          }
+        };
+
+        mediaRecorder.start();
+        isRecording = true;
+        btn.classList.add("recording");
+        btn.textContent = "⏹";
+      } else {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t => t.stop());
+        isRecording = false;
+        btn.classList.remove("recording");
+        btn.textContent = "🎤";
+      }
+    }
+  </script>
+</body>
+</html>
+"""
