@@ -209,216 +209,115 @@ def apply_category_filter(df, category_filter):
     return filtered.copy()
 
 
-def build_replenishment_plan(df, question):
-    work = df.copy()
-
-    if "stock_qty" not in work.columns:
-        return error_result(
-            question,
-            "Stok kolonu bulunamadı. Replenishment planı için stock_qty gerekli."
-        )
-
-    if "reorder_point_qty" in work.columns:
-        stock_risk_mask = work["stock_qty"] <= work["reorder_point_qty"]
-    else:
-        stock_threshold = work["stock_qty"].quantile(0.25)
-        stock_risk_mask = work["stock_qty"] <= stock_threshold
-
-    if "availability_status" in work.columns:
-        stock_risk_mask = stock_risk_mask | work["availability_status"].astype(str).apply(
-            normalize_text
-        ).str.contains("out|oos|stok yok", na=False)
-
-    c2d_threshold = work["c2d_pct"].median() if "c2d_pct" in work.columns else None
-    b2d_threshold = work["b2d_pct"].median() if "b2d_pct" in work.columns else None
-
-    strong_mask = pd.Series(True, index=work.index)
-
-    if c2d_threshold is not None:
-        strong_mask = strong_mask & (work["c2d_pct"] >= c2d_threshold)
-
-    if b2d_threshold is not None:
-        strong_mask = strong_mask & (work["b2d_pct"] >= b2d_threshold)
-
-    selected = work[stock_risk_mask & strong_mask].copy()
-
-    # Çok kısıtlı olursa sadece stok riskiyle relax et
-    if selected.empty:
-        selected = work[stock_risk_mask].copy()
-
-    if selected.empty:
-        return error_result(
-            question,
-            "C2D/B2D güçlü ve stok riski taşıyan ürün bulunamadı."
-        )
-
-    if "reorder_point_qty" in selected.columns:
-        selected["stock_gap_qty"] = (
-            selected["reorder_point_qty"].fillna(0) - selected["stock_qty"].fillna(0)
-        ).clip(lower=0)
-    else:
-        selected["stock_gap_qty"] = 0
-
-    if "transactions" in selected.columns:
-        selected["daily_sales_proxy"] = selected["transactions"].fillna(0) / 7
-    else:
-        selected["daily_sales_proxy"] = 0
-
-    selected["suggested_replenishment_qty"] = (
-        selected["stock_gap_qty"] + (selected["daily_sales_proxy"] * 14)
-    ).round().astype(int)
-
-    selected["priority_score"] = 0
-
-    if "c2d_pct" in selected.columns:
-        selected["priority_score"] += selected["c2d_pct"].rank(pct=True) * 30
-
-    if "b2d_pct" in selected.columns:
-        selected["priority_score"] += selected["b2d_pct"].rank(pct=True) * 30
-
-    if "revenue" in selected.columns:
-        selected["priority_score"] += selected["revenue"].rank(pct=True) * 25
-
-    selected["priority_score"] += selected["stock_gap_qty"].rank(pct=True) * 15
-
-    selected["priority"] = pd.cut(
-        selected["priority_score"],
-        bins=[-1, 45, 70, 100],
-        labels=["Medium", "High", "Critical"],
-    ).astype(str)
-
-    selected["recommended_action"] = selected.apply(
-        lambda r: (
-            "Acil replenishment planla; C2D/B2D güçlü ve stok riski var."
-            if r.get("priority") in ["High", "Critical"]
-            else "Stok takibi ve replenishment kontrolü yap."
-        ),
-        axis=1,
-    )
-
-    selected["reason"] = selected.apply(
-        lambda r: (
-            f"Stok: {r.get('stock_qty')}, Reorder point: {r.get('reorder_point_qty')}, "
-            f"C2D: %{round(r.get('c2d_pct'), 2) if pd.notna(r.get('c2d_pct')) else 'N/A'}, "
-            f"B2D: %{round(r.get('b2d_pct'), 2) if pd.notna(r.get('b2d_pct')) else 'N/A'}"
-        ),
-        axis=1,
-    )
-
-    selected = selected.sort_values(
-        ["priority_score", "suggested_replenishment_qty"],
-        ascending=[False, False],
-    )
-
-    rows = records(selected)
-
-    return json.dumps(
-        {
-            "analysis_type": "recommended_action_execution",
-            "action_type": "replenishment_plan",
-            "question": question,
-            "summary": {
-                "selected_sku_count": int(len(selected)),
-                "critical_count": int((selected["priority"] == "Critical").sum()),
-                "high_count": int((selected["priority"] == "High").sum()),
-                "total_suggested_replenishment_qty": int(selected["suggested_replenishment_qty"].sum()),
-            },
-            "main_result": "C2D/B2D güçlü ve stok riski taşıyan SKU’lar için replenishment planı oluşturuldu.",
-            "rows": rows,
-            "recommended_actions": [
-                "Critical öncelikli SKU’lar için satın alma / tedarik ekibine replenishment talebi aç.",
-                "Yüksek C2D/B2D alan ama stok riski taşıyan ürünlerde kampanya artırmadan önce stok garantisi al.",
-                "OOS veya kritik stok ürünlerinde paid traffic ve onsite visibility geçici olarak kontrol edilmeli.",
-                "Excel çıktısını tedarik, kategori ve performans pazarlama ekipleriyle paylaş.",
-            ],
-        },
-        ensure_ascii=False,
-        default=str,
-    )
+def get_professor_diagnosis(r, stats):
+    c2d = r.get("c2d_pct")
+    b2d = r.get("b2d_pct")
+    pdp = r.get("pdp_views")
+    stock = r.get("stock_qty")
+    price_gap = r.get("price_gap_pct")
+    reorder = r.get("reorder_point_qty") if pd.notna(r.get("reorder_point_qty")) else 5
+    
+    c2d_high = c2d >= stats["c2d_med"] if pd.notna(c2d) else False
+    b2d_high = b2d >= stats["b2d_med"] if pd.notna(b2d) else False
+    pdp_high = pdp >= stats["pdp_med"] if pd.notna(pdp) else False
+    
+    is_expensive = pd.notna(price_gap) and price_gap > 5
+    is_oos_risk = pd.notna(stock) and stock <= reorder
+    is_overstock = pd.notna(stock) and stock > reorder * 10
+    
+    # Kural 1: Kritik Stok Kaybı (Critical OOS Risk)
+    if b2d_high and is_oos_risk:
+        return "Kritik Stok (OOS Risk)", "Satışa dönüşen bu üründe stok tükenmek üzere. Acil tedarik sürecini başlatın.", 95, "Critical"
+    
+    # Kural 2: Fiyat Bariyeri (Pricing Barrier)
+    if pdp_high and not b2d_high and is_expensive:
+        gap_val = round(price_gap, 1) if pd.notna(price_gap) else 0
+        return "Fiyat Bariyeri", f"Trafik yüksek ama rakibe göre %{gap_val} pahalı olduğundan dönüşüm düşük. Fiyatı veya kampanyaları gözden geçirin.", 85, "High"
+        
+    # Kural 3: Sepeti Terk Etme (Cart Abandonment)
+    if pdp_high and c2d_high and not b2d_high and not is_expensive:
+        return "Sepeti Terk (Cart Abandonment)", "Ürün sepete atılıyor ancak ödemeye geçilmiyor. Kargo bedeli veya ödeme bariyerlerini kontrol edin.", 80, "High"
+        
+    # Kural 4: Gizli Cevher (Hidden Gem)
+    if not pdp_high and b2d_high and not is_oos_risk:
+        return "Gizli Cevher (Hidden Gem)", "Trafik düşük olsa da satın alma oranı yüksek. Acilen onsite görünürlüğü ve reklam bütçesini artırın.", 75, "Medium"
+        
+    # Kural 5: Ölü Yatırım (Overstock)
+    if not pdp_high and not b2d_high and is_overstock:
+        return "Ölü Yatırım (Overstock)", "Ürün trafik almıyor, satmıyor ve stok maliyeti yaratıyor. 1 Alana 1 Bedava veya agresif indirimlerle stoku eritin.", 60, "Low"
+        
+    # Default: Core Performer
+    if b2d_high and pdp_high:
+        return "Core Performer", "Amiral gemisi ürün. Stok seviyesini koruyun ve organik satışını destekleyin.", 50, "Low"
+        
+    return "Standart Seyir", "Sıradışı bir anomali yok. Rakip rekabeti ve kategori dinamiklerini izlemeye devam edin.", 30, "Low"
 
 
-def build_campaign_boost_plan(df, question):
+def build_comprehensive_action_plan(df, question):
     work = df.copy()
 
     category_filter = extract_category_filter(work, question)
     work = apply_category_filter(work, category_filter)
 
     if work.empty:
-        return error_result(question, "Kampanya/görünürlük planı için ilgili segment bulunamadı.")
+        return error_result(question, "Profesör analizi için ilgili kategoride ürün bulunamadı.")
 
-    sort_col = "revenue" if "revenue" in work.columns else "pdp_views"
-    if sort_col in work.columns:
-        work = work.sort_values(sort_col, ascending=False)
+    stats = {
+        "c2d_med": work["c2d_pct"].median() if "c2d_pct" in work.columns else 0,
+        "b2d_med": work["b2d_pct"].median() if "b2d_pct" in work.columns else 0,
+        "pdp_med": work["pdp_views"].median() if "pdp_views" in work.columns else 0,
+    }
 
-    work["recommended_action"] = "Görünürlük ve kampanya desteğini artır."
-    work["priority"] = "High"
-    work["reason"] = "Kazanan segment; revenue/PDP/funnel sinyalleri güçlü."
+    results = []
+    for idx, row in work.iterrows():
+        r = row.to_dict()
+        insight_cat, action, score, prio = get_professor_diagnosis(r, stats)
+        r["insight_category"] = insight_cat
+        r["professor_action"] = action
+        r["priority_score"] = score
+        r["priority"] = prio
+        
+        stock = r.get("stock_qty") or 0
+        reorder = r.get("reorder_point_qty") or 0
+        gap = max(0, reorder - stock) if pd.notna(reorder) and pd.notna(stock) else 0
+        daily = (r.get("transactions") or 0) / 7.0 if pd.notna(r.get("transactions")) else 0
+        r["suggested_replenishment_qty"] = int(round(gap + (daily * 14)))
+        r["stock_gap_qty"] = gap
+        
+        r["reason"] = f"Teşhis: {insight_cat}"
+        r["recommended_action"] = action
+        results.append(r)
 
-    rows = records(work.head(20))
+    final_df = pd.DataFrame(results)
+    
+    sort_col = "revenue" if "revenue" in final_df.columns else "pdp_views"
+    if sort_col not in final_df.columns:
+        sort_col = "priority_score"
+        
+    final_df = final_df.sort_values(
+        ["priority_score", sort_col],
+        ascending=[False, False]
+    )
+
+    rows = records(final_df.head(30))
 
     return json.dumps(
         {
             "analysis_type": "recommended_action_execution",
-            "action_type": "campaign_boost_plan",
+            "action_type": "comprehensive_professor_plan",
             "question": question,
             "summary": {
-                "selected_sku_count": int(len(work)),
-                "focus": "winning_segment_visibility",
+                "selected_sku_count": int(len(final_df)),
+                "critical_count": int((final_df["priority"] == "Critical").sum()),
+                "high_count": int((final_df["priority"] == "High").sum()),
             },
-            "main_result": "Kazanan segment için kampanya ve görünürlük planı oluşturuldu.",
+            "main_result": "E-Ticaret Profesörü teşhis motoru çalıştırıldı. Her SKU için Fiyat, Stok ve Dönüşüm metrikleri çaprazlanarak nokta atışı aksiyonlar üretildi.",
             "rows": rows,
             "recommended_actions": [
-                "Kazanan segmentte onsite görünürlüğü artır.",
-                "Paid/CRM bütçesini yüksek dönüşüm potansiyeli olan SKU’lara yönlendir.",
-                "Stok yeterliliğini kontrol ettikten sonra kampanya desteğini artır.",
-            ],
-        },
-        ensure_ascii=False,
-        default=str,
-    )
-
-
-def build_weak_segment_plan(df, question):
-    work = df.copy()
-
-    category_filter = extract_category_filter(work, question)
-    work = apply_category_filter(work, category_filter)
-
-    if work.empty:
-        return error_result(question, "Riskli segment analizi için ilgili kategori/segment bulunamadı.")
-
-    if "b2d_pct" in work.columns:
-        work = work.sort_values("b2d_pct", ascending=True)
-
-    work["recommended_action"] = "Fiyat, stok ve funnel kırılımı detaylandır."
-    work["priority"] = "High"
-    work["reason"] = work.apply(
-        lambda r: (
-            f"B2D: %{round(r.get('b2d_pct'), 2) if pd.notna(r.get('b2d_pct')) else 'N/A'}, "
-            f"Stok: {r.get('stock_qty')}, "
-            f"Fiyat: {r.get('price')}, "
-            f"Benchmark: {r.get('benchmark_price')}"
-        ),
-        axis=1,
-    )
-
-    rows = records(work.head(20))
-
-    return json.dumps(
-        {
-            "analysis_type": "recommended_action_execution",
-            "action_type": "weak_segment_diagnosis",
-            "question": question,
-            "summary": {
-                "selected_sku_count": int(len(work)),
-                "focus": "weak_segment_root_cause",
-            },
-            "main_result": "Riskli segment için fiyat, stok ve funnel kırılımı hazırlandı.",
-            "rows": rows,
-            "recommended_actions": [
-                "B2D düşük SKU’larda fiyat gap ve benchmark farkını kontrol et.",
-                "Stok riski olan ürünlerde replenishment planı çıkar.",
-                "PDP yüksek ama B2D düşük ürünlerde ürün sayfası, fiyat, kargo ve ödeme bariyerlerini incele.",
+                "Kritik Stok (OOS Risk) grubundaki ürünler için acil tedarik emri oluşturulmalı.",
+                "Fiyat Bariyeri teşhisi konan SKU'larda merchant benchmark verisine göre fiyat optimizasyonu kurgulanmalı.",
+                "Gizli Cevher ürünlerine hemen CRM veya performance marketing bütçesi kaydırılmalı.",
+                "Excel'i indirip her ürün için özel üretilen profesör aksiyonlarını ekiplere dağıtın."
             ],
         },
         ensure_ascii=False,
@@ -440,43 +339,8 @@ def execute_recommended_action(question: str, last_result_json: str = None):
             default=str,
         )
 
-    q = normalize_text(question)
-
-    if any(x in q for x in [
-        "replenishment",
-        "stok riski",
-        "stok",
-        "c2d/b2d",
-        "c2d b2d",
-        "tedarik",
-        "bu urunler",
-        "bu ürünler",
-    ]):
-        return build_replenishment_plan(df, question)
-
-    if any(x in q for x in [
-        "gorunurluk",
-        "görünürlük",
-        "kampanya",
-        "kazanan",
-        "destegini artir",
-        "desteğini artır",
-    ]):
-        return build_campaign_boost_plan(df, question)
-
-    if any(x in q for x in [
-        "zayif",
-        "zayıf",
-        "riskli",
-        "kaybeden",
-        "detaylandir",
-        "detaylandır",
-        "fiyat stok funnel",
-    ]):
-        return build_weak_segment_plan(df, question)
-
-    # Default: aksiyon gibi görünüyor ama sınıflanamadıysa stok/funnel action planına düş
-    return build_replenishment_plan(df, question)
+    # Use the comprehensive professor engine for all action inquiries
+    return build_comprehensive_action_plan(df, question)
 
 
 def records(df):
@@ -502,6 +366,8 @@ def records(df):
         "b2d_pct",
         "priority",
         "priority_score",
+        "insight_category",
+        "professor_action",
         "recommended_action",
         "reason",
     ]

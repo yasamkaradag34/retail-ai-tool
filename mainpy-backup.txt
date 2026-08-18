@@ -4,6 +4,9 @@ from pydantic import BaseModel
 import requests
 import pandas as pd
 import json
+import os
+import shutil
+from typing import List
 from io import BytesIO
 from datetime import datetime
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -130,8 +133,12 @@ OOS = stock_qty = 0 veya availability = out_of_stock
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 INSIGHT ENGINE TOOL
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Kullanıcı kategori, sektör, dönem veya performans nedeni sorarsa
-generate_category_insight(category, sector, period_name) tool'unu çağır.
+Kullanıcı kategori, sektör, dönem, performans nedeni, fırsat, risk,
+kazanan/kaybeden segment, stok/fiyat/talep nedeni veya CEO özeti sorarsa
+generate_category_insight(category, sector, period_name, question) tool'unu çağır.
+
+Category Insights sorularında kullanıcının tam sorusunu MUTLAKA question parametresiyle gönder.
+Çünkü aynı kategori için "neden fırsat?", "neden riskli?", "stoktan mı fiyattan mı?" farklı analiz tipleridir.
 
 Aşağıdaki soru tiplerinde generate_category_insight kullan:
 - "Mobile kategorisi neden düştü?"
@@ -143,12 +150,20 @@ Aşağıdaki soru tiplerinde generate_category_insight kullan:
 - "Trendyol ürün grupları için genel performans analizi yap"
 - "Sektörel değişkenlere göre satış nedenlerini analiz et"
 - "Kanal, traffic, funnel, stok ve fiyat etkisini birlikte yorumla"
+- "Kategori performansını CEO özeti formatında çıkar"
 
 Sektör seçimi:
 - Teknoloji / elektronik / mobile / tablet / headphone → consumer_electronics
 - Moda / tekstil / ayakkabı / giyim → fashion
 - Gıda / market / FMCG → fmcg
 - Trendyol / marketplace / karma ürün grupları → marketplace_general
+
+Örnek tool çağrıları:
+"Tabletler neden fırsat kategorisi olabilir?"
+→ generate_category_insight(category="Tabletler", sector="consumer_electronics", period_name="selected_period", question="Tabletler neden fırsat kategorisi olabilir?")
+
+"Bu dönem satış performansı stoktan mı, fiyattan mı, talepten mi etkilenmiş?"
+→ generate_category_insight(category="genel", sector="consumer_electronics", period_name="selected_period", question="Bu dönem satış performansı stoktan mı, fiyattan mı, talepten mi etkilenmiş?")
 
 Sadece SKU listesi, tablo veya spesifik filtre sorularında analyze_ecommerce_sample(question) kullan.
 Insight, neden analizi, özet, aksiyon, fırsat/tehdit sorularında generate_category_insight kullan.
@@ -445,37 +460,147 @@ def format_tool_response_for_ui(raw_text: str) -> str:
         rows = data.get("rows", []) or []
         calculation_type = data.get("calculation_type", "scalar")
 
+        metric_labels = {
+            "stock_qty": "stok adedi",
+            "price": "fiyat",
+            "benchmark_price": "benchmark fiyat",
+            "price_gap": "fiyat farkı",
+            "price_gap_pct": "price gap yüzdesi",
+            "revenue": "ciro",
+            "pdp_views": "PDP görüntülenmesi",
+            "list_clicks": "liste tıklaması",
+            "add_to_carts": "sepete ekleme",
+            "transactions": "transaction",
+            "c2d_pct": "C2D",
+            "b2d_pct": "B2D",
+            "bounce_rate_pct": "bounce rate",
+            "stock_coverage_days": "stok coverage günü",
+            "estimated_lost_revenue": "tahmini kayıp ciro",
+            "aov": "ortalama sepet tutarı",
+        }
+
+        aggregation_labels = {
+            "avg": "ortalama",
+            "mean": "ortalama",
+            "sum": "toplam",
+            "count": "adet",
+            "unique_count": "tekil adet",
+            "min": "minimum",
+            "max": "maksimum",
+            "median": "medyan",
+            "top_10": "en yüksek ilk 10",
+            "bottom_10": "en düşük ilk 10",
+            "top_n": "en yüksek",
+            "bottom_n": "en düşük",
+            "share_of_total": "toplam içindeki pay",
+            "ratio": "oran",
+            "comparison": "karşılaştırma",
+        }
+
+        def fmt_number(value):
+            try:
+                value = float(value)
+                if value.is_integer():
+                    return f"{int(value):,}".replace(",", ".")
+                return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            except Exception:
+                return value
+
+        def fmt_pct(value):
+            try:
+                return f"%{float(value):.2f}"
+            except Exception:
+                return f"%{value}"
+
+        def subject_from_filters(filters):
+            if not filters:
+                return "Seçili veri"
+
+            first = filters[0]
+            col = first.get("column")
+            value = first.get("value")
+
+            if isinstance(value, list):
+                value = ", ".join([str(v) for v in value[:3]])
+
+            if col == "brand":
+                return f"{str(value).upper()} ürünleri"
+
+            if col in ["cat1", "cat2", "multi_category", "category"]:
+                return f"{value} kategorisi"
+
+            return str(value)
+
+        metric_label = metric_labels.get(metric, metric)
+        aggregation_label = aggregation_labels.get(aggregation, aggregation)
+        subject = subject_from_filters(filters)
+
         lines = []
         lines.append("🧮 Hesaplama Sonucu")
         lines.append("")
 
-        if question:
-            lines.append(f"Soru: {question}")
+        # Pay / oran cevabı: numerator, denominator, share_pct varsa teknik alanları doğal dile çevir
+        if rows and isinstance(rows[0], dict) and all(
+            key in rows[0] for key in ["numerator", "denominator", "share_pct"]
+        ):
+            first_row = rows[0]
 
-        lines.append(f"Metrik: {metric}")
-        lines.append(f"Hesaplama: {aggregation}")
-        lines.append(f"Dahil edilen satır: {row_count}")
+            numerator = first_row.get("numerator")
+            denominator = first_row.get("denominator")
+            share_pct = first_row.get("share_pct")
 
-        if filters:
-            filter_texts = []
-            for f in filters:
-                filter_texts.append(f"{f.get('column')} = {f.get('value')}")
-            lines.append(f"Filtre: {', '.join(filter_texts)}")
+            lines.append(
+                f"{subject} için {aggregation_label} {metric_label} {fmt_number(numerator)}’dır."
+            )
+            lines.append("")
+            lines.append(
+                f"Toplam {metric_label} {fmt_number(denominator)} olduğu için "
+                f"{subject}, toplam {metric_label} içinde {fmt_pct(share_pct)} paya sahiptir."
+            )
+            lines.append("")
+            lines.append(
+                f"Hesaplama: {fmt_number(numerator)} / {fmt_number(denominator)} × 100 = {fmt_pct(share_pct)}"
+            )
 
-        lines.append("")
+            return "\n".join(lines)
 
+        # Tek değer hesaplama
         if calculation_type == "scalar":
-            lines.append(f"Sonuç: {result}")
-        elif rows:
-            lines.append("İlk Sonuçlar")
+            lines.append(
+                f"{subject} için {aggregation_label} {metric_label}: {fmt_number(result)}"
+            )
+            lines.append("")
+            lines.append(f"Dahil edilen satır sayısı: {row_count}")
+
+            return "\n".join(lines)
+
+        # Group by / top n / bottom n gibi listeli sonuçlar
+        if rows:
+            lines.append(f"{aggregation_label.capitalize()} {metric_label} sonuçları:")
+            lines.append("")
+
             for row in rows[:10]:
                 parts = []
-                for key, value in row.items():
-                    parts.append(f"{key}: {value}")
-                lines.append("- " + " | ".join(parts))
-        else:
-            lines.append("Sonuç bulunamadı.")
 
+                # Daha okunabilir alanları öne al
+                for key in ["brand", "cat1", "cat2", "sku", "product_title", "value", metric]:
+                    if key in row and row.get(key) not in [None, ""]:
+                        label = metric_labels.get(key, key)
+                        parts.append(f"{label}: {fmt_number(row.get(key))}")
+
+                # Eğer yukarıdaki alanlar yoksa tüm row'u yaz
+                if not parts:
+                    for key, value in row.items():
+                        parts.append(f"{key}: {fmt_number(value)}")
+
+                lines.append("- " + " | ".join(parts))
+
+            lines.append("")
+            lines.append(f"Dahil edilen satır sayısı: {row_count}")
+
+            return "\n".join(lines)
+
+        lines.append("Sonuç bulunamadı.")
         return "\n".join(lines)
 
     if analysis_type == "business_metric_error":
@@ -600,89 +725,140 @@ def format_tool_response_for_ui(raw_text: str) -> str:
         category = data.get("category", "Genel")
         sector_name = data.get("sector_name", "")
         period_name = data.get("period_name", "")
+        question_type = data.get("question_type", "general_performance")
 
         summary = data.get("executive_summary", {}) or {}
+        metric_snapshot = data.get("metric_snapshot", {}) or {}
+        natural_summary = data.get("natural_summary", "")
         main_diagnosis = data.get("main_diagnosis", "")
+        signals = data.get("signal_interpretation", []) or []
         root_causes = data.get("root_causes", []) or []
         actions = data.get("recommended_actions", []) or []
         winners = data.get("winning_categories", []) or []
         losers = data.get("losing_categories", []) or []
 
+        def fmt_num(value):
+            try:
+                value = float(value)
+                if value.is_integer():
+                    return f"{int(value):,}".replace(",", ".")
+                return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            except Exception:
+                return value
+
+        def fmt_pct(value):
+            try:
+                return f"%{float(value):.2f}"
+            except Exception:
+                return f"%{value}"
+
         lines = []
-        lines.append(f"📊 {category} Performans Özeti")
+        lines.append(f"📊 {category} Kategori Insightı")
         lines.append("")
 
+        meta = []
         if period_name:
-            lines.append(f"Dönem: {period_name}")
+            meta.append(f"Dönem: {period_name}")
         if sector_name:
-            lines.append(f"Sektör: {sector_name}")
+            meta.append(f"Sektör: {sector_name}")
+        if question_type:
+            meta.append(f"Analiz tipi: {question_type}")
+        if meta:
+            lines.append(" | ".join(meta))
+            lines.append("")
+
+        if natural_summary:
+            lines.append(natural_summary)
+            lines.append("")
+
+        if main_diagnosis:
+            lines.append("Ana teşhis")
+            lines.append(main_diagnosis)
+            lines.append("")
+
+        # Teknik metrikleri ham JSON gibi değil, kısa yönetici cümlesi olarak göster.
+        revenue_delta = summary.get("revenue_delta_pct")
+        transaction_delta = summary.get("transactions_delta_pct")
+        pdp_delta = summary.get("pdp_delta_pct")
+        a2c_delta = summary.get("a2c_delta_pct")
+        c2d = summary.get("c2d_pct")
+        b2d = summary.get("b2d_pct")
+        stock_risk = summary.get("critical_stock_sku_count", 0)
+        oos = summary.get("oos_sku_count", 0)
+        price_gap = summary.get("avg_price_gap_pct", 0)
+
+        lines.append("Öne çıkan metrik okuması")
+        lines.append(
+            f"Bu segmentte revenue değişimi {fmt_pct(revenue_delta)}, transaction değişimi {fmt_pct(transaction_delta)}, "
+            f"PDP değişimi {fmt_pct(pdp_delta)} ve A2C değişimi {fmt_pct(a2c_delta)} seviyesinde."
+        )
+        lines.append(
+            f"C2D {fmt_pct(c2d)} ve B2D {fmt_pct(b2d)} olduğu için kullanıcı ilgisinin sepete ve satın almaya dönüşme kalitesi bu iki metrikle izlenmeli."
+        )
+
+        if stock_risk or oos:
+            lines.append(
+                f"Stok tarafında {fmt_num(stock_risk)} kritik stok SKU ve {fmt_num(oos)} OOS SKU bulunduğu için talep satışa dönüşmeden kaybedilebilir."
+            )
+
+        try:
+            if float(price_gap) > 5:
+                lines.append(f"Fiyat rekabetinde ortalama price gap {fmt_pct(price_gap)}; benchmark üstü fiyatlama B2D üzerinde baskı yaratabilir.")
+            elif float(price_gap) < -5:
+                lines.append(f"Fiyat rekabetinde ortalama price gap {fmt_pct(price_gap)}; benchmark altında fiyat avantajı bulunuyor.")
+        except Exception:
+            pass
 
         lines.append("")
-        lines.append("1) Genel Durum")
-        lines.append(f"- Revenue değişimi: %{summary.get('revenue_delta_pct', 'N/A')}")
-        lines.append(f"- Transaction değişimi: %{summary.get('transactions_delta_pct', 'N/A')}")
-        lines.append(f"- PDP değişimi: %{summary.get('pdp_delta_pct', 'N/A')}")
-        lines.append(f"- A2C değişimi: %{summary.get('a2c_delta_pct', 'N/A')}")
-        lines.append(f"- C2D değişimi: %{summary.get('c2d_delta_pct', 'N/A')}")
-        lines.append(f"- B2D değişimi: %{summary.get('b2d_delta_pct', 'N/A')}")
-        lines.append(f"- Kritik stok SKU sayısı: {summary.get('critical_stock_sku_count', 'N/A')}")
-        lines.append(f"- OOS SKU sayısı: {summary.get('oos_sku_count', 'N/A')}")
-        lines.append("")
 
-        lines.append("2) Ana Teşhis")
-        lines.append(main_diagnosis or "Net ana teşhis üretilemedi.")
-        lines.append("")
+        if signals:
+            lines.append("Sinyal yorumu")
+            for signal in signals[:4]:
+                interpretation = signal.get("interpretation") or ""
+                evidence = signal.get("evidence") or ""
+                if interpretation and evidence:
+                    lines.append(f"- {interpretation} ({evidence})")
+                elif interpretation:
+                    lines.append(f"- {interpretation}")
+            lines.append("")
 
         if root_causes:
-            lines.append("3) Olası Nedenler")
+            lines.append("Olası neden")
             for cause in root_causes[:3]:
                 cause_name = cause.get("cause", "")
                 evidence = cause.get("evidence", "")
                 confidence = cause.get("confidence", "")
-                confidence_text = f" Güven: {confidence}" if confidence else ""
-                lines.append(f"- {cause_name}: {evidence}{confidence_text}")
+                confidence_text = f" Güven: {confidence}." if confidence else ""
+                lines.append(f"- {cause_name}: {evidence}.{confidence_text}")
             lines.append("")
 
         if winners:
-            lines.append("4) Kazanan Segmentler")
+            lines.append("Kazanan segmentler")
             for item in winners[:3]:
-                name = (
-                    item.get("cat2")
-                    or item.get("cat1")
-                    or item.get("sales_channel")
-                    or item.get("traffic_channel")
-                    or "Segment"
-                )
+                name = item.get("cat2") or item.get("cat1") or item.get("sales_channel") or item.get("traffic_channel") or "Segment"
                 score = item.get("performance_score", "N/A")
-                revenue_delta = item.get("revenue_delta_pct", "N/A")
-                transaction_delta = item.get("transactions_delta_pct", "N/A")
-                lines.append(
-                    f"- {name}: skor {score}, revenue %{revenue_delta}, transaction %{transaction_delta}"
-                )
+                rev = item.get("revenue_delta_pct", "N/A")
+                trans = item.get("transactions_delta_pct", "N/A")
+                lines.append(f"- {name}, performans skoru {score}; revenue değişimi %{rev}, transaction değişimi %{trans}.")
             lines.append("")
 
         if losers:
-            lines.append("5) Riskli / Kaybeden Segmentler")
+            lines.append("Riskli / kaybeden segmentler")
             for item in losers[:3]:
-                name = (
-                    item.get("cat2")
-                    or item.get("cat1")
-                    or item.get("sales_channel")
-                    or item.get("traffic_channel")
-                    or "Segment"
-                )
+                name = item.get("cat2") or item.get("cat1") or item.get("sales_channel") or item.get("traffic_channel") or "Segment"
                 score = item.get("performance_score", "N/A")
-                revenue_delta = item.get("revenue_delta_pct", "N/A")
-                transaction_delta = item.get("transactions_delta_pct", "N/A")
-                lines.append(
-                    f"- {name}: skor {score}, revenue %{revenue_delta}, transaction %{transaction_delta}"
-                )
+                rev = item.get("revenue_delta_pct", "N/A")
+                trans = item.get("transactions_delta_pct", "N/A")
+                lines.append(f"- {name}, performans skoru {score}; revenue değişimi %{rev}, transaction değişimi %{trans}.")
             lines.append("")
 
         if actions:
-            lines.append("6) Önerilen Aksiyonlar")
+            lines.append("Önerilen aksiyon")
             for action in actions[:5]:
                 lines.append(f"- {action}")
+
+        lines.append("")
+        lines.append("Detaylı metrik kırılımı ve ham hesaplar için Excel çıktısını indirebilirsin.")
 
         return "\n".join(lines)
 
@@ -888,6 +1064,7 @@ def route(user_message: str):
                         category=fn_args.get("category", "genel"),
                         sector=fn_args.get("sector", "consumer_electronics"),
                         period_name=fn_args.get("period_name", "selected_period"),
+                        question=fn_args.get("question", user_message),
                     )
 
                 elif fn_name == "analyze_ecommerce_sample":
@@ -1087,12 +1264,15 @@ def build_excel_from_tool_result(raw_text: str) -> BytesIO:
 
         elif analysis_type == "category_sector_insight":
             write_df(writer, dict_to_key_value_df(data.get("executive_summary", {})), "Executive Summary")
+            write_df(writer, dict_to_key_value_df(data.get("metric_snapshot", {})), "Metric Snapshot")
+            write_df(writer, list_to_df(data.get("signal_interpretation", [])), "Signal Interpretation")
             write_df(writer, list_to_df(data.get("root_causes", [])), "Root Causes")
             write_df(writer, list_to_df(data.get("winning_categories", [])), "Winners")
             write_df(writer, list_to_df(data.get("losing_categories", [])), "Losers")
             write_df(writer, list_to_df(data.get("channel_insights", [])), "Channel Insights")
             write_df(writer, list_to_df(data.get("traffic_insights", [])), "Traffic Insights")
             write_df(writer, list_to_df([{"action": x} for x in data.get("recommended_actions", [])]), "Actions")
+            write_df(writer, list_to_df(data.get("rows", [])), "Category Rows")
 
         elif analysis_type == "business_metric_calculation":
             business_info = {
@@ -1140,7 +1320,41 @@ def chat(req: ChatRequest):
     reply = route(req.message)
     return {"reply": reply}
 
+@app.post("/upload-data")
+async def upload_data(files: List[UploadFile] = File(...)):
+    os.makedirs("data", exist_ok=True)
 
+    saved_files = []
+    errors = []
+
+    for file in files:
+        try:
+            filename = file.filename.strip()
+
+            if not filename:
+                errors.append("Boş dosya adı geldi.")
+                continue
+
+            ext = os.path.splitext(filename)[1].lower()
+            if ext not in [".xlsx", ".csv"]:
+                errors.append(f"{filename} desteklenmeyen dosya tipi.")
+                continue
+
+            save_path = os.path.join("data", filename)
+
+            with open(save_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+
+            saved_files.append(filename)
+
+        except Exception as e:
+            errors.append(f"{file.filename}: {str(e)}")
+
+    return {
+        "status": "ok" if saved_files else "error",
+        "saved_files": saved_files,
+        "errors": errors
+    }
 @app.get("/download-last-result")
 def download_last_result():
     if not LAST_TOOL_RESULT_JSON:
@@ -1197,216 +1411,628 @@ def journey():
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Retail AI Chat</title>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retail AI Console</title>
   <style>
-    * {
-      box-sizing: border-box;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #eaf6ff;
+      --panel: #ffffff;
+      --panel-soft: #f7fbff;
+      --nav: #071a3d;
+      --nav-2: #0c2554;
+      --blue: #2563eb;
+      --blue-2: #3b82f6;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #d8e6f7;
+      --result: #071226;
     }
 
     body {
-      margin: 0;
       min-height: 100vh;
-      background: radial-gradient(ellipse at top, #3d1a00 0%, #1a0800 45%, #050200 100%);
-      color: #f0e8d0;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      overflow: hidden;
     }
 
-    .chat-container {
-      width: 100%;
-      max-width: 900px;
-      height: 85vh;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.16);
-      border-radius: 24px;
+    .app-shell {
+      display: grid;
+      grid-template-columns: 248px 1fr;
+      height: 100vh;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, var(--nav) 0%, #061431 100%);
+      padding: 22px 18px;
+      color: #fff;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 20px 80px rgba(0,0,0,0.45);
+      border-right: 1px solid rgba(255,255,255,0.08);
     }
 
-    .chat-header {
-      padding: 20px 24px;
-      border-bottom: 1px solid rgba(255,255,255,0.12);
+    .brand {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      gap: 12px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 18px;
     }
 
-    .chat-header h1 {
-      margin: 0;
-      font-size: 22px;
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #60a5fa, #2563eb);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      font-weight: 800;
+      box-shadow: 0 10px 22px rgba(37, 99, 235, .28);
+      flex-shrink: 0;
+    }
+
+    .brand h1 {
+      font-size: 18px;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      font-weight: 800;
+    }
+
+    .brand p {
+      margin-top: 3px;
+      font-size: 11px;
+      color: #9fb4dd;
       font-weight: 500;
     }
 
-    .back-link {
-      color: #c8a850;
-      text-decoration: none;
-      font-size: 14px;
+    .nav-label {
+      font-size: 10px;
+      letter-spacing: .12em;
+      color: #8fa4ce;
+      text-transform: uppercase;
+      font-weight: 800;
+      margin: 16px 8px 10px;
     }
 
-    #messages {
-      flex: 1;
-      padding: 24px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    .menu { display: flex; flex-direction: column; gap: 6px; }
+
+    .menu-btn {
+      border: 0;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 11px;
+      background: transparent;
+      color: #c7d5f3;
+      padding: 11px 12px;
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 650;
+      transition: .16s ease;
     }
 
-    .message {
-      max-width: 75%;
-      padding: 12px 16px;
-      border-radius: 16px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      font-size: 14px;
+    .menu-btn span {
+      display: block;
+      margin-top: 3px;
+      font-size: 10.5px;
+      color: #7f95c0;
+      font-weight: 500;
     }
 
-    .user {
-      align-self: flex-end;
-      background: #c8a850;
-      color: #1a0800;
-    }
+    .menu-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
 
-    .ai {
-      align-self: flex-start;
-      background: rgba(255,255,255,0.1);
-      color: #f0e8d0;
-      border: 1px solid rgba(255,255,255,0.12);
-    }
-
-    .chat-input {
-      display: flex;
-      gap: 12px;
-      padding: 18px;
-      border-top: 1px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.22);
-    }
-
-    #input {
-      flex: 1;
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgba(255,255,255,0.08);
+    .menu-btn.active {
+      background: linear-gradient(135deg, #3b82f6, #2557e8);
       color: #fff;
+      box-shadow: 0 10px 20px rgba(37, 99, 235, .22);
+    }
+
+    .menu-btn.active span { color: rgba(255,255,255,.78); }
+
+    .sidebar-footer {
+      margin-top: auto;
+      border: 1px solid rgba(255,255,255,0.09);
+      background: rgba(255,255,255,0.045);
+      border-radius: 14px;
+      padding: 13px;
+    }
+
+    .sidebar-footer strong { display:block; font-size: 12px; margin-bottom: 6px; }
+    .sidebar-footer p { color:#9fb4dd; font-size:11px; line-height:1.55; }
+
+    .main {
+      height: 100vh;
+      overflow: auto;
+      padding: 24px 30px 28px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    .page-title h2 {
+      font-size: 30px;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      font-weight: 850;
+      color: #0f1f3d;
+    }
+
+    .page-title p {
+      margin-top: 7px;
+      font-size: 13px;
+      color: #536987;
+      max-width: 740px;
+      line-height: 1.5;
+    }
+
+    .home-link {
+      text-decoration: none;
+      background: #fff;
+      color: var(--blue);
+      border: 1px solid #cfe0f6;
       border-radius: 999px;
-      padding: 14px 18px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 750;
+      box-shadow: 0 8px 20px rgba(15, 31, 61, .06);
+      white-space: nowrap;
+    }
+
+    .hero-strip {
+      background: rgba(255,255,255,.78);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 16px 40px rgba(15, 31, 61, .05);
+    }
+
+    .hero-strip h3 { font-size: 18px; letter-spacing:-.02em; margin-bottom: 4px; }
+    .hero-strip p { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+
+    .metrics { display: flex; gap: 10px; }
+    .metric-card {
+      min-width: 108px;
+      background: #fff;
+      border: 1px solid #dbe8f8;
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+    .metric-card b { display:block; color: var(--blue); font-size:18px; line-height:1; }
+    .metric-card span { display:block; color:#64748b; margin-top:5px; font-size:11px; font-weight:650; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(360px, 0.88fr) minmax(460px, 1.12fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .module-panel,
+    .result-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 18px 42px rgba(15, 31, 61, .06);
+      min-height: calc(100vh - 205px);
+    }
+
+    .module-panel { padding: 22px; }
+
+    .module-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .module-kicker {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid #cfe0f6;
+      background: #eef6ff;
+      color: #2557e8;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .module-title {
+      font-size: 24px;
+      line-height: 1.15;
+      letter-spacing: -0.035em;
+      font-weight: 850;
+      color: #13294b;
+      margin-bottom: 8px;
+    }
+
+    .module-desc {
+      color: #5b6e8a;
+      font-size: 13px;
+      line-height: 1.55;
+      max-width: 620px;
+    }
+
+    .input-area { margin-top: 18px; }
+
+    textarea {
+      width: 100%;
+      min-height: 124px;
+      max-height: 220px;
+      resize: vertical;
+      border: 1.4px solid #d8e6f7;
+      border-radius: 14px;
+      padding: 14px 15px;
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: #10203a;
       outline: none;
-      font-size: 14px;
+      background: #fff;
+      transition: .15s ease;
     }
 
-    #input::placeholder {
-      color: rgba(255,255,255,0.45);
+    textarea:focus {
+      border-color: #4b8bf7;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, .08);
     }
 
-    button {
-      border: none;
-      border-radius: 999px;
-      padding: 14px 24px;
-      background: #c8a850;
-      color: #1a0800;
+    .action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .ghost-btn {
+      border: 0;
+      cursor: pointer;
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      font-weight: 800;
+      transition: .15s ease;
+    }
+
+    .primary-btn { background: var(--blue); color: #fff; box-shadow: 0 12px 22px rgba(37, 99, 235, .22); }
+    .primary-btn:hover { background:#1d4ed8; transform: translateY(-1px); }
+    .secondary-btn { background:#eef6ff; border:1px solid #cfe0f6; color:#2448c7; }
+    .secondary-btn:hover { background:#e4f0ff; }
+    .ghost-btn { background: rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14); color:#d8e4ff; }
+    .ghost-btn:hover { background: rgba(255,255,255,.12); }
+
+    .quick-title {
+      margin: 20px 0 10px;
+      font-size: 12px;
+      color: #475569;
+      font-weight: 850;
+    }
+
+    .chips { display:flex; flex-direction:column; gap:8px; }
+    .chip {
+      width: 100%;
+      text-align: left;
+      border: 1px solid #d8e6f7;
+      background: #fff;
+      color: #2448c7;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 12.3px;
+      line-height: 1.35;
       font-weight: 700;
       cursor: pointer;
     }
+    .chip:hover { background:#f0f7ff; border-color:#bcd5ff; }
 
-    button:hover {
-      background: #e0bf62;
+    .result-panel {
+      background: #0c1835;
+      color: #f8fbff;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .result-header {
+      display:flex;
+      justify-content:space-between;
+      gap:16px;
+      align-items:flex-start;
+      margin-bottom: 14px;
+    }
+    .result-header h3 { font-size: 22px; letter-spacing:-.025em; font-weight:850; }
+    .result-header p { margin-top:6px; color:#9badce; font-size:12.5px; }
+
+    .result-box {
+      flex: 1;
+      min-height: 360px;
+      background: #071126;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 16px;
+      padding: 18px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.68;
+      color: #e9f1ff;
+    }
+
+    .result-box.placeholder {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      color:#8fa4ce;
+      padding: 40px;
+    }
+
+    .loading { opacity: .72; font-style: italic; }
+
+    @media (max-width: 1180px) {
+      .workspace { grid-template-columns: 1fr; }
+      .module-panel, .result-panel { min-height: auto; }
+      .result-box { min-height: 300px; }
+      .hero-strip { align-items:flex-start; flex-direction:column; }
+    }
+
+    @media (max-width: 760px) {
+      body { overflow:auto; }
+      .app-shell { grid-template-columns: 1fr; height:auto; }
+      .sidebar { position:relative; height:auto; }
+      .main { height:auto; padding:20px; }
+      .topbar { flex-direction:column; gap:12px; }
+      .page-title h2 { font-size: 26px; }
+      .metrics { width:100%; flex-wrap:wrap; }
+      .metric-card { flex:1; }
     }
   </style>
 </head>
-
 <body>
-  <div class="chat-container">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">
+          <div class="brand-icon">R</div>
+          <div>
+            <h1>Retail AI</h1>
+            <p>SaaS Analytics Console</p>
+          </div>
+        </div>
 
-    <div class="chat-header">
-      <h1>Retail AI Journey</h1>
-      <a class="back-link" href="/">← Ana Sayfa</a>
-    </div>
+        <div class="nav-label">Kategoriler</div>
+        <nav class="menu" id="menu">
+          <button class="menu-btn active" data-key="business_calculator">Business Calculator<span>Matematiksel hesaplama</span></button>
+          <button class="menu-btn" data-key="category_insights">Category Insights<span>Kategori & sektör analizi</span></button>
+          <button class="menu-btn" data-key="price_competition">Price Competition<span>Merchant benchmark</span></button>
+          <button class="menu-btn" data-key="action_executor">Action Executor<span>Aksiyon planı</span></button>
+          <button class="menu-btn" data-key="funnel_stock">Funnel & Stock<span>Dönüşüm & stok riski</span></button>
+          <button class="menu-btn" data-key="excel_outputs">Excel Outputs<span>Rapor çıktıları</span></button>
+          <button class="menu-btn" data-key="data_upload">Analiz Edilecek Veri Kaynaklarını Yükle<span>Analiz Edilecek Veri Kaynaklarını YÜkle</span></button>
+        </nav>
+      </div>
 
-    <div id="messages">
-      <div class="message ai">Merhaba! Stok, satış, funnel performansı hakkında soru sorabilirsin.</div>
-    </div>
+      <div class="sidebar-footer">
+        <strong>Demo akışı</strong>
+        <p>Modül seç, iş sorunu yaz, sonucu yönetici özeti olarak al ve Excel çıktısını indir.</p>
+      </div>
+    </aside>
 
-    <div class="chat-input">
-      <input id="input" placeholder="Örn: C2D yüksek ama stoğu az SKU'lar hangileri?" />
-      <button onclick="downloadExcel()" id="downloadBtn" style="display:none;">Excel İndir</button>
-      <button onclick="sendMessage()">Gönder</button>
-    </div>
+    <main class="main">
+      <div class="topbar">
+        <div class="page-title">
+          <h2>Retail AI Console</h2>
+          <p>Matematiksel hesaplama, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir profesyonel çalışma alanında çalıştır.</p>
+        </div>
+        <a class="home-link" href="/">← Ana Sayfa</a>
+      </div>
 
+      <section class="hero-strip">
+        <div>
+          <h3>Excel analyst + Retail strategist</h3>
+          <p>Şirket datası, Merchant benchmark ve funnel sinyallerini fonksiyonlara ayırarak ölçülebilir aksiyonlara dönüştürür.</p>
+        </div>
+        <div class="metrics">
+          <div class="metric-card"><b>6</b><span>Modül</span></div>
+          <div class="metric-card"><b>3</b><span>Data input</span></div>
+          <div class="metric-card"><b>XLSX</b><span>Export</span></div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <div class="module-panel">
+          <div class="module-head">
+            <div>
+              <div class="module-kicker" id="moduleBadge">calculate_business_metric</div>
+              <h3 class="module-title" id="moduleTitle">Business Calculator</h3>
+              <p class="module-desc" id="moduleDesc">Excel üzerinde ortalama, toplam, top/bottom, marka/kategori kırılımı ve benzeri matematiksel iş sorularını çalıştır.</p>
+            </div>
+          </div>
+
+          <div class="input-area">
+            <textarea id="questionInput" placeholder="Örn: APPLE ürünlerinin ortalama fiyatı nedir?"></textarea>
+            <div class="action-row">
+              <button class="primary-btn" onclick="runModule()">Çalıştır</button>
+              <button class="secondary-btn" onclick="downloadExcel()">Excel İndir</button>
+            </div>
+          </div>
+
+          <div class="quick-title">Hazır sorular</div>
+          <div class="chips" id="chips"></div>
+        </div>
+
+        <div class="result-panel">
+          <div class="result-header">
+            <div>
+              <h3>Analiz Çıktısı</h3>
+              <p>Sonuç burada yönetici özeti formatında gösterilir.</p>
+            </div>
+            <button class="ghost-btn" onclick="clearResult()">Temizle</button>
+          </div>
+          <div class="result-box placeholder" id="resultBox">Soldaki modüllerden birini seç ve hazır sorulardan biriyle demoyu başlat.</div>
+        </div>
+      </section>
+    </main>
   </div>
 
   <script>
-    async function sendMessage() {
-      const input = document.getElementById("input");
-      const messages = document.getElementById("messages");
-      const text = input.value.trim();
+    const modules = {
+      business_calculator: {
+        badge: "calculate_business_metric",
+        title: "Business Calculator",
+        desc: "Excel üzerinde ortalama, toplam, top/bottom, marka/kategori kırılımı ve benzeri matematiksel iş sorularını çalıştır.",
+        placeholder: "Örn: APPLE ürünlerinin ortalama fiyatı nedir?",
+        suggestions: [
+          "APPLE ürünlerinin ortalama fiyatı nedir?",
+          "En yüksek revenue üreten ilk 10 markayı çıkar",
+          "C2D ortalaması en yüksek kategoriler hangileri?",
+          "B2D düşük ama PDP yüksek ürünleri listele"
+        ]
+      },
+      category_insights: {
+        badge: "generate_category_insight",
+        title: "Category Insights",
+        desc: "Seçilen kategori için performans, kazanan segmentler, riskler ve yönetici özeti çıkarır.",
+        placeholder: "Örn: Tablet kategorisinin performans insightını ver",
+        suggestions: [
+          "Tablet kategorisinin performans insightını ver",
+          "Kulaklık kategorisinde riskli alanlar neler?",
+          "Giyilebilir Teknoloji için yönetici özeti çıkar",
+          "Cep Telefonları kategorisini detaylı analiz et"
+        ]
+      },
+      price_competition: {
+        badge: "generate_price_competition_from_uploaded_inputs",
+        title: "Price Competition",
+        desc: "Merchant benchmark datasına göre pahalı, ucuz, rekabetçi ve riskli ürünleri analiz eder.",
+        placeholder: "Örn: Cep Telefonları kategorisinde fiyat rekabeti analizi yap",
+        suggestions: [
+          "Cep Telefonları kategorisinde fiyat rekabeti analizi yap",
+          "APPLE markasında benchmarka göre pahalı ürünleri çıkar",
+          "Rakibe göre en pahalı 10 SKU hangileri?",
+          "Median competitor price altında kalan ürünleri bul"
+        ]
+      },
+      action_executor: {
+        badge: "execute_recommended_action",
+        title: "Action Executor",
+        desc: "Insight çıktılarından aksiyon planı üretir: replenishment, kampanya, görünürlük ve risk azaltma önerileri.",
+        placeholder: "Örn: C2D/B2D güçlü ama stok riski olan SKU'lar için aksiyon planı çıkar",
+        suggestions: [
+          "C2D/B2D güçlü ama stok riski olan SKU'lar için aksiyon planı çıkar",
+          "Tablet kategorisi için büyüme aksiyonlarını öner",
+          "OOS riski olan ürünler için replenishment planı yap",
+          "Sepete eklenip satın alınmayan ürünler için aksiyon öner"
+        ]
+      },
+      funnel_stock: {
+        badge: "analyze_ecommerce_sample",
+        title: "Funnel & Stock",
+        desc: "Funnel kırılımı, stok riski, dönüşüm kaybı ve kategori bazlı e-ticaret performans sorularını cevaplar.",
+        placeholder: "Örn: C2D yüksek ama stoğu az SKU'lar hangileri?",
+        suggestions: [
+          "C2D yüksek ama stoğu az SKU'lar hangileri?",
+          "A2C yüksek ama transaction düşük SKU'ları listele",
+          "En büyük funnel kaybı hangi adımda?",
+          "OOS ürün PDP view alıyor mu?"
+        ]
+      },
+      excel_outputs: {
+        badge: "download_last_result",
+        title: "Excel Outputs",
+        desc: "Son üretilen analiz sonucunu Excel olarak indirebilirsin. Çıktılar sheet bazında düzenlenir.",
+        placeholder: "Örn: Son aksiyon planını Excel olarak indir",
+        suggestions: [
+          "Son price competition çıktısını Excel'e hazırla",
+          "Son aksiyon planını Excel olarak indir",
+          "Çıktıyı sheet bazında özetle",
+          "Download için hazır son sonucu kontrol et"
+        ]
+      }
+    };
 
-      if (!text) return;
+    const menuButtons = document.querySelectorAll(".menu-btn");
+    const moduleBadge = document.getElementById("moduleBadge");
+    const moduleTitle = document.getElementById("moduleTitle");
+    const moduleDesc = document.getElementById("moduleDesc");
+    const questionInput = document.getElementById("questionInput");
+    const chips = document.getElementById("chips");
+    const resultBox = document.getElementById("resultBox");
 
-      messages.innerHTML += '<div class="message user">' + escapeHtml(text) + '</div>';
-      input.value = "";
-      messages.scrollTop = messages.scrollHeight;
+    function renderModule(moduleKey) {
+      const mod = modules[moduleKey];
+      menuButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.key === moduleKey));
+      moduleBadge.textContent = mod.badge;
+      moduleTitle.textContent = mod.title;
+      moduleDesc.textContent = mod.desc;
+      questionInput.placeholder = mod.placeholder;
+      questionInput.value = "";
+      chips.innerHTML = "";
+      mod.suggestions.forEach(q => {
+        const chip = document.createElement("button");
+        chip.className = "chip";
+        chip.textContent = q;
+        chip.onclick = () => { questionInput.value = q; };
+        chips.appendChild(chip);
+      });
+    }
 
-      messages.innerHTML += '<div class="message ai" id="loading">Düşünüyorum...</div>';
-      messages.scrollTop = messages.scrollHeight;
+    menuButtons.forEach(btn => btn.addEventListener("click", () => renderModule(btn.dataset.key)));
 
+    async function runModule() {
+      const question = questionInput.value.trim();
+      if (!question) return;
+      resultBox.classList.remove("placeholder");
+      resultBox.classList.add("loading");
+      resultBox.textContent = "Analiz çalışıyor...";
       try {
         const res = await fetch("/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ message: text })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: question })
         });
-
         const data = await res.json();
-
-        const loading = document.getElementById("loading");
-        if (loading) loading.remove();
-
-        messages.innerHTML += '<div class="message ai">' + escapeHtml(data.reply || "Yanıt alınamadı.") + '</div>';
-        messages.scrollTop = messages.scrollHeight;
-        document.getElementById("downloadBtn").style.display = "inline-block";
-
-      } catch (error) {
-        const loading = document.getElementById("loading");
-        if (loading) loading.remove();
-
-        messages.innerHTML += '<div class="message ai">Bir hata oluştu: ' + escapeHtml(error.message) + '</div>';
-        messages.scrollTop = messages.scrollHeight;
+        resultBox.classList.remove("loading");
+        resultBox.textContent = data.reply || "Sonuç alınamadı.";
+      } catch (err) {
+        resultBox.classList.remove("loading");
+        resultBox.textContent = "Bir hata oluştu: " + err;
       }
     }
 
+    function downloadExcel() { window.open("/download-last-result", "_blank"); }
 
-    function downloadExcel() {
-      window.location.href = "/download-last-result";
+    function clearResult() {
+      resultBox.className = "result-box placeholder";
+      resultBox.textContent = "Soldaki modüllerden birini seç ve hazır sorulardan biriyle demoyu başlat.";
     }
 
-    document.getElementById("input").addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        sendMessage();
-      }
+    questionInput.addEventListener("keydown", function(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runModule();
     });
 
-    function escapeHtml(text) {
-      return String(text)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
+    renderModule("business_calculator");
   </script>
 </body>
 </html>
 """
-
 
 def simple_page(title, body):
     return f"""

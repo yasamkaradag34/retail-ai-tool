@@ -1,9 +1,100 @@
+# =============================================================================
+#  RETAIL AI — LOCAL INTELLIGENCE PLATFORM
+#  Version: 1.0  |  Stack: FastAPI + LLaMA 3.1 (Ollama) + Pandas + OpenPyXL
+# =============================================================================
+#
+#  BASE ARCHITECTURE
+#  ─────────────────
+#
+#  ┌─────────────────────────────────────────────────────────────────────┐
+#  │                        CLIENT (Browser)                             │
+#  │   /            → Landing page  (DataProvido homepage)               │
+#  │   /journey     → Analytics console  (sidebar + workspace UI)        │
+#  │   /pricing     → Pricing page                                       │
+#  │   /contact     → Contact page                                       │
+#  │   /who-we-are  → About page                                         │
+#  │   /how-works   → How it works page                                  │
+#  └──────────────────────────┬──────────────────────────────────────────┘
+#                             │ HTTP / REST
+#  ┌──────────────────────────▼──────────────────────────────────────────┐
+#  │                     FastAPI (main.py)                               │
+#  │                                                                     │
+#  │  POST /chat              → LLM router → tool dispatcher             │
+#  │  POST /upload-data       → Saves Excel/CSV to /data                 │
+#  │  GET  /download-last-result → Streams last result as .xlsx          │
+#  │  POST /transcribe        → Whisper voice-to-text                    │
+#  │  POST /reset             → Clears conversation history              │
+#  └──────────────────────────┬──────────────────────────────────────────┘
+#                             │
+#  ┌──────────────────────────▼──────────────────────────────────────────┐
+#  │                  LLM LAYER  (Ollama / LLaMA 3.1)                   │
+#  │                                                                     │
+#  │  • System prompt → defines persona & tool use rules                 │
+#  │  • Tool-calling loop → model picks tool → Python executes           │
+#  │  • Conversation history → in-memory list (reset on /reset)          │
+#  └──────────────────────────┬──────────────────────────────────────────┘
+#                             │ tool_call dispatch
+#  ┌──────────────────────────▼──────────────────────────────────────────┐
+#  │                  FUNCTION MODULES  (/functions)                     │
+#  │                                                                     │
+#  │  analytics.py          → ecommerce funnel & sample analysis         │
+#  │  business_calculator.py→ SQL-style math on any Excel column         │
+#  │  insights.py           → category insight & executive summary       │
+#  │  price_competition.py  → merchant benchmark & pricing gaps          │
+#  │  action_executor.py    → generates action plans from insights       │
+#  │  funnel_master.py      → advanced funnel breakdown (A2C, C2D, B2D)  │
+#  │  cross_analyzer.py     → cross-dataset performance analysis         │
+#  │  gfk_analyzer.py       → GfK market share & brand/SKU ranking       │
+#  │  stock.py              → stock level queries & OOS detection         │
+#  │  orders.py             → order status, daily orders, customer view  │
+#  │  reports.py            → revenue, best sellers, stock turnover      │
+#  │  voice.py              → Whisper audio transcription                │
+#  │  sector_norms.py       → sector benchmark normalization             │
+#  └──────────────────────────┬──────────────────────────────────────────┘
+#                             │ reads / writes
+#  ┌──────────────────────────▼──────────────────────────────────────────┐
+#  │                  DATA LAYER  (/data)                                │
+#  │                                                                     │
+#  │  stok.xlsx                 → stock master data                      │
+#  │  orders.xlsx               → order transaction history              │
+#  │  GfK_Leaderpanel.xlsx      → GfK market share panel data            │
+#  │  gfk_sku.xlsx              → GfK SKU-level ranking data             │
+#  │  google_trends_seasonal_3y.xlsx → seasonal trend data               │
+#  │  [user-uploaded files]     → dynamic via /upload-data               │
+#  └─────────────────────────────────────────────────────────────────────┘
+#
+#  SCHEMA LAYER  (/schemas)
+#  ─────────────────────────
+#  tools.py  → OpenAI-style tool definitions sent to LLaMA for routing
+#
+#  STATIC ASSETS  (/static)
+#  ─────────────────────────
+#  duck.png  → landing page avatar asset
+#
+#  TEMPLATES  (/templates)
+#  ─────────────────────────
+#  index.html → standalone desert-themed landing page (served separately)
+#
+#  KEY DESIGN DECISIONS
+#  ─────────────────────
+#  • 100% local: no external API calls; model runs via Ollama on localhost
+#  • Tool-calling: LLM decides which function to call based on user query
+#  • Excel-first: all data sources are .xlsx / .csv, parsed with Pandas
+#  • In-memory session: conversation history lives in the Python process
+#  • Excel export: every analysis result can be downloaded as a .xlsx file
+#
+# =============================================================================
+
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import requests
 import pandas as pd
 import json
+import os
+import shutil
+from typing import List
 from io import BytesIO
 from datetime import datetime
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -19,6 +110,14 @@ from functions.insights import generate_category_insight
 from functions.price_competition import generate_price_competition_from_uploaded_inputs
 from functions.business_calculator import calculate_business_metric
 from functions.action_executor import execute_recommended_action
+from functions.funnel_master import analyze_funnel_master
+from functions.cross_analyzer import analyze_cross_performance
+from functions.gfk_analyzer import (
+    analyze_gfk_market_share,
+    analyze_gfk_brand_performance,
+    analyze_gfk_sku_ranking,
+    analyze_gfk_combined,
+)
 
 from functions.stock import (
     get_stock_level, get_all_stock, get_daily_sales_report,
@@ -37,6 +136,7 @@ from functions.voice import transcribe_audio
 from schemas.tools import TOOLS
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
 MODEL = "llama3.1"
@@ -111,6 +211,28 @@ analyze_ecommerce_sample(question) tool'unu çağır:
 - satış etkisi
 - kategori / marka / SKU karşılaştırmaları
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FUNNEL MASTER ENGINE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Kullanıcı kullanıcı yolculuğu (user journey), checkout adımları, drop-off,
+funnel darboğazı, nerede kaybediyoruz, kargo/ödeme/sepet/checkout kayıpları,
+cihaz veya kanal bazında funnel, mobil funnel, PDP'den siparişe kaç kişi geçiyor
+gibi bir soru sorarsa analyze_funnel_master(question) tool'unu çağır.
+
+Bu tool şu sorularda kullanılır:
+- "Kullanıcıları hangi adımda kaybediyoruz?"
+- "Funnel'da en büyük drop-off nerede?"
+- "Kargo adımında neden çok kayıp var?"
+- "Ödeme sayfasına gelenler neden tamamlamıyor?"
+- "Sepetten ödemeye kaç kişi geçiyor?"
+- "Mobile funnel analizi yap"
+- "Kategori bazında funnel kırılımı çıkar"
+- "PDP'den transactiona genel dönüşüm oranımız nedir?"
+- "Checkout submit'ten sonra neden transaction oluşmuyor?"
+- "Tüm funnel adımlarını analiz et"
+
+Aksiyon odaklı teşhis, adım bazında drop-off yüzdesi ve e-ticaret mantığıyla öneri üretir.
+
 Bu tool 200 satırlık sample e-ticaret datası üzerinde çalışır.
 
 Metrik tanımları:
@@ -130,8 +252,12 @@ OOS = stock_qty = 0 veya availability = out_of_stock
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 INSIGHT ENGINE TOOL
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Kullanıcı kategori, sektör, dönem veya performans nedeni sorarsa
-generate_category_insight(category, sector, period_name) tool'unu çağır.
+Kullanıcı kategori, sektör, dönem, performans nedeni, fırsat, risk,
+kazanan/kaybeden segment, stok/fiyat/talep nedeni veya CEO özeti sorarsa
+generate_category_insight(category, sector, period_name, question) tool'unu çağır.
+
+Category Insights sorularında kullanıcının tam sorusunu MUTLAKA question parametresiyle gönder.
+Çünkü aynı kategori için "neden fırsat?", "neden riskli?", "stoktan mı fiyattan mı?" farklı analiz tipleridir.
 
 Aşağıdaki soru tiplerinde generate_category_insight kullan:
 - "Mobile kategorisi neden düştü?"
@@ -143,12 +269,20 @@ Aşağıdaki soru tiplerinde generate_category_insight kullan:
 - "Trendyol ürün grupları için genel performans analizi yap"
 - "Sektörel değişkenlere göre satış nedenlerini analiz et"
 - "Kanal, traffic, funnel, stok ve fiyat etkisini birlikte yorumla"
+- "Kategori performansını CEO özeti formatında çıkar"
 
 Sektör seçimi:
 - Teknoloji / elektronik / mobile / tablet / headphone → consumer_electronics
 - Moda / tekstil / ayakkabı / giyim → fashion
 - Gıda / market / FMCG → fmcg
 - Trendyol / marketplace / karma ürün grupları → marketplace_general
+
+Örnek tool çağrıları:
+"Tabletler neden fırsat kategorisi olabilir?"
+→ generate_category_insight(category="Tabletler", sector="consumer_electronics", period_name="selected_period", question="Tabletler neden fırsat kategorisi olabilir?")
+
+"Bu dönem satış performansı stoktan mı, fiyattan mı, talepten mi etkilenmiş?"
+→ generate_category_insight(category="genel", sector="consumer_electronics", period_name="selected_period", question="Bu dönem satış performansı stoktan mı, fiyattan mı, talepten mi etkilenmiş?")
 
 Sadece SKU listesi, tablo veya spesifik filtre sorularında analyze_ecommerce_sample(question) kullan.
 Insight, neden analizi, özet, aksiyon, fırsat/tehdit sorularında generate_category_insight kullan.
@@ -217,12 +351,46 @@ Aşağıdaki tool'ları sadece çok basit operasyonel sorularda kullan:
 YANIT FORMATI
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. Önce kısa sonuç ver.
-2. Sonra varsa en önemli SKU/kategori/markaları listele.
-3. Sonunda aksiyon önerisi ekle.
-4. "yüksek / düşük" gibi belirsiz ifadeler yerine mümkünse sayı kullan.
-5. Kullanıcıya SQL gösterme.
+2. Eğer kategori/ürün analizi yapıldıysa, metrik sonuçlarını "Tüketici Davranışı & Sektörel Yorum" (tüketicilerin satın alma döngüleri, fiyat hassasiyetleri, dönemsellik etkileri vb.) ile harmanlayarak açıkla.
+3. Sonra varsa en önemli SKU/kategori/markaları listele.
+4. Sonunda aksiyon önerisi ekle.
+5. "yüksek / düşük" gibi belirsiz ifadeler yerine mümkünse sayı kullan.
+6. Kullanıcıya SQL gösterme.
 
 Türkçe konuş.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GFK LEADERPANEL & PAZAR ANALİZİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GfK pazar verisi (Leaderpanel) ile ilgili sorularda aşağıdaki tool'ları çağır.
+
+GfK terminolojisi:
+- Ihs = MediaMarkt'ın ilgili kategorideki internet satış pazar payı (%)
+- PW = Previous Week (geçen hafta)
+- CW = Current Week (bu hafta)
+- WoW = Week over Week (haftalık değişim)
+- Summary_value = Kategori × hafta bazında toplam internet pazarı (TRY) + MM payı
+- Brand sheet = Marka bazında MM internet satış payı (%)
+- SKU Ranking = Ürün grubu bazında satış sıralaması (rank 1, 2, 3...)
+
+GfK veri kategorileri: Smartphones, COMPUTER HW, SDA, MDA, CLIMATE SDA, PTV/FLAT,
+Headphones & Headsets, COMPUTER ACCESSORIES, CORE WEARABLES, VACUUM CLEANERS,
+WASHING MACHINES, DISHWASHERS, COOLING, MONITORS, AIR CONDITIONERS, vb.
+
+Tool yönlendirmeleri:
+- "Pazar payımız nedir?"                     → analyze_gfk_market_share(question)
+- "MediaMarkt AIR CONDITIONERS'da kaçıncı?" → analyze_gfk_market_share(question)
+- "En çok büyüyen kategori hangisi?"         → analyze_gfk_market_share(question)
+- "Bu hafta vs geçen hafta karşılaştır"      → analyze_gfk_market_share(question)
+- "SAMSUNG bu hafta pazar payı nedir?"       → analyze_gfk_brand_performance(question)
+- "APPLE vs SAMSUNG MediaMarkt'ta"           → analyze_gfk_brand_performance(question)
+- "Smartphones'da hangi marka önde?"         → analyze_gfk_brand_performance(question)
+- "WASHING MACHINES top 10 SKU"              → analyze_gfk_sku_ranking(question)
+- "BOSCH'un en çok satan modeli hangisi?"    → analyze_gfk_sku_ranking(question)
+- "GfK'ya göre 1. sıradaki ürünler"         → analyze_gfk_sku_ranking(question)
+- "GfK ile iç satışlarımızı kıyasla"        → analyze_gfk_combined(question)
+- "Pazar büyürken satışımız neden düşüyor?" → analyze_gfk_combined(question)
+- "SAMSUNG GfK vs ecommerce performansı"    → analyze_gfk_combined(question)
 """
 }
 
@@ -251,6 +419,7 @@ def call_ollama(messages, use_tools=True):
                 "content": f"Ollama bağlantı hatası: {str(e)}"
             }
         }
+
 def log_tool_json_to_terminal(raw_text: str):
     if not LOG_TOOL_JSON_TO_TERMINAL:
         return
@@ -275,65 +444,22 @@ def log_tool_json_to_terminal(raw_text: str):
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n", flush=True)
 
 
-
 def should_use_business_calculator(user_message: str) -> bool:
     q = user_message.lower()
 
     math_keywords = [
-        "ortalama",
-        "toplam",
-        "kaç",
-        "kac",
-        "adet",
-        "sayısı",
-        "sayisi",
-        "minimum",
-        "maksimum",
-        "en yüksek",
-        "en yuksek",
-        "en düşük",
-        "en dusuk",
-        "medyan",
-        "average",
-        "avg",
-        "sum",
-        "count",
-        "top 10",
-        "ilk 10",
-        "en fazla",
-        "en az",
+        "ortalama", "toplam", "kaç", "kac", "adet", "sayısı", "sayisi",
+        "minimum", "maksimum", "en yüksek", "en yuksek", "en düşük",
+        "en dusuk", "medyan", "average", "avg", "sum", "count",
+        "top 10", "ilk 10", "en fazla", "en az",
     ]
 
     metric_keywords = [
-        "fiyat",
-        "price",
-        "benchmark",
-        "revenue",
-        "ciro",
-        "pdp",
-        "a2c",
-        "c2d",
-        "b2d",
-        "transaction",
-        "transactions",
-        "trans",
-        "stok",
-        "stock",
-        "gap",
-        "marka",
-        "kategori",
-        "apple",
-        "samsung",
-        "xiaomi",
-        "jbl",
-        "lg",
-        "philips",
-        "logitech",
-        "gsm",
-        "telefon",
-        "tablet",
-        "kulaklık",
-        "kulaklik",
+        "fiyat", "price", "benchmark", "revenue", "ciro", "pdp", "a2c",
+        "c2d", "b2d", "transaction", "transactions", "trans", "stok",
+        "stock", "gap", "marka", "kategori", "apple", "samsung", "xiaomi",
+        "jbl", "lg", "philips", "logitech", "gsm", "telefon", "tablet",
+        "kulaklık", "kulaklik",
     ]
 
     return any(x in q for x in math_keywords) and any(x in q for x in metric_keywords)
@@ -343,34 +469,120 @@ def should_use_action_executor(user_message: str) -> bool:
     q = user_message.lower()
 
     action_keywords = [
-        "aksiyon",
-        "önerilen aksiyon",
-        "onerilen aksiyon",
-        "replenishment",
-        "tedarik",
-        "planı yap",
-        "plani yap",
-        "excel çıkar",
-        "excel cikar",
-        "excel çıkart",
-        "excel cikart",
-        "bu ürünler",
-        "bu urunler",
-        "görünürlük",
-        "gorunurluk",
-        "kampanya",
-        "stok riski olan",
-        "c2d/b2d güçlü",
-        "c2d b2d güçlü",
-        "detaylandır",
-        "detaylandir",
+        "aksiyon", "önerilen aksiyon", "onerilen aksiyon", "replenishment",
+        "tedarik", "planı yap", "plani yap", "excel çıkar", "excel cikar",
+        "excel çıkart", "excel cikart", "bu ürünler", "bu urunler",
+        "görünürlük", "gorunurluk", "kampanya", "stok riski olan",
+        "c2d/b2d güçlü", "c2d b2d güçlü", "detaylandır", "detaylandir",
     ]
 
     return any(x in q for x in action_keywords)
 
 
+def should_use_category_insights(user_message: str) -> bool:
+    import re
+    tr_map = str.maketrans("ıİğĞüÜşŞöÖçÇ", "iIgGuUsSoOcC")
+    q = user_message.lower().translate(tr_map)
+    
+    insight_keywords = [
+        "insight", "kategori", "category", "sektor", "sector",
+        "pahalayiz", "pahaliyiz", "ucuzuz", "fiyat rekabet", "rekabetini", "fiyat indirimi",
+        "satis alamiyoruz", "satis alamiyoruz", "iyi satiyoruz", "iyi satıyoruz",
+        "benchmark ustundeyiz", "benchmark ustundeyiz", "benchmark altindayiz",
+        "fiyat esnekligi", "fiyat esnekliği", "price action"
+    ]
+    return any(x in q for x in insight_keywords)
+
+
+def should_use_funnel_master(user_message: str) -> bool:
+    import re
+    tr_map = str.maketrans("ıİğĞüÜşŞöÖçÇ", "iIgGuUsSoOcC")
+    q = user_message.lower().translate(tr_map)
+
+    funnel_keywords = [
+        "funnel", "drop-off", "drop off", "dropoff",
+        "kullanici kayb", "nerede kaybediyoruz", "hangi adimda",
+        "kargo adimi", "kargo adiminda", "odeme adimi", "odeme sayfasi",
+        "sepetten odemeye", "cart to", "checkout", "checkout submit",
+        "pdp'den", "pdpden", "pdp view",
+        "user journey", "kullanici yolculugu", "kullanici yolculuk",
+        "tum adimlar", "tum funnel", "funnel analiz",
+        "genel donusum", "genel conversion", "conversion rate",
+        "mobil funnel", "mobile funnel", "cihaz bazinda funnel",
+        "kategori bazinda funnel", "kanal bazinda funnel",
+        "neden tamamlamiyor", "neden gecirilmiyor",
+        "shipping view", "payment view", "summary view",
+    ]
+
+    return any(x in q for x in funnel_keywords)
+
+
+def should_use_cross_performance(user_message: str) -> bool:
+    import re
+    tr_map = str.maketrans("ıİğĞüÜşŞöÖçÇ", "iIgGuUsSoOcC")
+    q = user_message.lower().translate(tr_map)
+    keywords = [
+        "pahalıyız", "pahaliyiz", "ucuzuz", "fiyat indirimi", "satis canlandir",
+        "trends", "mevsimsellik", "google trends", "cross", "capraz", "çapraz",
+        "ppc", "bid", "teklif artir", "reklam bütçe"
+    ]
+    return any(x in q for x in keywords)
+
+
+def should_use_gfk_market_share(user_message: str) -> bool:
+    tr_map = str.maketrans("ıİğĞüÜşŞöÖçÇ", "iIgGuUsSoOcC")
+    q = user_message.lower().translate(tr_map)
+    keywords = [
+        "gfk", "leaderpanel", "pazar payi", "pazar pay", "market share",
+        "ihs", "pw vs cw", "pw vs. cw", "bu hafta vs", "gecen hafta vs",
+        "haftayla karsilastir", "haftalik degisim", "wow degisim",
+        "pazar buyumesi", "pazar durumu", "en cok buyuyen kategori",
+        "en cok dusen kategori", "kacincisiniz", "kacinci sirada",
+        "mediamarkt pazar", "internet pazari",
+    ]
+    return any(x in q for x in keywords)
+
+
+def should_use_gfk_brand(user_message: str) -> bool:
+    tr_map = str.maketrans("ıİğĞüÜşŞöÖçÇ", "iIgGuUsSoOcC")
+    q = user_message.lower().translate(tr_map)
+    # GfK + marka kombine
+    has_gfk = any(x in q for x in ["gfk", "leaderpanel", "pazar pay", "market share", "ihs"])
+    has_brand = any(x in q for x in [
+        "samsung", "apple", "xiaomi", "oppo", "huawei", "honor", "bosch",
+        "arcelik", "beko", "vestel", "lg", "sony", "philips", "asus", "hp",
+        "marka", "brand"
+    ])
+    return has_gfk and has_brand
+
+
+def should_use_gfk_sku_ranking(user_message: str) -> bool:
+    tr_map = str.maketrans("ıİğĞüÜşŞöÖçÇ", "iIgGuUsSoOcC")
+    q = user_message.lower().translate(tr_map)
+    has_gfk = any(x in q for x in ["gfk", "leaderpanel", "siralamasinda", "gfk'ya gore", "gfk'da"])
+    has_ranking = any(x in q for x in [
+        "top 10", "top 5", "top 20", "ilk 10", "ilk 5",
+        "siralamasinda", "1. sirada", "rank", "en cok satan model",
+        "sku listesi", "model listesi",
+    ])
+    return has_gfk or (has_ranking and any(x in q for x in [
+        "washing machine", "camasir", "smartphone", "buzdolabi", "dishwasher",
+        "televizyon", "klima", "laptop", "tablet", "kulaklık", "kulaklik",
+    ]))
+
+
+def should_use_gfk_combined(user_message: str) -> bool:
+    tr_map = str.maketrans("ıİğĞüÜşŞöÖçÇ", "iIgGuUsSoOcC")
+    q = user_message.lower().translate(tr_map)
+    has_gfk = any(x in q for x in ["gfk", "leaderpanel", "pazar", "market share"])
+    has_internal = any(x in q for x in [
+        "c2d", "b2d", "revenue", "satis", "stok", "karsilastir", "kiyasla",
+        "ic satislarimiz", "bizim satisimiz", "yararlanamiyoruz"
+    ])
+    return has_gfk and has_internal
+
+
 def format_tool_response_for_ui(raw_text: str) -> str:
-    """Ham tool JSON sonucunu kullanıcı ekranı için kısa, sunumluk özete çevirir."""
     if SHOW_RAW_JSON_IN_UI:
         return raw_text
 
@@ -402,20 +614,21 @@ def format_tool_response_for_ui(raw_text: str) -> str:
         lines.append("")
 
         if rows:
-            lines.append("2) İlk Öncelikli Ürünler")
+            lines.append("2) Profesör Teşhisi & Öncelikli Ürünler")
             for row in rows[:8]:
                 sku = row.get("sku", "N/A")
                 title = row.get("product_title", "")
                 priority = row.get("priority", "N/A")
-                repl_qty = row.get("suggested_replenishment_qty", "N/A")
-                stock = row.get("stock_qty", "N/A")
-                c2d = row.get("c2d_pct", "N/A")
-                b2d = row.get("b2d_pct", "N/A")
-
-                lines.append(
-                    f"- {sku} | {priority} | önerilen replenishment: {repl_qty} | stok: {stock} | C2D: %{c2d} | B2D: %{b2d} | {title}"
-                )
-
+                insight = row.get("insight_category", "N/A")
+                action = row.get("professor_action", "")
+                
+                if insight != "N/A":
+                    lines.append(f"- **{sku}** [{priority}] — {insight} | {title}")
+                    lines.append(f"  ↳ 💡 {action}")
+                else:
+                    repl_qty = row.get("suggested_replenishment_qty", "N/A")
+                    stock = row.get("stock_qty", "N/A")
+                    lines.append(f"- {sku} | {priority} | önerilen replenishment: {repl_qty} | stok: {stock} | {title}")
             lines.append("")
 
         if actions:
@@ -445,37 +658,105 @@ def format_tool_response_for_ui(raw_text: str) -> str:
         rows = data.get("rows", []) or []
         calculation_type = data.get("calculation_type", "scalar")
 
+        metric_labels = {
+            "stock_qty": "stok adedi", "price": "fiyat",
+            "benchmark_price": "benchmark fiyat", "price_gap": "fiyat farkı",
+            "price_gap_pct": "price gap yüzdesi", "revenue": "ciro",
+            "pdp_views": "PDP görüntülenmesi", "list_clicks": "liste tıklaması",
+            "add_to_carts": "sepete ekleme", "transactions": "transaction",
+            "c2d_pct": "C2D", "b2d_pct": "B2D", "bounce_rate_pct": "bounce rate",
+            "stock_coverage_days": "stok coverage günü",
+            "estimated_lost_revenue": "tahmini kayıp ciro",
+            "aov": "ortalama sepet tutarı",
+        }
+
+        aggregation_labels = {
+            "avg": "ortalama", "mean": "ortalama", "sum": "toplam",
+            "count": "adet", "unique_count": "tekil adet", "min": "minimum",
+            "max": "maksimum", "median": "medyan", "top_10": "en yüksek ilk 10",
+            "bottom_10": "en düşük ilk 10", "top_n": "en yüksek",
+            "bottom_n": "en düşük", "share_of_total": "toplam içindeki pay",
+            "ratio": "oran", "comparison": "karşılaştırma",
+        }
+
+        def fmt_number(value):
+            try:
+                value = float(value)
+                if value.is_integer():
+                    return f"{int(value):,}".replace(",", ".")
+                return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            except Exception:
+                return value
+
+        def fmt_pct(value):
+            try:
+                return f"%{float(value):.2f}"
+            except Exception:
+                return f"%{value}"
+
+        def subject_from_filters(filters):
+            if not filters:
+                return "Seçili veri"
+            first = filters[0]
+            col = first.get("column")
+            value = first.get("value")
+            if isinstance(value, list):
+                value = ", ".join([str(v) for v in value[:3]])
+            if col == "brand":
+                return f"{str(value).upper()} ürünleri"
+            if col in ["cat1", "cat2", "multi_category", "category"]:
+                return f"{value} kategorisi"
+            return str(value)
+
+        metric_label = metric_labels.get(metric, metric)
+        aggregation_label = aggregation_labels.get(aggregation, aggregation)
+        subject = subject_from_filters(filters)
+
         lines = []
         lines.append("🧮 Hesaplama Sonucu")
         lines.append("")
 
-        if question:
-            lines.append(f"Soru: {question}")
-
-        lines.append(f"Metrik: {metric}")
-        lines.append(f"Hesaplama: {aggregation}")
-        lines.append(f"Dahil edilen satır: {row_count}")
-
-        if filters:
-            filter_texts = []
-            for f in filters:
-                filter_texts.append(f"{f.get('column')} = {f.get('value')}")
-            lines.append(f"Filtre: {', '.join(filter_texts)}")
-
-        lines.append("")
+        if rows and isinstance(rows[0], dict) and all(
+            key in rows[0] for key in ["numerator", "denominator", "share_pct"]
+        ):
+            first_row = rows[0]
+            numerator = first_row.get("numerator")
+            denominator = first_row.get("denominator")
+            share_pct = first_row.get("share_pct")
+            lines.append(f"{subject} için {aggregation_label} {metric_label} {fmt_number(numerator)}'dır.")
+            lines.append("")
+            lines.append(
+                f"Toplam {metric_label} {fmt_number(denominator)} olduğu için "
+                f"{subject}, toplam {metric_label} içinde {fmt_pct(share_pct)} paya sahiptir."
+            )
+            lines.append("")
+            lines.append(f"Hesaplama: {fmt_number(numerator)} / {fmt_number(denominator)} × 100 = {fmt_pct(share_pct)}")
+            return "\n".join(lines)
 
         if calculation_type == "scalar":
-            lines.append(f"Sonuç: {result}")
-        elif rows:
-            lines.append("İlk Sonuçlar")
+            lines.append(f"{subject} için {aggregation_label} {metric_label}: {fmt_number(result)}")
+            lines.append("")
+            lines.append(f"Dahil edilen satır sayısı: {row_count}")
+            return "\n".join(lines)
+
+        if rows:
+            lines.append(f"{aggregation_label.capitalize()} {metric_label} sonuçları:")
+            lines.append("")
             for row in rows[:10]:
                 parts = []
-                for key, value in row.items():
-                    parts.append(f"{key}: {value}")
+                for key in ["brand", "cat1", "cat2", "sku", "product_title", "value", metric]:
+                    if key in row and row.get(key) not in [None, ""]:
+                        label = metric_labels.get(key, key)
+                        parts.append(f"{label}: {fmt_number(row.get(key))}")
+                if not parts:
+                    for key, value in row.items():
+                        parts.append(f"{key}: {fmt_number(value)}")
                 lines.append("- " + " | ".join(parts))
-        else:
-            lines.append("Sonuç bulunamadı.")
+            lines.append("")
+            lines.append(f"Dahil edilen satır sayısı: {row_count}")
+            return "\n".join(lines)
 
+        lines.append("Sonuç bulunamadı.")
         return "\n".join(lines)
 
     if analysis_type == "business_metric_error":
@@ -483,26 +764,21 @@ def format_tool_response_for_ui(raw_text: str) -> str:
         lines.append("⚠️ Hesaplama yapılamadı")
         lines.append("")
         lines.append(data.get("error", "Bilinmeyen hata"))
-
         if data.get("detail"):
             lines.append("")
             lines.append(f"Teknik detay: {data.get('detail')}")
-
         if data.get("available_brands"):
             lines.append("")
             lines.append("Mevcut markalar:")
             lines.append(", ".join(data.get("available_brands", [])[:20]))
-
         if data.get("available_cat1"):
             lines.append("")
             lines.append("Mevcut ana kategoriler:")
             lines.append(", ".join(data.get("available_cat1", [])[:20]))
-
         if data.get("available_cat2"):
             lines.append("")
             lines.append("Mevcut alt kategoriler:")
             lines.append(", ".join(data.get("available_cat2", [])[:20]))
-
         return "\n".join(lines)
 
     if analysis_type == "price_competition_uploaded_inputs":
@@ -520,7 +796,6 @@ def format_tool_response_for_ui(raw_text: str) -> str:
         lines.append("Eşleşme anahtarı: GTIN")
         lines.append("Internal benchmark: Kullanılmadı")
         lines.append("")
-
         lines.append("1) Genel Fiyat Pozisyonu")
         lines.append(f"- Yüklenen ürün sayısı: {summary.get('uploaded_product_count', 'N/A')}")
         lines.append(f"- Merchant benchmark ile eşleşen ürün: {summary.get('matched_product_count', 'N/A')}")
@@ -531,7 +806,6 @@ def format_tool_response_for_ui(raw_text: str) -> str:
         lines.append(f"- Benchmark altı SKU: {summary.get('benchmark_below_sku_count', 'N/A')}")
         lines.append(f"- Parite SKU: {summary.get('parity_sku_count', 'N/A')}")
         lines.append("")
-
         lines.append("2) Ana Teşhis")
         lines.append(diagnosis or "Net fiyat rekabeti teşhisi üretilemedi.")
         lines.append("")
@@ -545,13 +819,9 @@ def format_tool_response_for_ui(raw_text: str) -> str:
                 price = item.get("price", "N/A")
                 benchmark = item.get("benchmark_price", "N/A")
                 b2d = item.get("b2d_pct", "N/A")
-
                 if isinstance(gap, (int, float)):
                     gap = round(gap, 2)
-
-                lines.append(
-                    f"- {sku} — %{gap} pahalı | Fiyat: {price} | Benchmark: {benchmark} | B2D: %{b2d} | {title}"
-                )
+                lines.append(f"- {sku} — %{gap} pahalı | Fiyat: {price} | Benchmark: {benchmark} | B2D: %{b2d} | {title}")
             lines.append("")
 
         if cheaper:
@@ -563,13 +833,9 @@ def format_tool_response_for_ui(raw_text: str) -> str:
                 price = item.get("price", "N/A")
                 benchmark = item.get("benchmark_price", "N/A")
                 stock = item.get("stock_qty", "N/A")
-
                 if isinstance(gap, (int, float)):
                     gap = round(gap, 2)
-
-                lines.append(
-                    f"- {sku} — %{gap} ucuz | Fiyat: {price} | Benchmark: {benchmark} | Stok: {stock} | {title}"
-                )
+                lines.append(f"- {sku} — %{gap} ucuz | Fiyat: {price} | Benchmark: {benchmark} | Stok: {stock} | {title}")
             lines.append("")
 
         if actions:
@@ -585,112 +851,285 @@ def format_tool_response_for_ui(raw_text: str) -> str:
         lines.append("")
         lines.append(data.get("error", "Bilinmeyen hata"))
         lines.append("")
-
         if data.get("detail"):
             lines.append("Teknik Detay")
             lines.append(str(data.get("detail")))
-
         lines.append("")
         lines.append("Bu feature internal benchmark üretmez. Merchant benchmark datası zorunludur.")
-
         return "\n".join(lines)
-
 
     if analysis_type == "category_sector_insight":
         category = data.get("category", "Genel")
         sector_name = data.get("sector_name", "")
         period_name = data.get("period_name", "")
+        question_type = data.get("question_type", "general_performance")
 
         summary = data.get("executive_summary", {}) or {}
+        metric_snapshot = data.get("metric_snapshot", {}) or {}
+        natural_summary = data.get("natural_summary", "")
         main_diagnosis = data.get("main_diagnosis", "")
+        signals = data.get("signal_interpretation", []) or []
         root_causes = data.get("root_causes", []) or []
         actions = data.get("recommended_actions", []) or []
         winners = data.get("winning_categories", []) or []
         losers = data.get("losing_categories", []) or []
 
+        def fmt_num(value):
+            try:
+                value = float(value)
+                if value.is_integer():
+                    return f"{int(value):,}".replace(",", ".")
+                return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            except Exception:
+                return value
+
+        def fmt_pct(value):
+            try:
+                return f"%{float(value):.2f}"
+            except Exception:
+                return f"%{value}"
+
         lines = []
-        lines.append(f"📊 {category} Performans Özeti")
+        lines.append(f"📊 {category} Kategori Insightı")
         lines.append("")
 
+        meta = []
         if period_name:
-            lines.append(f"Dönem: {period_name}")
+            meta.append(f"Dönem: {period_name}")
         if sector_name:
-            lines.append(f"Sektör: {sector_name}")
+            meta.append(f"Sektör: {sector_name}")
+        if question_type:
+            meta.append(f"Analiz tipi: {question_type}")
+        if meta:
+            lines.append(" | ".join(meta))
+            lines.append("")
+
+        if natural_summary:
+            lines.append(natural_summary)
+            lines.append("")
+
+        if main_diagnosis:
+            lines.append("Ana teşhis")
+            lines.append(main_diagnosis)
+            lines.append("")
+
+        revenue_delta = summary.get("revenue_delta_pct")
+        transaction_delta = summary.get("transactions_delta_pct")
+        pdp_delta = summary.get("pdp_delta_pct")
+        a2c_delta = summary.get("a2c_delta_pct")
+        c2d = summary.get("c2d_pct")
+        b2d = summary.get("b2d_pct")
+        stock_risk = summary.get("critical_stock_sku_count", 0)
+        oos = summary.get("oos_sku_count", 0)
+        price_gap = summary.get("avg_price_gap_pct", 0)
+
+        lines.append("Öne çıkan metrik okuması")
+        lines.append(
+            f"Bu segmentte revenue değişimi {fmt_pct(revenue_delta)}, transaction değişimi {fmt_pct(transaction_delta)}, "
+            f"PDP değişimi {fmt_pct(pdp_delta)} ve A2C değişimi {fmt_pct(a2c_delta)} seviyesinde."
+        )
+        lines.append(
+            f"C2D {fmt_pct(c2d)} ve B2D {fmt_pct(b2d)} olduğu için kullanıcı ilgisinin sepete ve satın almaya dönüşme kalitesi bu iki metrikle izlenmeli."
+        )
+
+        if stock_risk or oos:
+            lines.append(
+                f"Stok tarafında {fmt_num(stock_risk)} kritik stok SKU ve {fmt_num(oos)} OOS SKU bulunduğu için talep satışa dönüşmeden kaybedilebilir."
+            )
+
+        try:
+            if float(price_gap) > 5:
+                lines.append(f"Fiyat rekabetinde ortalama price gap {fmt_pct(price_gap)}; benchmark üstü fiyatlama B2D üzerinde baskı yaratabilir.")
+            elif float(price_gap) < -5:
+                lines.append(f"Fiyat rekabetinde ortalama price gap {fmt_pct(price_gap)}; benchmark altında fiyat avantajı bulunuyor.")
+        except Exception:
+            pass
 
         lines.append("")
-        lines.append("1) Genel Durum")
-        lines.append(f"- Revenue değişimi: %{summary.get('revenue_delta_pct', 'N/A')}")
-        lines.append(f"- Transaction değişimi: %{summary.get('transactions_delta_pct', 'N/A')}")
-        lines.append(f"- PDP değişimi: %{summary.get('pdp_delta_pct', 'N/A')}")
-        lines.append(f"- A2C değişimi: %{summary.get('a2c_delta_pct', 'N/A')}")
-        lines.append(f"- C2D değişimi: %{summary.get('c2d_delta_pct', 'N/A')}")
-        lines.append(f"- B2D değişimi: %{summary.get('b2d_delta_pct', 'N/A')}")
-        lines.append(f"- Kritik stok SKU sayısı: {summary.get('critical_stock_sku_count', 'N/A')}")
-        lines.append(f"- OOS SKU sayısı: {summary.get('oos_sku_count', 'N/A')}")
-        lines.append("")
 
-        lines.append("2) Ana Teşhis")
-        lines.append(main_diagnosis or "Net ana teşhis üretilemedi.")
-        lines.append("")
+        behavior_analysis = data.get("consumer_behavior_analysis")
+        if behavior_analysis and behavior_analysis.get("general_behavior"):
+            lines.append("Tüketici Davranışı & Sektörel Yorum")
+            lines.append(f"- **Kategori Rolü:** {behavior_analysis.get('display_name')}")
+            lines.append(f"- **Tüketici Alışkanlığı:** {behavior_analysis.get('general_behavior')}")
+            triggered = behavior_analysis.get("triggered_insights", [])
+            if triggered:
+                lines.append("- **Sektörel Metrik Eşleşmesi:**")
+                for insight in triggered:
+                    lines.append(f"  * {insight}")
+            lines.append("")
+
+        if signals:
+            lines.append("Sinyal yorumu")
+            for signal in signals[:4]:
+                interpretation = signal.get("interpretation") or ""
+                evidence = signal.get("evidence") or ""
+                if interpretation and evidence:
+                    lines.append(f"- {interpretation} ({evidence})")
+                elif interpretation:
+                    lines.append(f"- {interpretation}")
+            lines.append("")
 
         if root_causes:
-            lines.append("3) Olası Nedenler")
+            lines.append("Olası neden")
             for cause in root_causes[:3]:
                 cause_name = cause.get("cause", "")
                 evidence = cause.get("evidence", "")
                 confidence = cause.get("confidence", "")
-                confidence_text = f" Güven: {confidence}" if confidence else ""
-                lines.append(f"- {cause_name}: {evidence}{confidence_text}")
+                confidence_text = f" Güven: {confidence}." if confidence else ""
+                lines.append(f"- {cause_name}: {evidence}.{confidence_text}")
             lines.append("")
 
         if winners:
-            lines.append("4) Kazanan Segmentler")
+            lines.append("Kazanan segmentler")
             for item in winners[:3]:
-                name = (
-                    item.get("cat2")
-                    or item.get("cat1")
-                    or item.get("sales_channel")
-                    or item.get("traffic_channel")
-                    or "Segment"
-                )
+                name = item.get("cat2") or item.get("cat1") or item.get("sales_channel") or item.get("traffic_channel") or "Segment"
                 score = item.get("performance_score", "N/A")
-                revenue_delta = item.get("revenue_delta_pct", "N/A")
-                transaction_delta = item.get("transactions_delta_pct", "N/A")
-                lines.append(
-                    f"- {name}: skor {score}, revenue %{revenue_delta}, transaction %{transaction_delta}"
-                )
+                rev = item.get("revenue_delta_pct", "N/A")
+                trans = item.get("transactions_delta_pct", "N/A")
+                lines.append(f"- {name}, performans skoru {score}; revenue değişimi %{rev}, transaction değişimi %{trans}.")
             lines.append("")
 
         if losers:
-            lines.append("5) Riskli / Kaybeden Segmentler")
+            lines.append("Riskli / kaybeden segmentler")
             for item in losers[:3]:
-                name = (
-                    item.get("cat2")
-                    or item.get("cat1")
-                    or item.get("sales_channel")
-                    or item.get("traffic_channel")
-                    or "Segment"
-                )
+                name = item.get("cat2") or item.get("cat1") or item.get("sales_channel") or item.get("traffic_channel") or "Segment"
                 score = item.get("performance_score", "N/A")
-                revenue_delta = item.get("revenue_delta_pct", "N/A")
-                transaction_delta = item.get("transactions_delta_pct", "N/A")
+                rev = item.get("revenue_delta_pct", "N/A")
+                trans = item.get("transactions_delta_pct", "N/A")
+                lines.append(f"- {name}, performans skoru {score}; revenue değişimi %{rev}, transaction değişimi %{trans}.")
+            lines.append("")
+
+        if actions:
+            lines.append("Önerilen aksiyon")
+            for action in actions[:5]:
+                lines.append(f"- {action}")
+
+        # Google Trends Seasonal Insights
+        seasonal_trends = data.get("seasonal_trends")
+        if seasonal_trends:
+            lines.append("")
+            lines.append("📈 Google Trends Türkiye Mevsimsel Talep Analizi (Son 3 Yıl)")
+            lines.append(f"- **Arama Terimi**: {seasonal_trends.get('keyword', '')}")
+            lines.append(f"- **Tarihsel Eğilim**: {seasonal_trends.get('trend_direction', '')}")
+            lines.append(f"- **Yüksek Sezon (Zirve Ay)**: {seasonal_trends.get('peak_month', '')} (Bu dönemde pazarlama bütçeleri ve görünürlük maksimize edilmeli)")
+            lines.append(f"- **Düşük Sezon (Dip Ay)**: {seasonal_trends.get('low_month', '')} (Bu dönemde kampanya ve indirimlerle talep canlandırılmalı)")
+
+        # E-commerce Price Competition Strategic Matrix
+        price_scenarios = data.get("price_scenarios")
+        if price_scenarios:
+            lines.append("")
+            lines.append("🎯 E-Ticaret Fiyat Rekabeti Strateji Matrisi (E-Ticaret Profesyoneli Teşhisi)")
+            
+            # Scenario 1: Pahalı & Düşüşte
+            s1 = price_scenarios.get("expensive_falling_sales", [])
+            if s1:
+                lines.append("")
+                lines.append("🔴 Senaryo 1: Pahalıyız ve Satış Düşüyor (Fiyat İndirimi / Price Action Adayları)")
+                for item in s1[:3]:
+                    lines.append(f"  - **{item.get('sku')}** ({item.get('brand')}) — Fiyat: {item.get('price')} (Gap: %{round(item.get('price_gap_pct', 0), 1)}) | Satış Değişimi: %{round(item.get('revenue_delta_pct', 0), 1)}")
+                    lines.append(f"    ↳ 💡 {item.get('action')}")
+                
+            # Scenario 2: Pahalı & Satış İyi
+            s2 = price_scenarios.get("expensive_good_sales", [])
+            if s2:
+                lines.append("")
+                lines.append("🟢 Senaryo 2: Pahalıyız ama Satış İyi (Premium / Güçlü Ürünler)")
+                for item in s2[:3]:
+                    lines.append(f"  - **{item.get('sku')}** ({item.get('brand')}) — Fiyat: {item.get('price')} (Gap: %{round(item.get('price_gap_pct', 0), 1)}) | Satış Değişimi: +%{round(item.get('revenue_delta_pct', 0), 1)}")
+                    lines.append(f"    ↳ 💡 {item.get('action')}")
+                
+            # Scenario 3: Ucuz & Satış Yok
+            s3 = price_scenarios.get("cheap_no_sales", [])
+            if s3:
+                lines.append("")
+                lines.append("🟡 Senaryo 3: Ucuzuz ama Satış Yok (Görünürlük / Content / Stok Sorunu Adayları)")
+                for item in s3[:3]:
+                    lines.append(f"  - **{item.get('sku')}** ({item.get('brand')}) — Fiyat: {item.get('price')} (Gap: %{round(item.get('price_gap_pct', 0), 1)}) | Stok: {item.get('stock_qty')}")
+                    lines.append(f"    ↳ 💡 {item.get('action')}")
+                
+            # Scenario 4: Ucuz & Satış İyi
+            s4 = price_scenarios.get("cheap_good_sales", [])
+            if s4:
+                lines.append("")
+                lines.append("🔵 Senaryo 4: Ucuzuz ve Satış İyi (Trafik / PPC Bid Artırma Adayları)")
+                for item in s4[:3]:
+                    lines.append(f"  - **{item.get('sku')}** ({item.get('brand')}) — Fiyat: {item.get('price')} (Gap: %{round(item.get('price_gap_pct', 0), 1)}) | Satış Değişimi: +%{round(item.get('revenue_delta_pct', 0), 1)}")
+                    lines.append(f"    ↳ 💡 {item.get('action')}")
+
+            # Losing Competitiveness
+            losing = price_scenarios.get("losing_competitiveness", [])
+            if losing:
+                lines.append("")
+                lines.append("⚠️ Fiyat Rekabetini Kaybettiğimiz Markalar")
+                for item in losing[:3]:
+                    lines.append(f"  - **{item.get('brand')}**: Ürünlerin %{round(item.get('ratio'), 1)}'i benchmark üstünde (Ortalama Gap: %{round(item.get('avg_gap'), 1)})")
+
+        lines.append("")
+        lines.append("Detaylı metrik kırılımı ve ham hesaplar için Excel çıktısını indirebilirsin.")
+
+        return "\n".join(lines)
+
+    if analysis_type == "funnel_master_analysis":
+        steps = data.get("funnel_steps", []) or []
+        bottleneck = data.get("bottleneck") or {}
+        overall_conv = data.get("overall_conversion_pct", 0)
+        pdp_total = data.get("pdp_total", 0)
+        txn_total = data.get("transaction_total", 0)
+        actions = data.get("recommended_actions", []) or []
+        breakdown = data.get("dimension_breakdown", []) or []
+        dimension = data.get("dimension", "")
+
+        lines = []
+        lines.append("🔍 Funnel Master Analizi")
+        lines.append("")
+        lines.append(f"📊 Genel Dönüşüm: PDP → Transaction = %{overall_conv}")
+        lines.append(f"Toplam PDP: {int(pdp_total):,} | Toplam Transaction: {int(txn_total):,}")
+        lines.append("")
+
+        if bottleneck:
+            lines.append(f"🚨 En Kritik Darboğaz: **{bottleneck.get('step', 'N/A')}** — %{bottleneck.get('drop_from_prev_pct', 0)} kayıp")
+            lines.append("")
+
+        lines.append("Funnel Adım Adım Analiz")
+        for step in steps:
+            vol = step.get("volume", 0)
+            drop = step.get("drop_from_prev_pct")
+            delta = step.get("avg_delta_pct")
+            diagnosis = step.get("diagnosis", "")
+            drop_str = f" | Önceki adımdan kayıp: %{drop}" if drop is not None else ""
+            delta_str = f" | Dönemlik delta: %{delta}" if delta is not None else ""
+            lines.append(f"• **{step.get('step')}**: {int(vol):,}{drop_str}{delta_str}")
+            if diagnosis:
+                lines.append(f"  {diagnosis}")
+        lines.append("")
+
+        if breakdown and dimension:
+            dim_label = {"cat1": "Kategori", "cat2": "Alt Kategori", "device": "Cihaz",
+                         "traffic_channel": "Trafik Kanalı", "brand": "Marka", "sales_channel": "Satış Kanalı"}.get(dimension, dimension)
+            lines.append(f"{dim_label} Bazında Funnel Kırılımı")
+            for b in breakdown[:8]:
                 lines.append(
-                    f"- {name}: skor {score}, revenue %{revenue_delta}, transaction %{transaction_delta}"
+                    f"- {b.get('dimension')}: Dönüşüm %{b.get('overall_conversion_pct')} | "
+                    f"PDP: {int(b.get('pdp_views', 0)):,} | Darboğaz: {b.get('biggest_bottleneck')} (%{b.get('bottleneck_drop_pct')} kayıp)"
                 )
             lines.append("")
 
         if actions:
-            lines.append("6) Önerilen Aksiyonlar")
-            for action in actions[:5]:
+            lines.append("💡 Aksiyon Önerileri")
+            for action in actions:
                 lines.append(f"- {action}")
 
+        lines.append("")
+        lines.append("Excel İndir butonuyla funnel verilerini indirebilirsin.")
         return "\n".join(lines)
 
+    if analysis_type == "funnel_master_error":
+        return f"⚠️ Funnel analizi çalıştırılamadı: {data.get('error', 'Bilinmeyen hata')}"
+
     if analysis_type in [
-        "c2d_up_b2d_down",
-        "high_c2d_low_stock",
-        "high_b2d_low_stock",
-        "oos_products_with_pdp_views",
+        "c2d_up_b2d_down", "high_c2d_low_stock",
+        "high_b2d_low_stock", "oos_products_with_pdp_views",
     ]:
         rows = data.get("rows", []) or []
         logic = data.get("logic", "")
@@ -714,21 +1153,13 @@ def format_tool_response_for_ui(raw_text: str) -> str:
                 c2d = row.get("c2d_pct", "")
                 b2d = row.get("b2d_pct", "")
                 stock = row.get("stock_qty", "")
-
                 detail_parts = []
-                if brand:
-                    detail_parts.append(str(brand))
-                if cat1:
-                    detail_parts.append(str(cat1))
-                if cat2:
-                    detail_parts.append(str(cat2))
-                if c2d != "":
-                    detail_parts.append(f"C2D: %{c2d}")
-                if b2d != "":
-                    detail_parts.append(f"B2D: %{b2d}")
-                if stock != "":
-                    detail_parts.append(f"Stok: {stock}")
-
+                if brand: detail_parts.append(str(brand))
+                if cat1: detail_parts.append(str(cat1))
+                if cat2: detail_parts.append(str(cat2))
+                if c2d != "": detail_parts.append(f"C2D: %{c2d}")
+                if b2d != "": detail_parts.append(f"B2D: %{b2d}")
+                if stock != "": detail_parts.append(f"Stok: {stock}")
                 detail = " | ".join(detail_parts)
                 if detail:
                     lines.append(f"- {sku} — {detail}")
@@ -742,19 +1173,16 @@ def format_tool_response_for_ui(raw_text: str) -> str:
 
         return "\n".join(lines)
 
-    # Genel SQL/analiz tool çıktıları için kısa özet
     if isinstance(data, dict) and "rows" in data:
         rows = data.get("rows", []) or []
         row_count = data.get("row_count", len(rows))
         question = data.get("question", "")
-
         lines = []
         lines.append("📌 Analiz Sonucu")
         if question:
             lines.append(f"Soru: {question}")
         lines.append(f"Bulunan satır sayısı: {row_count}")
         lines.append("")
-
         if rows:
             lines.append("İlk Sonuçlar")
             for i, row in enumerate(rows[:10], start=1):
@@ -764,7 +1192,279 @@ def format_tool_response_for_ui(raw_text: str) -> str:
                 lines.append(f"{i}. " + " | ".join(parts))
         else:
             lines.append("Sonuç bulunamadı.")
+        return "\n".join(lines)
 
+    if analysis_type == "cross_performance_analysis":
+        category = data.get("category", "Genel")
+        scenarios = data.get("scenarios", {}) or {}
+        trends = data.get("trends", {}) or {}
+        candidates = data.get("price_cut_candidates", []) or []
+        summary = data.get("summary", {}) or {}
+        
+        lines = []
+        lines.append(f"🎯 Çapraz Metrik Rekabet ve Talep Analizi ({category.upper()})")
+        lines.append("")
+        lines.append(f"- **Analiz Edilen Toplam Ürün**: {summary.get('total_skus_analyzed', 0)}")
+        lines.append(f"- **Pazara Göre Pahalı Ürün (Gap > %1)**: {summary.get('expensive_skus_count', 0)}")
+        lines.append(f"- **Pazara Göre Ucuz Ürün (Gap < -%1)**: {summary.get('cheap_skus_count', 0)}")
+        lines.append("")
+        
+        if trends:
+            lines.append("📈 Google Trends Türkiye Mevsimsel Talep Sinyali")
+            lines.append(f"- **Arama Terimi / Trend**: {trends.get('keyword', 'N/A')} ({trends.get('trend_direction', 'N/A')})")
+            lines.append(f"- **Yüksek Sezon (Zirve Ay)**: {trends.get('peak_month', 'N/A')} (Bu dönemde pazarlama görünürlüğü artırılmalı)")
+            lines.append(f"- **Düşük Sezon (Dip Ay)**: {trends.get('low_month', 'N/A')} (Bu dönemde indirim ve kampanyalar yapılmalı)")
+            lines.append("")
+            
+        lines.append("🎯 Fiyat Rekabeti Strateji Matrisi (E-Ticaret Profesyoneli Teşhisi)")
+        
+        s1 = scenarios.get("expensive_falling_sales", [])
+        if s1:
+            lines.append("")
+            lines.append("🔴 Senaryo 1: Pahalıyız ve Satışlar Düşüyor (Fiyat İndirimi Adayları)")
+            for item in s1[:3]:
+                lines.append(f"  - **{item.get('sku')}** ({item.get('brand')}) — Fiyat: {item.get('price'):,} TL (Gap: %{item.get('price_gap_pct'):.1f}) | Satış Değişimi: %{item.get('revenue_delta_pct'):.1f}")
+                lines.append(f"    ↳ 💡 {item.get('action')}")
+                
+        s2 = scenarios.get("expensive_good_sales", [])
+        if s2:
+            lines.append("")
+            lines.append("🟢 Senaryo 2: Pahalıyız ama Satışlar İyi (Premium / Güçlü Ürünler)")
+            for item in s2[:3]:
+                lines.append(f"  - **{item.get('sku')}** ({item.get('brand')}) — Fiyat: {item.get('price'):,} TL (Gap: %{item.get('price_gap_pct'):.1f}) | Satış Değişimi: +%{item.get('revenue_delta_pct'):.1f}")
+                lines.append(f"    ↳ 💡 {item.get('action')}")
+                
+        s3 = scenarios.get("cheap_no_sales", [])
+        if s3:
+            lines.append("")
+            lines.append("🟡 Senaryo 3: Ucuzuz ama Satış Yok (Görünürlük / Content / Stok Sorunu Adayları)")
+            for item in s3[:3]:
+                lines.append(f"  - **{item.get('sku')}** ({item.get('brand')}) — Fiyat: {item.get('price'):,} TL (Gap: %{item.get('price_gap_pct'):.1f}) | Stok: {item.get('stock_qty')}")
+                lines.append(f"    ↳ 💡 {item.get('action')}")
+                
+        s4 = scenarios.get("cheap_good_sales", [])
+        if s4:
+            lines.append("")
+            lines.append("🔵 Senaryo 4: Ucuzuz ve Satışlar İyi (Trafik / PPC Reklam Bid Artırma Adayları)")
+            for item in s4[:3]:
+                lines.append(f"  - **{item.get('sku')}** ({item.get('brand')}) — Fiyat: {item.get('price'):,} TL (Gap: %{item.get('price_gap_pct'):.1f}) | Satış Değişimi: +%{item.get('revenue_delta_pct'):.1f}")
+                lines.append(f"    ↳ 💡 {item.get('action')}")
+                
+        losing = scenarios.get("losing_competitiveness", [])
+        if losing:
+            lines.append("")
+            lines.append("⚠️ Fiyat Rekabetini Kaybettiğimiz Markalar")
+            for item in losing[:3]:
+                lines.append(f"  - **{item.get('brand')}**: Ürünlerin %{item.get('ratio'):.1f}'i pazar benchmark'ının üstünde (Ortalama Gap: %{item.get('avg_gap'):.1f})")
+                
+        if candidates:
+            lines.append("")
+            lines.append("🔥 Fiyat İndirimi ile Satış Getirecek Ürünler (Yüksek Trafik & Sepet, Düşük Satış)")
+            for item in candidates[:3]:
+                lines.append(f"  - **{item.get('sku')}** — Trafik: {item.get('pdp_views'):,} PDP | C2D: %{item.get('c2d_pct'):.1f} | B2D: %{item.get('b2d_pct'):.1f} (Gap: %{item.get('price_gap_pct'):.1f})")
+                lines.append(f"    ↳ 💡 {item.get('action')}")
+                
+        lines.append("")
+        lines.append("Excel İndir butonuyla detaylı aksiyon listesini Excel olarak indirebilirsiniz.")
+        return "\n".join(lines)
+
+    if isinstance(data, dict) and data.get("error"):
+        return f"⚠️ Hata: {data.get('error')}\nDetay: {data.get('detail', '')}"
+
+    # ─── GfK Market Share ───────────────────────────────────────────────────
+    if analysis_type == "gfk_market_share":
+        source = data.get("source", "GfK Leaderpanel")
+        view = data.get("view", "")
+        category = data.get("category", "")
+        rows = data.get("rows", []) or []
+
+        lines = ["📈 GfK Pazar Analizi", ""]
+        lines.append(f"Kaynak: {source}")
+        lines.append("")
+
+        if category:
+            # Tek kategori detayı
+            lines.append(f"**Kategori:** {category}")
+            if data.get("previous_week_value_try"):
+                week_labels = data.get("week_labels", ["Geçen Hafta", "Bu Hafta"])
+                lines.append(f"- {week_labels[0]}: {data.get('previous_week_value_try')}")
+                lines.append(f"- {week_labels[1]}: {data.get('current_week_value_try')}")
+            if data.get("wow_change_pct"):
+                lines.append(f"- Haftalık Değişim (WoW): {data.get('wow_change_pct')}")
+            if data.get("wow_change_abs"):
+                lines.append(f"- Mutlak Değişim: {data.get('wow_change_abs')}")
+            if data.get("mediamarkt_market_share_pct"):
+                lines.append(f"- **MediaMarkt Pazar Payı (Ihs):** {data.get('mediamarkt_market_share_pct')}")
+            if data.get("mediamarkt_rank"):
+                lines.append(f"- MediaMarkt Sıralamada: #{data.get('mediamarkt_rank')}")
+        else:
+            # Çok kategori listesi
+            view_labels = {
+                "top_growing_categories": "🚀 En Çok Büyüyen Kategoriler (WoW)",
+                "top_declining_categories": "📉 En Çok Düşen Kategoriler (WoW)",
+                "mediamarkt_market_share_ranking": "🏆 MediaMarkt Pazar Payı Sıralaması",
+                "all_categories_overview": "📊 Tüm Kategoriler Genel Özet",
+            }
+            lines.append(view_labels.get(view, "Genel Analiz"))
+            lines.append("")
+            for r in rows[:15]:
+                cat = r.get("category", "")
+                cw = r.get("current_week_try", "")
+                wow = r.get("wow_change_pct", "")
+                share = r.get("mediamarkt_share_pct", "")
+                rank = r.get("mediamarkt_rank", "")
+                parts = [f"**{cat}**"]
+                if cw:
+                    parts.append(f"Hacim: {cw}")
+                if wow != "":
+                    arrow = "📈" if float(wow) > 0 else "📉"
+                    parts.append(f"WoW: {arrow} %{wow}")
+                if share != "":
+                    parts.append(f"MM Payı: %{share}")
+                if rank:
+                    parts.append(f"Sıra: #{rank}")
+                lines.append("- " + " | ".join(parts))
+
+        lines.append("")
+        lines.append("Excel İndir butonuyla detayları indirebilirsiniz.")
+        return "\n".join(lines)
+
+    # ─── GfK Brand Performance ──────────────────────────────────────────────
+    if analysis_type == "gfk_brand_performance":
+        source = data.get("source", "GfK Leaderpanel — Brand")
+        latest_week = data.get("latest_week", "")
+        filtered_cat = data.get("filtered_by_category", "")
+        filtered_brand = data.get("filtered_by_brand", "")
+        top_brand = data.get("top_brand", "")
+        top_share = data.get("top_brand_share_pct", "")
+        rows = data.get("rows", []) or []
+
+        lines = ["🏷️ GfK Marka Performansı", ""]
+        lines.append(f"Kaynak: {source}")
+        if latest_week:
+            lines.append(f"Son Hafta: {latest_week}")
+        if filtered_cat:
+            lines.append(f"Kategori Filtresi: {filtered_cat}")
+        if filtered_brand:
+            lines.append(f"Marka Filtresi: {filtered_brand}")
+        lines.append("")
+
+        if top_brand:
+            lines.append(f"🥇 Öne Çıkan Marka: **{top_brand}** — MediaMarkt Payı: %{top_share}")
+            lines.append("")
+
+        lines.append("Marka Bazında MediaMarkt İnternet Satış Payı (%):")
+        for r in rows[:15]:
+            brand = r.get("brand", "N/A")
+            share = r.get("latest_week_share_pct", "")
+            prev = r.get("prev_week_share_pct", "")
+            wow = r.get("wow_change_pp", "")
+            cat = r.get("product_group", "")
+            parts = [f"**{brand}**"]
+            if cat and not filtered_cat:
+                parts.append(f"({cat})")
+            if share != "":
+                parts.append(f"Bu Hafta: %{share}")
+            if prev != "":
+                parts.append(f"Geçen Hafta: %{prev}")
+            if wow != "":
+                arrow = "▲" if float(wow) > 0 else "▼"
+                parts.append(f"WoW: {arrow} {wow} pp")
+            lines.append("- " + " | ".join(parts))
+
+        lines.append("")
+        lines.append("Excel İndir butonuyla haftalık seriyi indirebilirsiniz.")
+        return "\n".join(lines)
+
+    # ─── GfK SKU Ranking ────────────────────────────────────────────────────
+    if analysis_type == "gfk_sku_ranking":
+        source = data.get("source", "GfK SKU Leaderpanel")
+        pg = data.get("filtered_by_product_group", "")
+        brand_filter = data.get("filtered_by_brand", "")
+        sku_count = data.get("sku_count", 0)
+        rows = data.get("rows", []) or []
+        all_brands = data.get("all_brands_in_group") or []
+
+        lines = ["🏆 GfK SKU Sıralaması", ""]
+        lines.append(f"Kaynak: {source}")
+        if pg:
+            lines.append(f"Ürün Grubu: **{pg}**")
+        if brand_filter:
+            lines.append(f"Marka: **{brand_filter}**")
+        lines.append(f"Toplam SKU: {sku_count}")
+        lines.append("")
+
+        if all_brands:
+            lines.append(f"Bu gruptaki markalar: {', '.join(all_brands[:12])}")
+            lines.append("")
+
+        lines.append("Satış Sıralaması:")
+        for r in rows[:20]:
+            rank = r.get("rank", "?")
+            brand = r.get("brand", "")
+            item = r.get("item", "")
+            instore = r.get("instore_code", "")
+            product_group = r.get("reportingproductgroup", "")
+            lines.append(f"#{rank} | **{brand}** | {item} | Mağaza Kodu: {instore}")
+
+        lines.append("")
+        lines.append("Excel İndir butonuyla tam sıralamayı indirebilirsiniz.")
+        return "\n".join(lines)
+
+    # ─── GfK Combined ───────────────────────────────────────────────────────
+    if analysis_type == "gfk_combined":
+        source = data.get("source", "GfK + Ecommerce")
+        gfk_overview = data.get("gfk_market_overview", []) or []
+        ec_brands = data.get("ecommerce_brand_performance", []) or []
+        ec_cats = data.get("ecommerce_category_performance", []) or []
+        cross_insights = data.get("cross_insights", []) or []
+
+        lines = ["🔗 GfK + Ecommerce Birleşik Analiz", ""]
+        lines.append(f"Kaynak: {source}")
+        lines.append("")
+
+        if cross_insights:
+            lines.append("💡 Cross Analiz Insight'ları")
+            for insight in cross_insights:
+                lines.append(f"  {insight}")
+            lines.append("")
+
+        if gfk_overview:
+            lines.append("📊 GfK Pazar Özeti (Haftalık)")
+            for r in gfk_overview[:8]:
+                cat = r.get("category", "")
+                cw = r.get("current_week_market_try", "")
+                wow = r.get("market_wow_growth_pct", "")
+                share = r.get("mediamarkt_market_share_pct", "")
+                parts = [f"**{cat}**"]
+                if cw:
+                    parts.append(f"Pazar: {cw}")
+                if wow != "":
+                    arrow = "📈" if float(wow) > 0 else "📉"
+                    parts.append(f"WoW: {arrow} %{wow}")
+                if share != "":
+                    parts.append(f"MM Payı: %{share}")
+                lines.append("  - " + " | ".join(parts))
+            lines.append("")
+
+        if ec_brands:
+            lines.append("🏪 Ecommerce Marka Performansı (İç Veri)")
+            for r in ec_brands[:8]:
+                brand = r.get("brand", "")
+                rev = r.get("revenue_sum", "")
+                c2d = r.get("avg_c2d_pct", "")
+                b2d = r.get("avg_b2d_pct", "")
+                rev_d = r.get("avg_revenue_delta_pct", "")
+                arrow = "📈" if float(rev_d or 0) > 0 else "📉"
+                lines.append(f"  - **{brand}** | Ciro: {rev} | C2D: %{c2d} | B2D: %{b2d} | {arrow} %{rev_d}")
+            lines.append("")
+
+        mapping_note = data.get("category_mapping_note", "")
+        if mapping_note:
+            lines.append(f"ℹ️ Not: {mapping_note}")
+
+        lines.append("")
+        lines.append("Excel İndir butonuyla detaylı karşılaştırma tablosunu indirebilirsiniz.")
         return "\n".join(lines)
 
     if isinstance(data, dict) and data.get("error"):
@@ -781,54 +1481,140 @@ def route(user_message: str):
 
     history.append({"role": "user", "content": user_message})
 
-    # Önerilen aksiyon / aksiyon planı isteklerini LLM'e bırakmadan direkt çalıştır.
+    if should_use_gfk_combined(user_message):
+        fn_name = "analyze_gfk_combined"
+        fn_result = analyze_gfk_combined(question=user_message)
+        raw_result = str(fn_result)
+        LAST_TOOL_RESULT_JSON = raw_result
+        LAST_TOOL_RESULT_NAME = fn_name
+        print("📊 DIRECT GFK COMBINED:", user_message, flush=True)
+        print("✅ TOOL RESULT PREVIEW:", raw_result[:1000], flush=True)
+        log_tool_json_to_terminal(raw_result)
+        formatted_result = format_tool_response_for_ui(raw_result)
+        history.append({"role": "tool", "content": raw_result})
+        history.append({"role": "assistant", "content": formatted_result})
+        return formatted_result
+
+    if should_use_gfk_sku_ranking(user_message):
+        fn_name = "analyze_gfk_sku_ranking"
+        fn_result = analyze_gfk_sku_ranking(question=user_message)
+        raw_result = str(fn_result)
+        LAST_TOOL_RESULT_JSON = raw_result
+        LAST_TOOL_RESULT_NAME = fn_name
+        print("🏆 DIRECT GFK SKU RANKING:", user_message, flush=True)
+        print("✅ TOOL RESULT PREVIEW:", raw_result[:1000], flush=True)
+        log_tool_json_to_terminal(raw_result)
+        formatted_result = format_tool_response_for_ui(raw_result)
+        history.append({"role": "tool", "content": raw_result})
+        history.append({"role": "assistant", "content": formatted_result})
+        return formatted_result
+
+    if should_use_gfk_brand(user_message):
+        fn_name = "analyze_gfk_brand_performance"
+        fn_result = analyze_gfk_brand_performance(question=user_message)
+        raw_result = str(fn_result)
+        LAST_TOOL_RESULT_JSON = raw_result
+        LAST_TOOL_RESULT_NAME = fn_name
+        print("🏷️ DIRECT GFK BRAND:", user_message, flush=True)
+        print("✅ TOOL RESULT PREVIEW:", raw_result[:1000], flush=True)
+        log_tool_json_to_terminal(raw_result)
+        formatted_result = format_tool_response_for_ui(raw_result)
+        history.append({"role": "tool", "content": raw_result})
+        history.append({"role": "assistant", "content": formatted_result})
+        return formatted_result
+
+    if should_use_gfk_market_share(user_message):
+        fn_name = "analyze_gfk_market_share"
+        fn_result = analyze_gfk_market_share(question=user_message)
+        raw_result = str(fn_result)
+        LAST_TOOL_RESULT_JSON = raw_result
+        LAST_TOOL_RESULT_NAME = fn_name
+        print("📈 DIRECT GFK MARKET SHARE:", user_message, flush=True)
+        print("✅ TOOL RESULT PREVIEW:", raw_result[:1000], flush=True)
+        log_tool_json_to_terminal(raw_result)
+        formatted_result = format_tool_response_for_ui(raw_result)
+        history.append({"role": "tool", "content": raw_result})
+        history.append({"role": "assistant", "content": formatted_result})
+        return formatted_result
+
+    if should_use_cross_performance(user_message):
+        fn_name = "analyze_cross_performance"
+        fn_result = analyze_cross_performance(question=user_message)
+        raw_result = str(fn_result)
+        LAST_TOOL_RESULT_JSON = raw_result
+        LAST_TOOL_RESULT_NAME = fn_name
+        print("🎯 DIRECT CROSS PERFORMANCE:", user_message, flush=True)
+        print("✅ TOOL RESULT PREVIEW:", raw_result[:1000], flush=True)
+        log_tool_json_to_terminal(raw_result)
+        formatted_result = format_tool_response_for_ui(raw_result)
+        history.append({"role": "tool", "content": raw_result})
+        history.append({"role": "assistant", "content": formatted_result})
+        return formatted_result
+
+    if should_use_category_insights(user_message):
+        fn_name = "generate_category_insight"
+        fn_result = generate_category_insight(
+            category="genel",
+            sector="consumer_electronics",
+            period_name="selected_period",
+            question=user_message,
+        )
+        raw_result = str(fn_result)
+        LAST_TOOL_RESULT_JSON = raw_result
+        LAST_TOOL_RESULT_NAME = fn_name
+        print("📊 DIRECT CATEGORY INSIGHTS:", user_message, flush=True)
+        print("✅ TOOL RESULT PREVIEW:", raw_result[:1000], flush=True)
+        log_tool_json_to_terminal(raw_result)
+        formatted_result = format_tool_response_for_ui(raw_result)
+        history.append({"role": "tool", "content": raw_result})
+        history.append({"role": "assistant", "content": formatted_result})
+        return formatted_result
+
+    if should_use_funnel_master(user_message):
+        fn_name = "analyze_funnel_master"
+        fn_result = analyze_funnel_master(question=user_message)
+        raw_result = str(fn_result)
+        LAST_TOOL_RESULT_JSON = raw_result
+        LAST_TOOL_RESULT_NAME = fn_name
+        print("🔍 DIRECT FUNNEL MASTER:", user_message, flush=True)
+        print("✅ TOOL RESULT PREVIEW:", raw_result[:1000], flush=True)
+        log_tool_json_to_terminal(raw_result)
+        formatted_result = format_tool_response_for_ui(raw_result)
+        history.append({"role": "tool", "content": raw_result})
+        history.append({"role": "assistant", "content": formatted_result})
+        return formatted_result
+
     if should_use_action_executor(user_message):
         fn_name = "execute_recommended_action"
         fn_result = execute_recommended_action(
             question=user_message,
             last_result_json=LAST_TOOL_RESULT_JSON,
         )
-
         raw_result = str(fn_result)
-
         LAST_TOOL_RESULT_JSON = raw_result
         LAST_TOOL_RESULT_NAME = fn_name
-
         print("⚙️ DIRECT ACTION EXECUTOR:", user_message, flush=True)
         print("✅ TOOL RESULT PREVIEW:", raw_result[:1000], flush=True)
-
         log_tool_json_to_terminal(raw_result)
-
         formatted_result = format_tool_response_for_ui(raw_result)
-
         history.append({"role": "tool", "content": raw_result})
         history.append({"role": "assistant", "content": formatted_result})
-
         return formatted_result
 
-    # Matematiksel / Excel tipi business hesaplama sorularını LLM'e bırakmadan direkt hesapla.
     if should_use_business_calculator(user_message):
         fn_name = "calculate_business_metric"
         fn_result = calculate_business_metric(user_message)
-
         raw_result = str(fn_result)
-
         LAST_TOOL_RESULT_JSON = raw_result
         LAST_TOOL_RESULT_NAME = fn_name
-
         print("🧮 DIRECT BUSINESS CALCULATOR:", user_message, flush=True)
         print("✅ TOOL RESULT PREVIEW:", raw_result[:1000], flush=True)
-
         log_tool_json_to_terminal(raw_result)
-
         formatted_result = format_tool_response_for_ui(raw_result)
-
         history.append({"role": "tool", "content": raw_result})
         history.append({"role": "assistant", "content": formatted_result})
-
         return formatted_result
 
-    # History çok büyüyünce model yavaşlıyor. Son birkaç mesaj yeterli.
     short_history = [SYSTEM_PROMPT] + history[-6:]
     result = call_ollama(short_history)
     message = result.get("message", {})
@@ -868,12 +1654,8 @@ def route(user_message: str):
                         question=fn_args.get("question", user_message),
                         last_result_json=LAST_TOOL_RESULT_JSON,
                     )
-
                 elif fn_name == "calculate_business_metric":
-                    fn_result = calculate_business_metric(
-                        fn_args.get("question", user_message)
-                    )
-
+                    fn_result = calculate_business_metric(fn_args.get("question", user_message))
                 elif fn_name in [
                     "generate_price_competition_from_uploaded_inputs",
                     "generate_merchant_price_competition_insight",
@@ -882,82 +1664,65 @@ def route(user_message: str):
                         category=fn_args.get("category", "genel"),
                         period_name=fn_args.get("period_name", "selected_period"),
                     )
-
                 elif fn_name == "generate_category_insight":
                     fn_result = generate_category_insight(
                         category=fn_args.get("category", "genel"),
                         sector=fn_args.get("sector", "consumer_electronics"),
                         period_name=fn_args.get("period_name", "selected_period"),
+                        question=fn_args.get("question", user_message),
                     )
-
+                elif fn_name == "analyze_funnel_master":
+                    fn_result = analyze_funnel_master(fn_args.get("question", user_message))
                 elif fn_name == "analyze_ecommerce_sample":
-                    fn_result = analyze_ecommerce_sample(
-                        fn_args.get("question", user_message)
-                    )
-
+                    fn_result = analyze_ecommerce_sample(fn_args.get("question", user_message))
+                elif fn_name == "analyze_cross_performance":
+                    fn_result = analyze_cross_performance(fn_args.get("question", user_message))
+                elif fn_name == "analyze_gfk_market_share":
+                    fn_result = analyze_gfk_market_share(fn_args.get("question", user_message))
+                elif fn_name == "analyze_gfk_brand_performance":
+                    fn_result = analyze_gfk_brand_performance(fn_args.get("question", user_message))
+                elif fn_name == "analyze_gfk_sku_ranking":
+                    fn_result = analyze_gfk_sku_ranking(fn_args.get("question", user_message))
+                elif fn_name == "analyze_gfk_combined":
+                    fn_result = analyze_gfk_combined(fn_args.get("question", user_message))
                 elif fn_name == "get_stock_level":
                     fn_result = get_stock_level(fn_args["product_id"])
-
                 elif fn_name == "get_all_stock":
                     fn_result = get_all_stock()
-
                 elif fn_name == "get_daily_sales_report":
                     fn_result = get_daily_sales_report()
-
                 elif fn_name == "check_low_stock":
                     fn_result = check_low_stock(fn_args.get("threshold", 10))
-
                 elif fn_name == "get_out_of_stock":
                     fn_result = get_out_of_stock()
-
                 elif fn_name == "search_product_by_name":
                     fn_result = search_product_by_name(fn_args["name"])
-
                 elif fn_name == "get_stock_value":
                     fn_result = get_stock_value()
-
                 elif fn_name == "update_stock":
-                    fn_result = update_stock(
-                        fn_args["product_id"],
-                        fn_args["quantity"]
-                    )
-
+                    fn_result = update_stock(fn_args["product_id"], fn_args["quantity"])
                 elif fn_name == "get_order_status":
                     fn_result = get_order_status(fn_args["order_id"])
-
                 elif fn_name == "get_all_orders":
                     fn_result = get_all_orders()
-
                 elif fn_name == "get_pending_orders":
                     fn_result = get_pending_orders()
-
                 elif fn_name == "get_orders_by_customer":
                     fn_result = get_orders_by_customer(fn_args["customer"])
-
                 elif fn_name == "update_order_status":
-                    fn_result = update_order_status(
-                        fn_args["order_id"],
-                        fn_args["status"]
-                    )
-
+                    fn_result = update_order_status(fn_args["order_id"], fn_args["status"])
                 elif fn_name == "get_todays_orders":
                     fn_result = get_todays_orders()
-
                 elif fn_name == "get_total_revenue":
                     fn_result = get_total_revenue()
-
                 elif fn_name == "get_best_selling_product":
                     fn_result = get_best_selling_product()
-
                 elif fn_name == "get_sales_summary":
                     fn_result = get_sales_summary()
-
                 elif fn_name == "get_low_stock_report":
                     fn_result = get_low_stock_report()
-
                 elif fn_name == "get_stock_turnover":
                     fn_result = get_stock_turnover()
-
                 else:
                     fn_result = f"Bilinmeyen fonksiyon: {fn_name}"
 
@@ -965,35 +1730,27 @@ def route(user_message: str):
                 fn_result = f"Tool çalışırken hata oluştu: {str(e)}"
 
             raw_result = str(fn_result)
-
             LAST_TOOL_RESULT_JSON = raw_result
             LAST_TOOL_RESULT_NAME = fn_name or "retail_ai_output"
 
             print("✅ TOOL RESULT PREVIEW:", raw_result[:1000], flush=True)
-
-            # Terminalde ham JSON/debug sonucu gösterilir.
             log_tool_json_to_terminal(raw_result)
-
-            # Ekranda sadece kısa, yönetici özeti gösterilir.
             formatted_result = format_tool_response_for_ui(raw_result)
-
             fn_results.append(formatted_result)
             history.append({"role": "tool", "content": raw_result})
 
         final = "\n\n".join(fn_results)
-
         print("📝 FINAL UI ANSWER:", final[:1000], flush=True)
-
         history.append({"role": "assistant", "content": final})
         return final
 
     content = message.get("content", "").strip()
-
     if not content or "{" in content[:20]:
         content = "Yanıt alınamadı, lütfen tekrar deneyin."
 
     history.append({"role": "assistant", "content": content})
     return content
+
 
 def safe_sheet_name(name: str) -> str:
     name = str(name or "Sheet")
@@ -1005,44 +1762,34 @@ def safe_sheet_name(name: str) -> str:
 def list_to_df(items):
     if not items:
         return pd.DataFrame()
-
     if isinstance(items, list):
         return pd.DataFrame(items)
-
     return pd.DataFrame([items])
 
 
 def dict_to_key_value_df(data: dict):
     rows = []
-
     for key, value in (data or {}).items():
         if isinstance(value, (dict, list)):
             rows.append({"metric": key, "value": json.dumps(value, ensure_ascii=False)})
         else:
             rows.append({"metric": key, "value": value})
-
     return pd.DataFrame(rows)
 
 
 def write_df(writer, df, sheet_name):
     sheet_name = safe_sheet_name(sheet_name)
-
     if df is None or df.empty:
         df = pd.DataFrame([{"info": "No data"}])
-
     df.to_excel(writer, sheet_name=sheet_name, index=False)
-
     worksheet = writer.sheets[sheet_name]
     worksheet.freeze_panes = "A2"
-
     header_fill = PatternFill("solid", fgColor="1F4E78")
     header_font = Font(color="FFFFFF", bold=True)
-
     for cell in worksheet[1]:
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center", vertical="center")
-
     for idx, col in enumerate(df.columns, start=1):
         values = df[col].head(100).fillna("").astype(str).tolist()
         max_len = max([len(str(col))] + [len(v) for v in values])
@@ -1053,16 +1800,12 @@ def build_excel_from_tool_result(raw_text: str) -> BytesIO:
     try:
         data = json.loads(raw_text)
     except Exception:
-        data = {
-            "analysis_type": "raw_text",
-            "raw_output": raw_text,
-        }
+        data = {"analysis_type": "raw_text", "raw_output": raw_text}
 
     output = BytesIO()
 
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         analysis_type = data.get("analysis_type", "retail_ai_output")
-
         metadata = {
             "analysis_type": analysis_type,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -1071,29 +1814,40 @@ def build_excel_from_tool_result(raw_text: str) -> BytesIO:
             "benchmark_mode": data.get("benchmark_mode", ""),
             "benchmark_source": data.get("benchmark_source", ""),
         }
-
         write_df(writer, dict_to_key_value_df(metadata), "Metadata")
 
         if analysis_type == "recommended_action_execution":
             write_df(writer, dict_to_key_value_df(data.get("summary", {})), "Action Summary")
             write_df(writer, list_to_df(data.get("rows", [])), "Action Plan")
             write_df(writer, list_to_df([{"action": x} for x in data.get("recommended_actions", [])]), "Actions")
-
         elif analysis_type == "price_competition_uploaded_inputs":
             write_df(writer, dict_to_key_value_df(data.get("summary", {})), "Summary")
             write_df(writer, list_to_df(data.get("top_expensive_products", [])), "Benchmark Above")
             write_df(writer, list_to_df(data.get("top_cheaper_products", [])), "Benchmark Below")
             write_df(writer, list_to_df([{"action": x} for x in data.get("recommended_actions", [])]), "Actions")
-
         elif analysis_type == "category_sector_insight":
             write_df(writer, dict_to_key_value_df(data.get("executive_summary", {})), "Executive Summary")
+            write_df(writer, dict_to_key_value_df(data.get("metric_snapshot", {})), "Metric Snapshot")
+            write_df(writer, list_to_df(data.get("signal_interpretation", [])), "Signal Interpretation")
             write_df(writer, list_to_df(data.get("root_causes", [])), "Root Causes")
             write_df(writer, list_to_df(data.get("winning_categories", [])), "Winners")
             write_df(writer, list_to_df(data.get("losing_categories", [])), "Losers")
             write_df(writer, list_to_df(data.get("channel_insights", [])), "Channel Insights")
             write_df(writer, list_to_df(data.get("traffic_insights", [])), "Traffic Insights")
             write_df(writer, list_to_df([{"action": x} for x in data.get("recommended_actions", [])]), "Actions")
-
+            write_df(writer, list_to_df(data.get("rows", [])), "Category Rows")
+        elif analysis_type == "cross_performance_analysis":
+            write_df(writer, dict_to_key_value_df(data.get("summary", {})), "Summary")
+            if data.get("trends"):
+                write_df(writer, dict_to_key_value_df(data.get("trends", {})), "Google Trends")
+            
+            scenarios = data.get("scenarios", {}) or {}
+            write_df(writer, list_to_df(scenarios.get("expensive_falling_sales", [])), "S1_Expensive_Falling")
+            write_df(writer, list_to_df(scenarios.get("expensive_good_sales", [])), "S2_Expensive_Good")
+            write_df(writer, list_to_df(scenarios.get("cheap_no_sales", [])), "S3_Cheap_No_Sales")
+            write_df(writer, list_to_df(scenarios.get("cheap_good_sales", [])), "S4_Cheap_Good")
+            write_df(writer, list_to_df(data.get("price_cut_candidates", [])), "Price_Cut_Candidates")
+            write_df(writer, list_to_df(data.get("expensive_skus", [])), "Expensive_SKUs")
         elif analysis_type == "business_metric_calculation":
             business_info = {
                 "question": data.get("question", ""),
@@ -1107,366 +1861,262 @@ def build_excel_from_tool_result(raw_text: str) -> BytesIO:
             }
             write_df(writer, dict_to_key_value_df(business_info), "Business Summary")
             write_df(writer, list_to_df(data.get("rows", [])), "Rows")
-
-        elif "rows" in data:
-            write_df(writer, list_to_df(data.get("rows", [])), "Rows")
-            metadata_extra = {
-                "question": data.get("question", ""),
-                "logic": data.get("logic", ""),
-                "generated_sql": data.get("generated_sql", ""),
-                "row_count": data.get("row_count", ""),
-                "analysis_type": analysis_type,
+        elif analysis_type == "gfk_market_share":
+            meta = {
+                "source": data.get("source", ""),
+                "category": data.get("category", ""),
+                "view": data.get("view", ""),
+                "mediamarkt_rank": data.get("mediamarkt_rank", ""),
+                "mediamarkt_market_share_pct": data.get("mediamarkt_market_share_pct", ""),
+                "wow_change_pct": data.get("wow_change_pct", ""),
+                "current_week_value_try": data.get("current_week_value_try", ""),
+                "previous_week_value_try": data.get("previous_week_value_try", ""),
             }
-            write_df(writer, dict_to_key_value_df(metadata_extra), "Analysis Info")
-
-        else:
-            write_df(writer, dict_to_key_value_df(data), "Output")
-
-        raw_df = pd.DataFrame([{
-            "raw_json": json.dumps(data, ensure_ascii=False, indent=2)
-        }])
-        write_df(writer, raw_df, "Raw JSON")
-
-    output.seek(0)
-    return output
-
-
-class ChatRequest(BaseModel):
-    message: str
-
-
-@app.post("/chat")
-def chat(req: ChatRequest):
-    reply = route(req.message)
-    return {"reply": reply}
-
-
-@app.get("/download-last-result")
-def download_last_result():
-    if not LAST_TOOL_RESULT_JSON:
-        error_output = BytesIO()
-
-        with pd.ExcelWriter(error_output, engine="openpyxl") as writer:
-            pd.DataFrame([{
-                "message": "Henüz indirilecek analiz sonucu yok."
-            }]).to_excel(writer, sheet_name="Info", index=False)
-
-        error_output.seek(0)
-
-        return StreamingResponse(
-            error_output,
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={
-                "Content-Disposition": "attachment; filename=retail_ai_no_result.xlsx"
+            write_df(writer, dict_to_key_value_df(meta), "GfK Market Share Summary")
+            write_df(writer, list_to_df(data.get("rows", [])), "Category Rows")
+        elif analysis_type == "gfk_brand_performance":
+            meta = {
+                "source": data.get("source", ""),
+                "latest_week": data.get("latest_week", ""),
+                "filtered_by_category": data.get("filtered_by_category", ""),
+                "filtered_by_brand": data.get("filtered_by_brand", ""),
+                "top_brand": data.get("top_brand", ""),
+                "top_brand_share_pct": data.get("top_brand_share_pct", ""),
             }
-        )
-
-    output = build_excel_from_tool_result(LAST_TOOL_RESULT_JSON)
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{LAST_TOOL_RESULT_NAME}_{timestamp}.xlsx"
-
-    return StreamingResponse(
-        output,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f"attachment; filename={filename}"
-        }
-    )
-
-
-@app.post("/reset")
-def reset():
-    global history
-    history = [SYSTEM_PROMPT]
-    return {"status": "ok"}
-
-
-@app.post("/transcribe")
-async def transcribe(audio: UploadFile = File(...)):
-    audio_bytes = await audio.read()
-    text = transcribe_audio(audio_bytes)
-    return {"text": text}
-
-
-
-
+            write_df(writer, dict_to_key_value_df(meta), "GfK Brand Summary")
+            # Haftalık seri dahil satırlar
+            rows_flat = []
+            for r in data.get("rows", []):
+                row_flat = {k: v for k, v in r.items() if k != "weekly_share_series"}
+                series = r.get("weekly_share_series", {})
+                row_flat.update(series)
 @app.get("/journey", response_class=HTMLResponse)
 def journey():
     return """
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Retail AI – SaaS Console</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retail AI Console</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange:       #f26f26;
+      --orange-dark:  #d85c18;
+      --orange-light: #f58c50;
+      --bg:           #ffffff;
+      --bg-2:         #f9fafb;
+      --bg-3:         #f1f3f5;
+      --text-900:     #292c2f;
+      --text-700:     #4e5359;
+      --text-500:     #6b7178;
+      --text-dim:     #a3acb6;
+      --border:       #dadee2;
+      --border-orange: rgba(242,111,38,0.22);
+      --panel-bg:     #ffffff;
+      --card-shadow:  0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    html, body { height: 100%; }
 
     body {
-      margin: 0;
       min-height: 100vh;
-      background: #eaf6ff;
-      color: #14213d;
-      font-family: Inter, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text-900);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
     }
 
     .app-shell {
-      min-height: 100vh;
-      display: flex;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      height: 100vh;
+      position: relative;
     }
 
+    /* ── SIDEBAR ── */
     .sidebar {
-      width: 292px;
-      background: #ffffff;
-      border-right: 1px solid #d8e8f7;
-      padding: 24px 18px;
+      background: var(--bg);
+      padding: 24px 20px;
+      color: var(--text-900);
       display: flex;
       flex-direction: column;
-      gap: 18px;
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      box-shadow: 8px 0 28px rgba(30, 100, 160, 0.07);
+      border-right: 1px solid var(--border);
+      box-shadow: 2px 0 8px rgba(0,0,0,0.04);
     }
 
     .brand {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 4px 8px 14px;
-      border-bottom: 1px solid #eef4fb;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 18px;
     }
 
-    .brand-mark {
-      width: 40px;
-      height: 40px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, #2563eb, #38bdf8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 800;
-      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.24);
-    }
-
-    .brand-title {
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-    }
-
-    .brand-subtitle {
-      font-size: 12px;
-      color: #64748b;
-      margin-top: 2px;
-    }
-
-    .menu-label {
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #94a3b8;
-      font-weight: 800;
-      padding: 0 8px;
-    }
-
-    .menu {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .menu-button {
-      width: 100%;
-      border: 0;
-      background: transparent;
-      color: #334155;
-      border-radius: 14px;
-      padding: 12px 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .brand-icon {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      background: var(--orange);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
       font-weight: 700;
-      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(242,111,38,0.30);
+      flex-shrink: 0;
+    }
+
+    .brand h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      font-weight: 700;
+      color: var(--text-900);
+    }
+    .brand p {
+      margin-top: 3px;
+      font-size: 11px;
+      color: var(--text-500);
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin: 16px 8px 10px;
+      opacity: 0.8;
+    }
+
+    .menu { display: flex; flex-direction: column; gap: 3px; }
+
+    .menu-btn {
+      border: 0;
+      width: 100%;
       text-align: left;
-      transition: all 0.16s ease;
-    }
-
-    .menu-button span.icon {
-      width: 28px;
-      height: 28px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      cursor: pointer;
       border-radius: 10px;
-      background: #eff6ff;
+      background: transparent;
+      color: var(--text-700);
+      padding: 10px 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      line-height: 1.2;
+      font-weight: 500;
+      transition: all 0.15s ease;
     }
 
-    .menu-button:hover {
-      background: #f1f8ff;
-      color: #0f172a;
+    .menu-btn span {
+      display: block;
+      margin-top: 3px;
+      font-size: 10.5px;
+      color: var(--text-dim);
+      font-weight: 400;
     }
 
-    .menu-button.active {
-      background: #dbeafe;
-      color: #1d4ed8;
-      box-shadow: inset 3px 0 0 #2563eb;
+    .menu-btn:hover {
+      background: rgba(242,111,38,0.07);
+      color: var(--orange);
     }
+
+    .menu-btn.active {
+      background: rgba(242,111,38,0.10);
+      color: var(--orange);
+      font-weight: 600;
+    }
+
+    .menu-btn.active span { color: var(--orange-light); }
 
     .sidebar-footer {
       margin-top: auto;
-      background: #f8fbff;
-      border: 1px solid #e2edf8;
-      border-radius: 18px;
+      border: 1px solid var(--border-orange);
+      background: rgba(242,111,38,0.04);
+      border-radius: 14px;
       padding: 14px;
-      color: #475569;
-      font-size: 12px;
-      line-height: 1.5;
     }
 
-    .main {
-      flex: 1;
-      padding: 28px;
-      overflow: auto;
+    .sidebar-footer strong {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 6px;
+      color: var(--text-900);
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
     }
+    .sidebar-footer p { color: var(--text-500); font-size: 11px; line-height: 1.6; }
+
+    /* ── MAIN ── */
+    .main {
+      height: 100vh;
+      overflow: auto;
+      padding: 24px 30px 28px;
+      background: linear-gradient(160deg, #fff8f4 0%, #ffffff 60%, #f4f8ff 100%);
+      scrollbar-width: thin;
+      scrollbar-color: rgba(242,111,38,0.20) transparent;
+    }
+    .main::-webkit-scrollbar { width: 4px; }
+    .main::-webkit-scrollbar-thumb { background: rgba(242,111,38,0.25); border-radius: 4px; }
 
     .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 24px;
+      margin-bottom: 18px;
     }
 
-    .topbar h1 {
-      margin: 0;
-      font-size: clamp(26px, 3vw, 38px);
-      letter-spacing: -0.04em;
-      color: #0f172a;
-    }
-
-    .topbar p {
-      margin: 6px 0 0;
-      color: #64748b;
-      font-size: 14px;
-    }
-
-    .top-actions {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .link-btn,
-    .primary-btn,
-    .ghost-btn {
-      border: 0;
-      border-radius: 999px;
-      padding: 12px 18px;
-      font-weight: 800;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      white-space: nowrap;
-    }
-
-    .link-btn {
-      background: #ffffff;
-      color: #2563eb;
-      border: 1px solid #d8e8f7;
-    }
-
-    .primary-btn {
-      background: #2563eb;
-      color: white;
-      box-shadow: 0 14px 28px rgba(37, 99, 235, 0.22);
-    }
-
-    .ghost-btn {
-      background: #ffffff;
-      color: #0f172a;
-      border: 1px solid #d8e8f7;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 18px;
-    }
-
-    .card {
-      background: rgba(255, 255, 255, 0.88);
-      border: 1px solid #d8e8f7;
-      border-radius: 24px;
-      box-shadow: 0 18px 45px rgba(33, 90, 150, 0.08);
-    }
-
-    .hero-card {
-      grid-column: span 12;
-      padding: 24px;
-      background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 55%, #dbeafe 100%);
-      display: grid;
-      grid-template-columns: 1.4fr 1fr;
-      gap: 20px;
-      align-items: center;
-    }
-
-    .hero-card h2 {
-      margin: 0 0 10px;
-      font-size: 28px;
-      letter-spacing: -0.03em;
-    }
-
-    .hero-card p {
-      margin: 0;
-      color: #475569;
+    .page-title p {
+      font-size: 13.5px;
+      color: var(--text-700);
+      max-width: 820px;
       line-height: 1.65;
-      max-width: 780px;
+      font-weight: 400;
     }
 
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+    .home-link {
+      text-decoration: none;
+      background: #fff;
+      color: var(--text-700);
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      padding: 9px 18px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: all 0.18s;
+      box-shadow: var(--card-shadow);
+    }
+    .home-link:hover {
+      border-color: var(--orange);
+      color: var(--orange);
+      box-shadow: 0 4px 16px rgba(242,111,38,0.12);
     }
 
-    .stat {
-      background: #ffffff;
-      border: 1px solid #e2edf8;
-      border-radius: 18px;
-      padding: 16px;
+    /* ── WORKSPACE ── */
+    .workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    .stat strong {
-      display: block;
-      font-size: 22px;
-      color: #1d4ed8;
-    }
-
-    .stat span {
-      font-size: 12px;
-      color: #64748b;
-      font-weight: 700;
-    }
-
-    .module-panel {
-      grid-column: span 5;
+    .module-panel, .result-panel {
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--card-shadow);
+      background: var(--panel-bg);
       padding: 22px;
-      min-height: 430px;
     }
 
-    .result-panel {
-      grid-column: span 7;
-      padding: 22px;
-      min-height: 430px;
-    }
-
-    .section-title {
+    .module-head {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -1474,443 +2124,484 @@ def journey():
       margin-bottom: 16px;
     }
 
-    .section-title h3 {
-      margin: 0;
-      font-size: 22px;
+    .module-kicker { display: none; }
+
+    .module-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      line-height: 1.15;
       letter-spacing: -0.02em;
+      font-weight: 700;
+      color: var(--text-900);
+      margin-bottom: 8px;
     }
 
-    .section-title p {
-      margin: 6px 0 0;
-      color: #64748b;
+    .module-desc {
+      color: var(--text-700);
       font-size: 13px;
-      line-height: 1.5;
+      line-height: 1.6;
+      max-width: 680px;
     }
 
-    .tool-pill {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      color: #1d4ed8;
-      padding: 7px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 800;
-      white-space: nowrap;
+    .input-area { margin-top: 18px; }
+
+    textarea {
+      width: 100%;
+      min-height: 124px;
+      max-height: 220px;
+      resize: vertical;
+      border: 1.4px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 15px;
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--text-900);
+      outline: none;
+      background: #ffffff;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.18s ease;
     }
 
-    .question-box {
+    textarea:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 4px rgba(242,111,38,0.10);
+    }
+
+    textarea::placeholder { color: var(--text-dim); }
+
+    .action-row {
       display: flex;
       gap: 10px;
-      margin-bottom: 16px;
+      margin-top: 12px;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
-    #questionInput {
-      flex: 1;
-      background: #ffffff;
-      border: 1px solid #cfe1f3;
-      border-radius: 16px;
-      padding: 14px 16px;
-      outline: none;
-      font-size: 14px;
-      color: #0f172a;
-    }
-
-    #questionInput:focus {
-      border-color: #60a5fa;
-      box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.18);
-    }
-
-    .suggestions {
-      display: grid;
-      gap: 10px;
-    }
-
-    .suggestion {
-      width: 100%;
-      text-align: left;
-      background: #f8fbff;
-      border: 1px solid #e2edf8;
-      color: #334155;
-      border-radius: 16px;
-      padding: 13px 14px;
+    .primary-btn, .secondary-btn, .ghost-btn {
+      border: 0;
       cursor: pointer;
-      font-weight: 700;
-      line-height: 1.35;
-      transition: all 0.15s ease;
+      height: 40px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.18s ease;
     }
 
-    .suggestion:hover {
-      background: #eff6ff;
-      border-color: #93c5fd;
+    .primary-btn {
+      background: var(--orange);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(242,111,38,0.30);
+    }
+    .primary-btn:hover {
+      background: var(--orange-dark);
+      box-shadow: 0 6px 20px rgba(242,111,38,0.40);
       transform: translateY(-1px);
+    }
+
+    .secondary-btn {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      color: var(--text-900);
+      box-shadow: var(--card-shadow);
+    }
+    .secondary-btn:hover {
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+
+    .ghost-btn {
+      background: transparent;
+      border: 1.5px solid var(--border);
+      color: var(--text-500);
+    }
+    .ghost-btn:hover {
+      border-color: var(--border);
+      color: var(--text-900);
+      background: var(--bg-2);
+    }
+
+    .quick-title {
+      margin: 12px 0 6px;
+      font-size: 11px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-weight: 700;
+    }
+
+    .question-select {
+      width: 100%;
+      border: 1.4px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text-900);
+      outline: none;
+      background: #ffffff;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      transition: all 0.18s ease;
+    }
+    .question-select option {
+      background: #ffffff;
+      color: var(--text-900);
+    }
+    .question-select:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 4px rgba(242,111,38,0.10);
+    }
+
+    .question-add-input {
+      border: 1.4px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text-900);
+      outline: none;
+      background: #ffffff;
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      transition: all 0.18s ease;
+    }
+    .question-add-input::placeholder { color: var(--text-dim); }
+    .question-add-input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 4px rgba(242,111,38,0.10);
+    }
+
+    .result-panel {
+      display: flex;
+      flex-direction: column;
     }
 
     .result-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      gap: 12px;
+      gap: 16px;
+      align-items: flex-start;
       margin-bottom: 14px;
     }
 
-    .result-box {
-      background: #0f172a;
-      color: #e5edf7;
-      border-radius: 20px;
-      padding: 20px;
-      min-height: 328px;
-      line-height: 1.7;
-      white-space: pre-wrap;
-      overflow: auto;
-      font-size: 14px;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    .result-header h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+      color: var(--text-900);
+    }
+    .result-header p {
+      margin-top: 5px;
+      color: var(--text-500);
+      font-size: 12.5px;
     }
 
-    .empty-state {
-      color: #94a3b8;
+    .result-box {
+      flex: 1;
+      min-height: 360px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-size: 13px;
+      line-height: 1.72;
+      color: var(--text-700);
+      scrollbar-width: thin;
+      scrollbar-color: rgba(242,111,38,0.20) transparent;
+    }
+    .result-box::-webkit-scrollbar { width: 4px; }
+    .result-box::-webkit-scrollbar-thumb { background: rgba(242,111,38,0.25); border-radius: 4px; }
+
+    .result-box.placeholder {
       display: flex;
-      height: 280px;
       align-items: center;
       justify-content: center;
       text-align: center;
+      color: var(--text-dim);
+      padding: 40px;
+      font-style: italic;
     }
 
-    .mini-modules {
-      grid-column: span 12;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
+    .loading { opacity: 0.72; font-style: italic; color: var(--orange); }
+
+    @media (max-width: 1180px) {
+      .workspace { grid-template-columns: 1fr; }
+      .module-panel, .result-panel { min-height: auto; }
+      .result-box { min-height: 300px; }
     }
 
-    .mini-card {
-      background: #ffffff;
-      border: 1px solid #d8e8f7;
-      border-radius: 20px;
-      padding: 18px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .mini-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 18px 38px rgba(33, 90, 150, 0.10);
-      border-color: #93c5fd;
-    }
-
-    .mini-card strong {
-      display: block;
-      margin-bottom: 6px;
-      color: #0f172a;
-    }
-
-    .mini-card span {
-      color: #64748b;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    @media (max-width: 980px) {
-      .app-shell { flex-direction: column; }
-      .sidebar { width: 100%; height: auto; position: relative; }
-      .menu { flex-direction: row; overflow-x: auto; }
-      .menu-button { min-width: 210px; }
-      .hero-card { grid-template-columns: 1fr; }
-      .module-panel, .result-panel { grid-column: span 12; }
-      .mini-modules { grid-template-columns: 1fr 1fr; }
-    }
-
-    @media (max-width: 620px) {
-      .main { padding: 16px; }
-      .stats { grid-template-columns: 1fr; }
-      .mini-modules { grid-template-columns: 1fr; }
-      .topbar { flex-direction: column; align-items: flex-start; }
-      .question-box { flex-direction: column; }
+    @media (max-width: 760px) {
+      body { overflow: auto; }
+      .app-shell { grid-template-columns: 1fr; height: auto; }
+      .sidebar { position: relative; height: auto; }
+      .main { height: auto; padding: 20px; }
+      .topbar { flex-direction: column; gap: 12px; }
     }
   </style>
 </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">R</div>
-        <div>
-          <div class="brand-title">Retail AI</div>
-          <div class="brand-subtitle">SaaS Analytics Console</div>
+      <div>
+        <div class="brand">
+          <div class="brand-icon">R</div>
+          <div>
+            <h1>Retail AI</h1>
+            <p>Analytics Console</p>
+          </div>
         </div>
+        <div class="nav-label">Kategoriler</div>
+        <nav class="menu" id="menu">
+          <button class="menu-btn active" data-key="business_calculator">Data Calculator<span>Matematiksel hesaplama</span></button>
+          <button class="menu-btn" data-key="category_insights">Category Insights<span>Kategori &amp; sektör analizi</span></button>
+          <button class="menu-btn" data-key="price_competition">Price Competition<span>Merchant benchmark</span></button>
+          <button class="menu-btn" data-key="action_executor">Action Executor<span>Aksiyon planı</span></button>
+          <button class="menu-btn" data-key="funnel_stock">Funnel &amp; Stock<span>Dönüşüm &amp; stok riski</span></button>
+          <button class="menu-btn" data-key="excel_outputs">Excel Outputs<span>Rapor çıktıları</span></button>
+          <button class="menu-btn" data-key="data_upload">Analiz Edilecek Veri Kaynaklarını Yükle<span>Analiz Edilecek Veri Kaynaklarını Yükle</span></button>
+        </nav>
       </div>
-
-      <div class="menu-label">Kategoriler</div>
-      <nav class="menu" id="menu"></nav>
-
       <div class="sidebar-footer">
-        <strong>Demo akışı</strong><br>
-        1) Soldan modül seç<br>
-        2) Hazır soruyla analizi çalıştır<br>
-        3) Sonucu Excel olarak indir
+        <strong>Demo akışı</strong>
+        <p>Modül seç, iş sorunu yaz, sonucu yönetici özeti olarak al ve Excel çıktısını indir.</p>
       </div>
     </aside>
 
     <main class="main">
       <div class="topbar">
-        <div>
-          <h1>Retail AI Console</h1>
-          <p>Matematiksel hesaplama, kategori insight, fiyat rekabeti ve aksiyon planlarını tek ekranda çalıştır.</p>
+        <div class="page-title">
+          <p>Matematiksel hesaplama, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir profesyonel çalışma alanında çalıştır; verileriniz üzerinde tüm matematiksel hesapları yapabilirsiniz.</p>
         </div>
-        <div class="top-actions">
-          <a href="/" class="link-btn">← Ana Sayfa</a>
-          <button onclick="downloadExcel()" id="downloadBtn" class="ghost-btn" style="display:none;">Excel İndir</button>
-        </div>
+        <a class="home-link" href="/">← Ana Sayfa</a>
       </div>
 
-      <section class="grid">
-        <div class="card hero-card">
-          <div>
-            <h2 id="heroTitle">Excel analyst + Retail strategist</h2>
-            <p id="heroDescription">Şirket datası, Merchant benchmark ve funnel sinyallerini fonksiyonlara ayırarak yönetilebilir SaaS modüllerine dönüştürüyoruz.</p>
-          </div>
-          <div class="stats">
-            <div class="stat"><strong>6</strong><span>Fonksiyon modülü</span></div>
-            <div class="stat"><strong>3</strong><span>Data input tipi</span></div>
-            <div class="stat"><strong>XLSX</strong><span>İndirilebilir çıktı</span></div>
-          </div>
-        </div>
-
-        <div class="card module-panel">
-          <div class="section-title">
+      <section class="workspace">
+        <div class="module-panel">
+          <div class="module-head">
             <div>
-              <h3 id="moduleTitle">Business Calculator</h3>
-              <p id="moduleDesc">Excel üzerinde ortalama, toplam, top/bottom, marka/kategori kırılımı hesaplar.</p>
+              <div class="module-kicker" id="moduleBadge">calculate_business_metric</div>
+              <h3 class="module-title" id="moduleTitle">Data Calculator</h3>
+              <p class="module-desc" id="moduleDesc">Satış, stok, fiyat ve funnel gibi tüm Excel verileriniz üzerinde; ortalama, toplam, en yüksek/en düşük, marka ve kategori bazlı kırılımlar gibi gelişmiş matematiksel analizleri hızla yapmanızı sağlar.</p>
             </div>
-            <span class="tool-pill" id="toolName">calculate_business_metric</span>
           </div>
 
-          <div class="question-box">
-            <input id="questionInput" placeholder="Bir business sorusu yaz..." />
-            <button class="primary-btn" onclick="runQuery()">Çalıştır</button>
+          <div class="quick-title" style="margin-top: 0; margin-bottom: 6px;">Hazır sorular</div>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+            <select id="questionSelect" class="question-select" onchange="selectQuestion(this.value)">
+            </select>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="newQuestionInput" class="question-add-input" placeholder="Bu menüye yeni hazır soru ekle..." style="flex: 1;" />
+              <button class="secondary-btn" onclick="addNewQuestion()">Soru Ekle</button>
+            </div>
           </div>
 
-          <div class="suggestions" id="suggestions"></div>
+          <div class="input-area" style="margin-top: 0;">
+            <textarea id="questionInput" placeholder="Örn: APPLE ürünlerinin ortalama fiyatı nedir?"></textarea>
+            <div class="action-row">
+              <button class="primary-btn" onclick="runModule()">Çalıştır</button>
+              <button class="secondary-btn" onclick="downloadExcel()">Excel İndir</button>
+            </div>
+          </div>
         </div>
 
-        <div class="card result-panel">
+        <div class="result-panel">
           <div class="result-header">
-            <div class="section-title" style="margin:0;">
-              <div>
-                <h3>Analiz Çıktısı</h3>
-                <p>Sonuç burada yönetici özeti formatında gösterilir.</p>
-              </div>
+            <div>
+              <h3>Analiz Çıktısı</h3>
+              <p>Sonuç burada yönetici özeti formatında gösterilir.</p>
             </div>
             <button class="ghost-btn" onclick="clearResult()">Temizle</button>
           </div>
-          <div class="result-box" id="resultBox"><div class="empty-state">Soldaki kategorilerden bir modül seç ve hazır sorulardan biriyle demoyu başlat.</div></div>
+          <div class="result-box placeholder" id="resultBox">Soldaki modüllerden birini seç ve hazır sorulardan biriyle demoyu başlat.</div>
         </div>
-
-        <div class="mini-modules" id="miniModules"></div>
       </section>
     </main>
   </div>
 
-<script>
-  const modules = {
-    calculator: {
-      icon: "🧮",
-      title: "Business Calculator",
-      desc: "Excel analyst gibi ortalama, toplam, adet, top/bottom ve kırılım hesapları yapar.",
-      tool: "calculate_business_metric",
-      hero: "Matematiksel business hesapları",
-      heroDesc: "Fiyat, revenue, PDP, C2D, B2D, stok ve benchmark gibi metrikleri Excel mantığıyla hesaplar.",
-      suggestions: [
-        "APPLE ürünlerinin ortalama fiyatı nedir?",
-        "SAMSUNG ürünlerinin toplam revenue'u nedir?",
-        "GSM kategorisinde ortalama B2D kaç?",
-        "Marka bazında ortalama fiyatları göster",
-        "En yüksek PDP alan ilk 10 ürün hangileri?"
-      ]
-    },
-    insights: {
-      icon: "📊",
-      title: "Category Insights",
-      desc: "Kategori, dönem, kanal, stok ve funnel sinyallerinden insight üretir.",
-      tool: "generate_category_insight",
-      hero: "Kategori ve dönemsel performans insight'ları",
-      heroDesc: "Kazanan/kaybeden segmentleri, olası nedenleri ve aksiyonları yönetici özeti olarak çıkarır.",
-      suggestions: [
-        "Mobile kategorisinin performansını tatil dönemi gibi analiz eder misin?",
-        "Kategori bazlı kazanan ve kaybedenleri çıkar",
-        "Bu dönem satış düşüşü stoktan mı, fiyattan mı, talepten mi?",
-        "Kanal, traffic, funnel, stok ve fiyat etkisini birlikte yorumla"
-      ]
-    },
-    price: {
-      icon: "💸",
-      title: "Price Competition",
-      desc: "GTIN üzerinden Merchant benchmark ile piyasa fiyat rekabeti analizi yapar.",
-      tool: "generate_price_competition_from_uploaded_inputs",
-      hero: "Merchant benchmark bazlı piyasa analizi",
-      heroDesc: "Internal benchmark üretmeden, Merchant benchmark datası ile price gap, pahalı/ucuz SKU ve aksiyon çıkarır.",
-      suggestions: [
-        "GSM kategorisinde fiyat rekabeti analizini yap",
-        "GTIN üzerinden Merchant benchmark ile rakibe göre pahalı olduğumuz ürünleri çıkar",
-        "Benchmark üstünde kalan SKU'ları çıkarır mısın?",
-        "Rakibe göre ucuz olduğumuz ama stok riski taşıyan ürünleri göster"
-      ]
-    },
-    actions: {
-      icon: "⚙️",
-      title: "Action Executor",
-      desc: "Önerilen aksiyonları çalıştırır, SKU listesi ve Excel aksiyon planı üretir.",
-      tool: "execute_recommended_action",
-      hero: "Öneriden aksiyon planına",
-      heroDesc: "Replenishment, kampanya, visibility ve riskli segment aksiyonlarını SKU seviyesinde çalıştırır.",
-      suggestions: [
-        "C2D/B2D güçlü ama stok riski olan SKU'lar için acil replenishment planı yap. Bu ürünler için Excel çıkart.",
-        "Kazanan kategori için kampanya planı yap",
-        "Riskli segment için fiyat, stok ve funnel kırılımını detaylandır",
-        "Önerilen aksiyonları çalıştır"
-      ]
-    },
-    funnel: {
-      icon: "🧭",
-      title: "Funnel & Stock",
-      desc: "SKU, stok riski, OOS, C2D/B2D ve funnel drop sorgularını cevaplar.",
-      tool: "analyze_ecommerce_sample",
-      hero: "Funnel, stok ve SKU analizleri",
-      heroDesc: "PDP, A2C, transaction, stok coverage ve revenue sinyallerini ürün seviyesinde inceler.",
-      suggestions: [
-        "C2D yüksek ama stoğu az SKU'lar hangileri?",
-        "OOS olmasına rağmen PDP View alan ürünleri göster",
-        "C2D artan fakat B2D azalan ürünlerin sadece SKU'larını listeler misin?",
-        "PDP view yüksek ama transaction düşük ürünleri göster"
-      ]
-    },
-    excel: {
-      icon: "📥",
-      title: "Excel Outputs",
-      desc: "Son çalışan analizi Excel olarak indirir; sheet'leri otomatik ayırır.",
-      tool: "/download-last-result",
-      hero: "Analizden indirilebilir Excel çıktısına",
-      heroDesc: "Her tool sonucu Metadata, Summary, Rows, Actions ve Raw JSON sheet'lerine dönüştürülür.",
-      suggestions: [
-        "Son analizi Excel olarak indir",
-        "Aksiyon planını Excel'e çıkar",
-        "Benchmark üstü ürünler için Excel çıktısı oluştur",
-        "Bu ürünler için Excel çıkart"
-      ]
-    }
-  };
+  <script>
+    /* ── Module logic ── */
+    const modules = {
+      business_calculator: {
+        badge: "calculate_business_metric", title: "Data Calculator",
+        desc: "Satış, stok, fiyat ve funnel gibi tüm Excel verileriniz üzerinde; ortalama, toplam, en yüksek/en düşük, marka ve kategori bazlı kırılımlar gibi gelişmiş matematiksel analizleri hızla yapmanızı sağlar.",
+        placeholder: "Örn: APPLE ürünlerinin ortalama fiyatı nedir?",
+        suggestions: [
+          "APPLE ürünlerinin ortalama fiyatı nedir?",
+          "En yüksek revenue üreten ilk 10 markayı çıkar",
+          "C2D ortalaması en yüksek kategoriler hangileri?",
+          "B2D düşük ama PDP yüksek ürünleri listele"
+        ]
+      },
+      category_insights: {
+        badge: "generate_category_insight", title: "Category Insights",
+        desc: "Seçilen kategori için performans, kazanan segmentler, riskler ve yönetici özeti çıkarır.",
+        placeholder: "Örn: Tablet kategorisinin performans insightını ver",
+        suggestions: [
+          "Hangi SKU'da pahalıyız?",
+          "Hangi SKU'da ucuzuz ama satış alamıyoruz?",
+          "Hangi SKU'da benchmark üstündeyiz ama hâlâ iyi satıyoruz?",
+          "Hangi markada/kategoride fiyat rekabetini kaybediyoruz?",
+          "Hangi ürünlerde fiyat indirimi gerçekten satış getirebilir?",
+          "Tablet kategorisinin performans insightını ver",
+          "Cep Telefonları kategorisini detaylı analiz et"
+        ]
+      },
+      price_competition: {
+        badge: "generate_price_competition_from_uploaded_inputs", title: "Price Competition",
+        desc: "Merchant benchmark datasına göre pahalı, ucuz, rekabetçi ve riskli ürünleri analiz eder.",
+        placeholder: "Örn: Cep Telefonları kategorisinde fiyat rekabeti analizi yap",
+        suggestions: [
+          "Cep Telefonları kategorisinde fiyat rekabeti analizi yap",
+          "APPLE markasında benchmarka göre pahalı ürünleri çıkar",
+          "Rakibe göre en pahalı 10 SKU hangileri?",
+          "Median competitor price altında kalan ürünleri bul"
+        ]
+      },
+      action_executor: {
+        badge: "execute_recommended_action", title: "Action Executor",
+        desc: "Insight çıktılarından aksiyon planı üretir: replenishment, kampanya, görünürlük ve risk azaltma önerileri.",
+        placeholder: "Örn: C2D/B2D güçlü ama stok riski olan SKU'lar için aksiyon planı çıkar",
+        suggestions: [
+          "C2D/B2D güçlü ama stok riski olan SKU'lar için aksiyon planı çıkar",
+          "Tablet kategorisi için büyüme aksiyonlarını öner",
+          "OOS riski olan ürünler için replenishment planı yap",
+          "Sepete eklenip satın alınmayan ürünler için aksiyon öner"
+        ]
+      },
+      funnel_stock: {
+        badge: "analyze_ecommerce_sample", title: "Funnel & Stock",
+        desc: "Funnel kırılımı, stok riski, dönüşüm kaybı ve kategori bazlı e-ticaret performans sorularını cevaplar.",
+        placeholder: "Örn: C2D yüksek ama stoğu az SKU'lar hangileri?",
+        suggestions: [
+          "C2D yüksek ama stoğu az SKU'lar hangileri?",
+          "A2C yüksek ama transaction düşük SKU'ları listele",
+          "En büyük funnel kaybı hangi adımda?",
+          "OOS ürün PDP view alıyor mu?"
+        ]
+      },
+      excel_outputs: {
+        badge: "download_last_result", title: "Excel Outputs",
+        desc: "Son üretilen analiz sonucunu Excel olarak indirebilirsin. Çıktılar sheet bazında düzenlenir.",
+        placeholder: "Örn: Son aksiyon planını Excel olarak indir",
+        suggestions: [
+          "Son price competition çıktısını Excel'e hazırla",
+          "Son aksiyon planını Excel olarak indir",
+          "Çıktıyı sheet bazında özetle",
+          "Download için hazır son sonucu kontrol et"
+        ]
+      }
+    };
 
-  let currentModule = "calculator";
-
-  function initMenu() {
-    const menu = document.getElementById("menu");
-    const mini = document.getElementById("miniModules");
-    menu.innerHTML = "";
-    mini.innerHTML = "";
-
-    Object.keys(modules).forEach(key => {
-      const m = modules[key];
-      menu.innerHTML += `
-        <button class="menu-button ${key === currentModule ? "active" : ""}" onclick="setModule('${key}')">
-          <span class="icon">${m.icon}</span>
-          <span>${m.title}</span>
-        </button>
-      `;
-
-      mini.innerHTML += `
-        <div class="mini-card" onclick="setModule('${key}')">
-          <strong>${m.icon} ${m.title}</strong>
-          <span>${m.desc}</span>
-        </div>
-      `;
-    });
-  }
-
-  function setModule(key) {
-    currentModule = key;
-    const m = modules[key];
-
-    document.getElementById("moduleTitle").innerText = m.title;
-    document.getElementById("moduleDesc").innerText = m.desc;
-    document.getElementById("toolName").innerText = m.tool;
-    document.getElementById("heroTitle").innerText = m.hero;
-    document.getElementById("heroDescription").innerText = m.heroDesc;
-    document.getElementById("questionInput").value = "";
-    document.getElementById("questionInput").placeholder = m.suggestions[0] || "Bir soru yaz...";
-
-    const suggestions = document.getElementById("suggestions");
-    suggestions.innerHTML = "";
-    m.suggestions.forEach(q => {
-      suggestions.innerHTML += `<button class="suggestion" onclick="runQuery('${escapeForAttr(q)}')">${escapeHtml(q)}</button>`;
-    });
-
-    initMenu();
-  }
-
-  async function runQuery(preset) {
-    const input = document.getElementById("questionInput");
+    const menuButtons = document.querySelectorAll(".menu-btn");
+    const moduleBadge = document.getElementById("moduleBadge");
+    const moduleTitle = document.getElementById("moduleTitle");
+    const moduleDesc = document.getElementById("moduleDesc");
+    const questionInput = document.getElementById("questionInput");
+    const questionSelect = document.getElementById("questionSelect");
     const resultBox = document.getElementById("resultBox");
-    const text = preset || input.value.trim();
 
-    if (!text) return;
-
-    if (currentModule === "excel" && text.toLowerCase().includes("indir")) {
-      downloadExcel();
-      return;
-    }
-
-    input.value = text;
-    resultBox.innerHTML = "Çalışıyor...";
-
-    try {
-      const res = await fetch("/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text })
+    function renderModule(moduleKey) {
+      const mod = modules[moduleKey];
+      menuButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.key === moduleKey));
+      moduleBadge.textContent = mod.badge;
+      moduleTitle.textContent = mod.title;
+      moduleDesc.textContent = mod.desc;
+      questionInput.placeholder = mod.placeholder;
+      questionInput.value = "";
+      
+      questionSelect.innerHTML = "";
+      const placeholderOpt = document.createElement("option");
+      placeholderOpt.value = "";
+      placeholderOpt.textContent = "Bir hazır soru seçin...";
+      placeholderOpt.disabled = true;
+      placeholderOpt.selected = true;
+      questionSelect.appendChild(placeholderOpt);
+      
+      mod.suggestions.forEach(q => {
+        const opt = document.createElement("option");
+        opt.value = q;
+        opt.textContent = q;
+        questionSelect.appendChild(opt);
       });
-
-      const data = await res.json();
-      resultBox.innerHTML = escapeHtml(data.reply || "Yanıt alınamadı.");
-      document.getElementById("downloadBtn").style.display = "inline-flex";
-    } catch (error) {
-      resultBox.innerHTML = "Bir hata oluştu: " + escapeHtml(error.message);
     }
-  }
 
-  function downloadExcel() {
-    window.location.href = "/download-last-result";
-  }
+    function selectQuestion(val) {
+      if (val) { questionInput.value = val; }
+    }
 
-  function clearResult() {
-    document.getElementById("resultBox").innerHTML = '<div class="empty-state">Sonuç temizlendi. Yeni bir modül seçip analizi çalıştırabilirsin.</div>';
-  }
+    function addNewQuestion() {
+      const newQInput = document.getElementById("newQuestionInput");
+      const val = newQInput.value.trim();
+      if (!val) return;
+      
+      const activeBtn = document.querySelector(".menu-btn.active");
+      if (!activeBtn) return;
+      const moduleKey = activeBtn.dataset.key;
+      
+      // Add to suggestions list of the active module
+      modules[moduleKey].suggestions.push(val);
+      
+      // Update dropdown select options
+      const opt = document.createElement("option");
+      opt.value = val;
+      opt.textContent = val;
+      questionSelect.appendChild(opt);
+      
+      // Select the newly added option
+      questionSelect.value = val;
+      questionInput.value = val;
+      
+      // Clear the add input
+      newQInput.value = "";
+    }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    initMenu();
-    setModule("calculator");
-    document.getElementById("questionInput").addEventListener("keydown", function(e) {
-      if (e.key === "Enter") runQuery();
+    menuButtons.forEach(btn => btn.addEventListener("click", () => renderModule(btn.dataset.key)));
+
+    async function runModule() {
+      const question = questionInput.value.trim();
+      if (!question) return;
+      resultBox.classList.remove("placeholder");
+      resultBox.classList.add("loading");
+      resultBox.textContent = "Analiz çalışıyor...";
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: question })
+        });
+        const data = await res.json();
+        resultBox.classList.remove("loading");
+        resultBox.textContent = data.reply || "Sonuç alınamadı.";
+      } catch (err) {
+        resultBox.classList.remove("loading");
+        resultBox.textContent = "Bir hata oluştu: " + err;
+      }
+    }
+
+    function downloadExcel() { window.open("/download-last-result", "_blank"); }
+
+    function clearResult() {
+      resultBox.className = "result-box placeholder";
+      resultBox.textContent = "Soldaki modüllerden birini seç ve hazır sorulardan biriyle demoyu başlat.";
+    }
+
+    questionInput.addEventListener("keydown", function(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runModule();
     });
-  });
 
-  function escapeHtml(text) {
-    return String(text)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function escapeForAttr(text) {
-    return String(text)
-      .replaceAll("\\", "\\\\")
-      .replaceAll("'", "\\'")
-      .replaceAll('"', "&quot;");
-  }
-</script>
+    renderModule("business_calculator");
+  </script>
 </body>
 </html>
 """
+
 
 def simple_page(title, body):
     return f"""
@@ -1919,63 +2610,30 @@ def simple_page(title, body):
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{title} - Retail AI</title>
+  <title>{title} - DataProvido</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     * {{ box-sizing: border-box; }}
-
     body {{
-      margin: 0;
-      min-height: 100vh;
+      margin: 0; min-height: 100vh;
       background: radial-gradient(ellipse at top, #3d1a00 0%, #1a0800 45%, #050200 100%);
-      color: #f5ead2;
-      font-family: "Montserrat", sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 32px;
+      color: #f5ead2; font-family: "Montserrat", sans-serif;
+      display: flex; align-items: center; justify-content: center; padding: 32px;
     }}
-
     .page-card {{
-      width: 100%;
-      max-width: 860px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.16);
-      border-radius: 28px;
-      padding: 42px;
-      box-shadow: 0 24px 90px rgba(0,0,0,0.45);
+      width: 100%; max-width: 860px;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 28px; padding: 42px; box-shadow: 0 24px 90px rgba(0,0,0,0.45);
     }}
-
-    h1 {{
-      margin: 0 0 18px;
-      font-family: "Playfair Display", serif;
-      font-size: clamp(36px, 5vw, 58px);
-      font-weight: 400;
-      color: #fff6df;
-    }}
-
-    p {{
-      margin: 0 0 16px;
-      color: rgba(255,246,223,0.86);
-      font-size: 16px;
-      line-height: 1.8;
-    }}
-
+    h1 {{ margin: 0 0 18px; font-family: "Playfair Display", serif; font-size: clamp(36px, 5vw, 58px); font-weight: 400; color: #fff6df; }}
+    p {{ margin: 0 0 16px; color: rgba(255,246,223,0.86); font-size: 16px; line-height: 1.8; }}
     .back-link {{
-      display: inline-flex;
-      margin-top: 22px;
-      color: #fff6df;
-      border: 1px solid rgba(255,255,255,0.45);
-      border-radius: 999px;
-      padding: 12px 22px;
-      text-decoration: none;
-      font-size: 14px;
+      display: inline-flex; margin-top: 22px; color: #fff6df;
+      border: 1px solid rgba(255,255,255,0.45); border-radius: 999px;
+      padding: 12px 22px; text-decoration: none; font-size: 14px;
     }}
-
-    .back-link:hover {{
-      background: rgba(255,255,255,0.10);
-    }}
+    .back-link:hover {{ background: rgba(255,255,255,0.10); }}
   </style>
 </head>
 <body>
@@ -2005,7 +2663,7 @@ def contact():
     return simple_page(
         "Contact",
         """
-        <p>For demos, collaboration or setup questions, you can contact the Retail AI team.</p>
+        <p>For demos, collaboration or setup questions, you can contact the DataProvido team.</p>
         <p>This page can later include a form, email address or calendar booking link.</p>
         """
     )
@@ -2033,366 +2691,440 @@ def how_works():
     )
 
 
-
 @app.get("/", response_class=HTMLResponse)
 def index():
-    return """
-<!DOCTYPE html>
-<html lang="tr">
+    return """<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Retail AI – Local AI</title>
+  <title>DataProvido – Turn Data Into Actionable Insights</title>
+  <meta name="description" content="DataProvido transforms your CRM, funnel, and stock data into clear, actionable business insights. Local AI. Zero compromise.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --orange: #f26f26; --orange-dark: #d85c18; --orange-light: #f58c50;
+      --bg:      #ffffff;
+      --bg-2:    #f9fafb;
+      --bg-3:    #f1f3f5;
+      --bg-grad: linear-gradient(180deg, #ecf7ff 0%, #fff3ec 100%);
+      --text-900: #292c2f;
+      --text-700: #4e5359;
+      --text-500: #6b7178;
+      --text-dim: #a3acb6;
+      --border:   #dadee2;
+      --border-orange: rgba(242,111,38,0.25);
+      --card-bg:  #ffffff;
+      --card-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+      --radius: 16px; --nav-h: 72px;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text-900); font-family: 'Inter', sans-serif; overflow-x: hidden; }
 
-    html, body {
-      height: 100%;
-      background: #0a0500;
+    /* NAV */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 40px;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border); transition: background .3s;
+      box-shadow: 0 1px 0 var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text-900); text-decoration: none; }
+    .nav-logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--orange); animation: pulse-dot 2.5s ease-in-out infinite; }
+    @keyframes pulse-dot { 0%,100% { box-shadow: 0 0 0 0 rgba(242,111,38,0.5); } 50% { box-shadow: 0 0 0 6px rgba(242,111,38,0); } }
+    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-link { color: var(--text-700); text-decoration: none; font-size: 14px; font-weight: 500; padding: 8px 14px; border-radius: 8px; transition: color .2s, background .2s; }
+    .nav-link:hover { color: var(--orange); background: rgba(242,111,38,0.06); }
+    .nav-cta { background: var(--orange); color: #fff; border: none; padding: 10px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background .2s, transform .15s; box-shadow: 0 4px 14px rgba(242,111,38,0.3); }
+    .nav-cta:hover { background: var(--orange-dark); transform: translateY(-1px); }
+
+    /* HERO — clean light gradient, no image */
+    .hero { position: relative; min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: calc(var(--nav-h) + 80px) 24px 100px; overflow: hidden; background: linear-gradient(160deg, #fff8f4 0%, #ffffff 45%, #f0f7ff 100%); }
+    .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(242,111,38,0.07) 0%, transparent 70%); pointer-events: none; }
+    .hero-content { position: relative; z-index: 2; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(242,111,38,0.08); border: 1px solid rgba(242,111,38,0.2); border-radius: 999px; padding: 6px 16px; font-size: 13px; font-weight: 600; color: var(--orange); margin-bottom: 28px; animation: fade-up 0.7s ease both; }
+    .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(40px, 6.5vw, 80px); font-weight: 700; line-height: 1.1; color: var(--text-900); letter-spacing: -1.5px; margin-bottom: 24px; animation: fade-up 0.9s ease 0.1s both; }
+    .hero h1 span { color: var(--orange); }
+    .hero-sub { font-size: clamp(16px, 2vw, 19px); font-weight: 400; color: var(--text-700); max-width: 560px; margin: 0 auto 44px; line-height: 1.7; animation: fade-up 0.9s ease 0.2s both; }
+    .hero-actions { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; animation: fade-up 0.9s ease 0.3s both; }
+    .btn-primary { background: var(--orange); color: #fff; padding: 14px 30px; border-radius: 999px; font-size: 15px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 6px 20px rgba(242,111,38,0.35); transition: background .2s, transform .15s, box-shadow .2s; }
+    .btn-primary:hover { background: var(--orange-dark); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(242,111,38,0.45); }
+    .btn-ghost { background: #fff; color: var(--text-900); border: 1.5px solid var(--border); padding: 13px 28px; border-radius: 999px; font-size: 15px; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: border-color .2s, box-shadow .2s; box-shadow: var(--card-shadow); }
+    .btn-ghost:hover { border-color: var(--orange); box-shadow: 0 4px 16px rgba(242,111,38,0.12); }
+
+    /* STATS */
+    .stats-strip { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 40px 40px; }
+    .stats-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }
+    .stat-item { text-align: center; padding: 0 24px; border-right: 1px solid var(--border); }
+    .stat-item:last-child { border-right: none; }
+    .stat-number { font-size: clamp(36px, 4vw, 52px); font-weight: 800; color: var(--orange); line-height: 1; }
+    .stat-label { font-size: 13px; color: var(--text-500); margin-top: 8px; font-weight: 400; }
+
+    /* SECTION */
+    .section { padding: 96px 40px; background: var(--bg); }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(242,111,38,0.08); border: 1px solid var(--border-orange); border-radius: 999px; padding: 5px 14px; font-size: 11px; font-weight: 700; color: var(--orange); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: clamp(28px, 3.5vw, 48px); font-weight: 700; color: var(--text-900); line-height: 1.2; margin-bottom: 16px; letter-spacing: -0.5px; }
+    .section-desc { font-size: 17px; color: var(--text-700); max-width: 540px; line-height: 1.75; }
+
+    /* YODECK-STYLE FEATURE SHOWCASE */
+    .showcase { background: var(--bg-2); padding: 100px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .showcase-inner { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+    .showcase-header { margin-bottom: 64px; }
+    .showcase-body { display: grid; grid-template-columns: 320px 1fr; gap: 32px; align-items: start; }
+
+    /* LEFT TABS */
+    .sc-tabs { display: flex; flex-direction: column; gap: 4px; }
+    .sc-tab {
+      position: relative; padding: 16px 18px 16px 22px;
+      border-radius: 12px; cursor: pointer;
+      border: 1px solid transparent;
+      transition: background .2s, border-color .2s;
       overflow: hidden;
     }
-
-    .landing {
-      position: relative;
-      width: 100%;
-      height: 100vh;
-      background: radial-gradient(ellipse at 50% 0%, #3d1a00 0%, #1a0800 40%, #0a0500 70%, #050200 100%);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+    .sc-tab:hover { background: rgba(242,111,38,0.04); border-color: var(--border-orange); }
+    .sc-tab.active { background: #fff; border-color: var(--border); box-shadow: var(--card-shadow); }
+    .sc-tab-bar {
+      position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: var(--bg-3); border-radius: 3px 0 0 3px;
     }
-
-    /* Yıldızlar */
-    .stars-svg {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 65%;
-      pointer-events: none;
-      z-index: 1;
+    .sc-tab.active .sc-tab-bar { background: rgba(242,111,38,0.2); }
+    .sc-tab-progress {
+      position: absolute; left: 0; top: 0; width: 3px;
+      background: var(--orange); border-radius: 3px 0 0 3px;
+      height: 0%;
     }
+    .sc-tab.active .sc-tab-progress { animation: tab-fill 5s linear forwards; }
+    @keyframes tab-fill { from { height: 0%; } to { height: 100%; } }
+    .sc-tab-head { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
+    .sc-tab-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
+    .sc-tab-title { font-size: 13px; font-weight: 700; color: var(--text-900); }
+    .sc-tab:not(.active) .sc-tab-title { color: var(--text-700); font-weight: 500; }
+    .sc-tab-desc { font-size: 12px; color: var(--text-500); line-height: 1.5; padding-left: 26px; display: none; margin-top: 4px; }
+    .sc-tab.active .sc-tab-desc { display: block; }
 
-    /* Navbar */
-    .landing-nav {
-      position: relative;
-      z-index: 10;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 28px;
-    }
+    /* RIGHT PANEL */
+    .sc-panel { position: relative; background: #fff; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 32px rgba(0,0,0,0.07); min-height: 440px; }
+    .sc-slide { position: absolute; inset: 0; padding: 48px 52px; display: flex; flex-direction: column; justify-content: center; opacity: 0; transform: translateX(16px); transition: opacity .4s ease, transform .4s ease; pointer-events: none; }
+    .sc-slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+    .sc-slide-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(242,111,38,0.08); border: 1px solid var(--border-orange); border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 700; color: var(--orange); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 22px; width: fit-content; }
+    .sc-slide h3 { font-family: 'Playfair Display', serif; font-size: clamp(22px, 2.8vw, 36px); font-weight: 700; color: var(--text-900); line-height: 1.2; margin-bottom: 14px; letter-spacing: -0.5px; }
+    .sc-slide p { font-size: 15px; color: var(--text-700); line-height: 1.75; max-width: 460px; margin-bottom: 30px; }
+    .sc-metrics { display: flex; gap: 16px; flex-wrap: wrap; }
+    .sc-metric { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; }
+    .sc-metric-val { font-size: 22px; font-weight: 800; color: var(--orange); line-height: 1; }
+    .sc-metric-label { font-size: 11px; color: var(--text-500); margin-top: 3px; }
+    .sc-slide-visual { position: absolute; right: -10px; bottom: -10px; font-size: 140px; opacity: 0.05; pointer-events: none; line-height: 1; }
 
-    .nav-left { display: flex; gap: 10px; }
-
-    .nav-btn {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.18);
-      color: #e8d5b0;
-      padding: 8px 20px;
-      border-radius: 50px;
-      font-family: "Montserrat", sans-serif;
-      font-size: 13px;
-      font-weight: 400;
-      letter-spacing: 0.02em;
-      cursor: pointer;
-      transition: background 0.2s;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      white-space: nowrap;
-    }
-    .nav-btn:hover { background: rgba(255,255,255,0.14); }
-
-    .nav-privacy {
-      background: linear-gradient(135deg, #8B6914, #C4922A, #8B6914);
-      border: none;
-      color: #fff8e8;
-      padding: 8px 20px;
-      border-radius: 50px;
-      font-family: "Montserrat", sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    @media (max-width: 900px) {
+      .showcase-body { grid-template-columns: 1fr; }
+      .sc-slide { position: relative; inset: unset; padding: 32px 24px; }
+      .sc-panel { min-height: unset; }
     }
 
-    /* Orbit */
-    .orbit-wrap {
-      position: relative;
-      z-index: 5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-top: 24px;
-    }
 
-    .orbit-ring {
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      border: 1px dashed rgba(180,140,70,0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      animation: spin 20s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* FEATURE CARDS */
+    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
+    .feat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 24px; transition: border-color .25s, transform .25s, box-shadow .25s; position: relative; overflow: hidden; box-shadow: var(--card-shadow); }
+    .feat-card:hover { border-color: var(--border-orange); transform: translateY(-3px); box-shadow: 0 10px 36px rgba(242,111,38,0.1); }
+    .feat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 18px; background: rgba(242,111,38,0.08); border: 1px solid rgba(242,111,38,0.18); }
+    .feat-title { font-size: 16px; font-weight: 700; color: var(--text-900); margin-bottom: 8px; }
+    .feat-desc { font-size: 14px; color: var(--text-700); line-height: 1.65; }
 
-    .orbit-dot {
-      position: absolute;
-      top: -4px; left: 50%;
-      transform: translateX(-50%);
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: rgba(180,140,70,0.5);
-    }
+    /* HOW IT WORKS */
+    .how-section { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .steps-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 64px; }
+    .step { padding: 0 32px 0 0; border-right: 1px solid var(--border); }
+    .step:last-child { border-right: none; padding-right: 0; }
+    .step-num { font-size: 52px; font-weight: 800; color: rgba(242,111,38,0.15); line-height: 1; margin-bottom: 14px; font-family: 'Playfair Display', serif; letter-spacing: -2px; }
+    .step-title { font-size: 16px; font-weight: 700; color: var(--text-900); margin-bottom: 8px; }
+    .step-desc { font-size: 14px; color: var(--text-700); line-height: 1.65; }
 
-    .logo-pill {
-      position: absolute;
-      background: linear-gradient(135deg, #1a1200, #2d2000);
-      border: 1px solid rgba(180,140,70,0.4);
-      border-radius: 50px;
-      padding: 5px 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-family: "Montserrat", sans-serif;
-      font-size: 12px;
-      font-weight: 500;
-      color: #e8d5a0;
-      animation: spin-rev 20s linear infinite;
-      white-space: nowrap;
-    }
-    @keyframes spin-rev { to { transform: rotate(-360deg); } }
+    /* TRUST */
+    .trust-section { text-align: center; background: var(--bg); }
+    .trust-badges { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 48px; }
+    .trust-badge { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 18px 24px; display: flex; align-items: center; gap: 14px; transition: border-color .25s, box-shadow .25s; box-shadow: var(--card-shadow); }
+    .trust-badge:hover { border-color: var(--border-orange); box-shadow: 0 6px 24px rgba(242,111,38,0.1); }
+    .trust-badge-icon { font-size: 26px; }
+    .trust-badge-text .label { font-size: 11px; color: var(--text-500); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; }
+    .trust-badge-text .value { font-size: 18px; font-weight: 700; color: var(--text-900); }
 
-    .logo-dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #4a8c3a, #7bc96f);
-      flex-shrink: 0;
-    }
+    /* CTA BANNER */
+    .cta-banner { margin: 0 40px 80px; background: linear-gradient(135deg, #fff3ec 0%, #ecf7ff 100%); border: 1px solid var(--border-orange); border-radius: 24px; padding: 72px 56px; text-align: center; position: relative; overflow: hidden; }
+    .cta-banner::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(242,111,38,0.06), transparent); pointer-events: none; }
+    .cta-banner h2 { font-family: 'Playfair Display', serif; font-size: clamp(28px, 4vw, 46px); font-weight: 700; color: var(--text-900); margin-bottom: 18px; letter-spacing: -0.5px; }
+    .cta-banner p { font-size: 17px; color: var(--text-700); margin-bottom: 36px; }
 
-    /* Hero */
-    .hero {
-      position: relative;
-      z-index: 5;
-      text-align: center;
-      padding: 20px 20px 0;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      margin-top: -30px;
-    }
+    /* FOOTER */
+    .site-footer { border-top: 1px solid var(--border); padding: 28px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; background: var(--bg-2); }
+    .footer-left { display: flex; align-items: center; gap: 10px; }
+    .footer-logo { font-size: 15px; font-weight: 700; color: var(--text-900); }
+    .footer-copy { font-size: 13px; color: var(--text-500); }
+    .footer-right { font-size: 12px; color: var(--text-500); letter-spacing: 0.1em; text-transform: uppercase; }
 
-    .hero h1 {
-      font-family: "Playfair Display", serif;
-      font-size: clamp(36px, 6vw, 64px);
-      font-weight: 400;
-      color: #f0e8d0;
-      line-height: 1.15;
-      letter-spacing: -0.01em;
-      margin-bottom: 16px;
-    }
-    .hero h1 em {
-      font-style: italic;
-      color: #d4b87a;
-    }
+    /* ANIMATIONS */
+    @keyframes fade-up { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+    .reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    /* JS nav style update for light nav */
+    body.scrolled .nav { box-shadow: 0 2px 16px rgba(0,0,0,0.07); }
 
-    .hero-sub {
-      font-family: "Montserrat", sans-serif;
-      font-size: 11px;
-      font-weight: 300;
-      letter-spacing: 0.25em;
-      color: rgba(255,255,255,0.9);
-      text-transform: uppercase;
-      margin-bottom: 36px;
-    }
-
-    .cta-btn {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.55);
-      border-radius: 50px;
-      padding: 14px 36px;
-      font-family: "Montserrat", sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      color: rgba(255,255,255,0.92);
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      transition: border-color 0.2s, background 0.2s;
-      text-decoration: none;
-    }
-    .cta-btn:hover {
-      background: rgba(200,165,80,0.08);
-      border-color: rgba(255,255,255,0.85);
-    }
-
-    /* Dunes */
-    .dunes-svg {
-      position: absolute;
-      bottom: 0; left: 0;
-      width: 100%; height: 55%;
-      pointer-events: none;
-      z-index: 2;
-    }
-
-    /* Footer */
-    .landing-footer {
-      position: absolute;
-      bottom: 0; left: 0;
-      width: 100%;
-      z-index: 10;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 14px;
-      padding: 14px;
-      font-family: "Montserrat", sans-serif;
-      font-size: 10px;
-      font-weight: 300;
-      letter-spacing: 0.2em;
-      color: rgba(200,170,100,0.45);
-      text-transform: uppercase;
-    }
-    .footer-dot {
-      width: 3px; height: 3px;
-      border-radius: 50%;
-      background: rgba(200,170,100,0.3);
+    @media (max-width: 900px) {
+      .nav { padding: 0 20px; } .nav-links { display: none; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); } .stat-item:nth-child(2) { border-right: none; }
+      .features-grid { grid-template-columns: 1fr; }
+      .steps-row { grid-template-columns: 1fr 1fr; gap: 32px; } .step { border-right: none; padding-right: 0; }
+      .cta-banner { margin: 0 20px 60px; padding: 48px 28px; }
+      .section { padding: 64px 20px; } .slider-wrap { padding: 0 20px; }
+      .slide { min-width: 100%; }
     }
   </style>
 </head>
 <body>
-<div class="landing">
 
-  <!-- Stars -->
-  <svg class="stars-svg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-    <g fill="white">
-      <circle cx="50" cy="40" r="0.8" opacity="0.6"/>
-      <circle cx="120" cy="20" r="1.2" opacity="0.8"/>
-      <circle cx="200" cy="60" r="0.6" opacity="0.5"/>
-      <circle cx="280" cy="15" r="0.9" opacity="0.7"/>
-      <circle cx="340" cy="45" r="1.5" opacity="0.9"/>
-      <circle cx="410" cy="25" r="0.7" opacity="0.6"/>
-      <circle cx="480" cy="55" r="1.1" opacity="0.8"/>
-      <circle cx="560" cy="10" r="0.8" opacity="0.7"/>
-      <circle cx="620" cy="38" r="1.3" opacity="0.9"/>
-      <circle cx="700" cy="22" r="0.6" opacity="0.5"/>
-      <circle cx="760" cy="48" r="1.0" opacity="0.7"/>
-      <circle cx="830" cy="18" r="0.7" opacity="0.6"/>
-      <circle cx="900" cy="42" r="1.4" opacity="0.8"/>
-      <circle cx="950" cy="28" r="0.9" opacity="0.7"/>
-      <circle cx="80" cy="90" r="0.7" opacity="0.5"/>
-      <circle cx="160" cy="110" r="1.1" opacity="0.7"/>
-      <circle cx="240" cy="85" r="0.8" opacity="0.6"/>
-      <circle cx="310" cy="120" r="1.3" opacity="0.8"/>
-      <circle cx="390" cy="95" r="0.6" opacity="0.5"/>
-      <circle cx="450" cy="130" r="1.0" opacity="0.7"/>
-      <circle cx="530" cy="80" r="0.9" opacity="0.6"/>
-      <circle cx="590" cy="115" r="1.2" opacity="0.8"/>
-      <circle cx="660" cy="88" r="0.7" opacity="0.5"/>
-      <circle cx="740" cy="105" r="1.1" opacity="0.7"/>
-      <circle cx="810" cy="75" r="0.8" opacity="0.6"/>
-      <circle cx="880" cy="98" r="1.3" opacity="0.8"/>
-      <circle cx="940" cy="120" r="0.6" opacity="0.5"/>
-      <circle cx="30" cy="150" r="1.0" opacity="0.7"/>
-      <circle cx="190" cy="145" r="1.2" opacity="0.8"/>
-      <circle cx="270" cy="185" r="0.8" opacity="0.6"/>
-      <circle cx="350" cy="160" r="0.6" opacity="0.5"/>
-      <circle cx="430" cy="195" r="1.1" opacity="0.7"/>
-      <circle cx="500" cy="155" r="0.9" opacity="0.6"/>
-      <circle cx="580" cy="175" r="1.3" opacity="0.8"/>
-      <circle cx="720" cy="188" r="1.0" opacity="0.7"/>
-      <circle cx="800" cy="162" r="0.8" opacity="0.6"/>
-      <circle cx="870" cy="182" r="1.2" opacity="0.8"/>
-      <circle cx="960" cy="158" r="0.6" opacity="0.5"/>
-      <circle cx="140" cy="215" r="1.1" opacity="0.7"/>
-      <circle cx="220" cy="245" r="0.7" opacity="0.5"/>
-      <circle cx="300" cy="220" r="1.3" opacity="0.8"/>
-      <circle cx="380" cy="250" r="0.8" opacity="0.6"/>
-      <circle cx="460" cy="225" r="0.6" opacity="0.5"/>
-      <circle cx="540" cy="240" r="1.0" opacity="0.7"/>
-      <circle cx="610" cy="208" r="0.9" opacity="0.6"/>
-      <circle cx="690" cy="235" r="1.2" opacity="0.8"/>
-      <circle cx="770" cy="218" r="0.7" opacity="0.5"/>
-      <circle cx="850" cy="248" r="1.1" opacity="0.7"/>
-      <circle cx="920" cy="225" r="0.8" opacity="0.6"/>
-      <circle cx="990" cy="212" r="1.4" opacity="0.8"/>
-    </g>
-    <g fill="white">
-      <circle cx="340" cy="45" r="1.8" opacity="1.0">
-        <animate attributeName="opacity" values="1;0.4;1" dur="3s" repeatCount="indefinite"/>
-      </circle>
-      <circle cx="620" cy="38" r="1.6" opacity="0.9">
-        <animate attributeName="opacity" values="0.9;0.3;0.9" dur="4.5s" repeatCount="indefinite"/>
-      </circle>
-      <circle cx="120" cy="20" r="1.5" opacity="0.8">
-        <animate attributeName="opacity" values="0.8;0.2;0.8" dur="3.8s" repeatCount="indefinite"/>
-      </circle>
-      <circle cx="900" cy="42" r="1.7" opacity="0.9">
-        <animate attributeName="opacity" values="0.9;0.4;0.9" dur="5.2s" repeatCount="indefinite"/>
-      </circle>
-    </g>
-  </svg>
+<nav class="nav" id="main-nav">
+  <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>DataProvido</a>
+  <div class="nav-links">
+    <a href="/pricing" class="nav-link">Pricing</a>
+    <a href="/contact" class="nav-link">Contact</a>
+    <a href="/who-we-are" class="nav-link">Who We Are?</a>
+    <a href="/how-works" class="nav-link">How Works?</a>
+  </div>
+  <a href="/journey" class="nav-cta">🔒 Privacy Information</a>
+</nav>
 
-  <!-- Navbar -->
-  <nav class="landing-nav">
-    <div class="nav-left">
-      <a href="/pricing" class="nav-btn">Pricing</a>
-      <a href="/contact" class="nav-btn">Contact</a>
-      <a href="/who-we-are" class="nav-btn">Who We Are?</a>
-      <a href="/how-works" class="nav-btn">How Works?</a>
-    </div>
-    <button class="nav-privacy">🔒 Privacy Information</button>
-  </nav>
-
-  <!-- Orbit + Logo -->
-  <div class="orbit-wrap">
-    <div class="orbit-ring">
-      <div class="orbit-dot"></div>
-      <div class="logo-pill">
-        <div class="logo-dot"></div>
-        To the memory of Turing...
-      </div>
+<section class="hero" id="hero">
+  <div class="hero-content">
+    <div class="hero-badge">✦ Local Intelligence. Zero Compromise.</div>
+    <h1>Turn CRM data into<br><span>actionable insights.</span></h1>
+    <p class="hero-sub">DataProvido analyses your stock, funnel, and sales data locally — giving your team clear, real-time answers without sending a single byte to the cloud.</p>
+    <div class="hero-actions">
+      <a href="/journey" class="btn-primary">Start Your Journey &nbsp;→</a>
+      <a href="/how-works" class="btn-ghost">See How It Works</a>
     </div>
   </div>
+</section>
 
-  <!-- Hero -->
-  <div class="hero">
-    <h1>Your data, your AI,<br>your insights.</h1>
-    <p class="hero-sub">Local Intelligence. Zero Compromise.</p>
-    <a href="/journey" class="cta-btn">Jump to Journey &nbsp;→</a>
+<div class="stats-strip reveal">
+  <div class="stats-inner">
+    <div class="stat-item"><div class="stat-number">3.2×</div><div class="stat-label">Average increase in insight speed</div></div>
+    <div class="stat-item"><div class="stat-number">98%</div><div class="stat-label">Data stays local, zero cloud exposure</div></div>
+    <div class="stat-item"><div class="stat-number">15+</div><div class="stat-label">Pre-built analytical modules</div></div>
+    <div class="stat-item"><div class="stat-number">&lt;30s</div><div class="stat-label">Average query response time</div></div>
   </div>
-
-  <!-- Dunes -->
-  <svg class="dunes-svg" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
-    <path d="M-50,400 L-50,280 Q100,180 250,240 Q400,300 500,210 Q620,130 750,200 Q880,260 1050,180 L1050,400 Z"
-          fill="#8B4A0A" opacity="0.6"/>
-    <path d="M-50,400 L-50,310 Q80,220 200,280 Q350,350 480,260 Q600,175 720,250 Q860,330 1050,240 L1050,400 Z"
-          fill="#C46A15" opacity="0.8"/>
-    <path d="M-50,400 L-50,360 Q50,310 150,340 Q280,380 420,320 Q540,265 650,310 Q780,360 900,315 Q960,290 1050,330 L1050,400 Z"
-          fill="#D97A1A"/>
-    <path d="M-50,400 L-50,380 Q100,355 250,370 Q380,385 480,360 Q580,340 680,365 Q800,390 950,358 Q1000,345 1050,360 L1050,400 Z"
-          fill="#E8921F" opacity="0.5"/>
-  </svg>
-
-  <!-- Footer -->
-  <div class="landing-footer">
-    <span>Powered by Llama 3.1</span>
-    <div class="footer-dot"></div>
-    <span>Runs entirely offline</span>
-  </div>
-
 </div>
+
+<section class="showcase">
+  <div class="showcase-inner">
+    <div class="showcase-header reveal">
+      <div class="section-tag">✦ Core Capabilities</div>
+      <h2 class="section-title">Everything your retail team<br>needs in one place</h2>
+      <p class="section-desc">From CRM pipelines to funnel drop-offs — ask any business question and get a precise, actionable answer in seconds.</p>
+    </div>
+    <div class="showcase-body">
+
+      <div class="sc-tabs" id="scTabs">
+        <div class="sc-tab active" data-sc="0">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">📊</span><span class="sc-tab-title">CRM Data to Insights</span></div>
+          <div class="sc-tab-desc">Surface underperforming deals and campaigns instantly.</div>
+        </div>
+        <div class="sc-tab" data-sc="1">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">🛒</span><span class="sc-tab-title">Funnel &amp; Conversion</span></div>
+          <div class="sc-tab-desc">Track PDP &rarr; Cart &rarr; Checkout drop-offs in seconds.</div>
+        </div>
+        <div class="sc-tab" data-sc="2">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">📦</span><span class="sc-tab-title">Stock Intelligence</span></div>
+          <div class="sc-tab-desc">Live stock levels, alerts and turnover velocity.</div>
+        </div>
+        <div class="sc-tab" data-sc="3">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">💰</span><span class="sc-tab-title">Price Radar</span></div>
+          <div class="sc-tab-desc">Compare prices against market benchmarks per SKU.</div>
+        </div>
+        <div class="sc-tab" data-sc="4">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">🏆</span><span class="sc-tab-title">GFK Market Share</span></div>
+          <div class="sc-tab-desc">Brand rankings and SKU-level competitive positioning.</div>
+        </div>
+        <div class="sc-tab" data-sc="5">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">⚡</span><span class="sc-tab-title">Action Executor</span></div>
+          <div class="sc-tab-desc">Recommended actions you can execute directly from chat.</div>
+        </div>
+      </div>
+
+      <div class="sc-panel" id="scPanel">
+        <div class="sc-slide active" data-panel="0">
+          <div class="sc-slide-tag">📊 Business Intelligence</div>
+          <h3>Turn CRM data into<br>clear next actions</h3>
+          <p>Connect your CRM pipeline and instantly surface which deals, segments, or campaigns are underperforming — with recommended actions attached. No SQL. No analyst queue.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">3.2×</div><div class="sc-metric-label">Faster insights</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">&lt;30s</div><div class="sc-metric-label">Query response</div></div>
+          </div>
+          <div class="sc-slide-visual">📊</div>
+        </div>
+        <div class="sc-slide" data-panel="1">
+          <div class="sc-slide-tag">🛒 Funnel Analytics</div>
+          <h3>Pinpoint exactly where<br>customers drop off</h3>
+          <p>Track PDP View → Add to Cart → Checkout flows. Identify conversion blockers and get actionable recommendations to improve your funnel rate.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">+18%</div><div class="sc-metric-label">Avg. conversion lift</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">4 steps</div><div class="sc-metric-label">Full funnel tracked</div></div>
+          </div>
+          <div class="sc-slide-visual">🛒</div>
+        </div>
+        <div class="sc-slide" data-panel="2">
+          <div class="sc-slide-tag">📦 Inventory</div>
+          <h3>Real-time stock visibility<br>across all SKUs</h3>
+          <p>Get live stock levels, low-stock alerts, out-of-stock reports, and turnover velocity — all answered in plain language. Never miss a stockout again.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">100%</div><div class="sc-metric-label">SKU coverage</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Real-time</div><div class="sc-metric-label">Data freshness</div></div>
+          </div>
+          <div class="sc-slide-visual">📦</div>
+        </div>
+        <div class="sc-slide" data-panel="3">
+          <div class="sc-slide-tag">💰 Pricing</div>
+          <h3>Stay ahead with intelligent<br>price monitoring</h3>
+          <p>Compare your pricing against market benchmarks automatically. Identify price gaps per SKU and brand, and act before competitors capture your customers.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">Daily</div><div class="sc-metric-label">Market updates</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">SKU-level</div><div class="sc-metric-label">Granularity</div></div>
+          </div>
+          <div class="sc-slide-visual">💰</div>
+        </div>
+        <div class="sc-slide" data-panel="4">
+          <div class="sc-slide-tag">🏆 Market Intelligence</div>
+          <h3>Dominate your category<br>with GFK insights</h3>
+          <p>Upload GFK reports and instantly get brand performance rankings, category share analysis, and SKU-level competitive positioning — without touching a spreadsheet.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">Auto</div><div class="sc-metric-label">Report parsing</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Brand+SKU</div><div class="sc-metric-label">Two-level view</div></div>
+          </div>
+          <div class="sc-slide-visual">🏆</div>
+        </div>
+        <div class="sc-slide" data-panel="5">
+          <div class="sc-slide-tag">⚡ Automation</div>
+          <h3>From insight to action<br>in one click</h3>
+          <p>Go beyond insights — DataProvido recommends specific business actions and lets you execute them directly from the chat interface. Analyse, decide, act — all in one place.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">1-click</div><div class="sc-metric-label">Action execution</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">15+</div><div class="sc-metric-label">Action types</div></div>
+          </div>
+          <div class="sc-slide-visual">⚡</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">✦ Why DataProvido</div>
+      <h2 class="section-title">Built for retail teams,<br>not data scientists</h2>
+      <p class="section-desc">No SQL, no dashboards, no waiting. Just ask your question in plain language and get a precise answer with recommended next steps.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card reveal"><div class="feat-icon">🔒</div><div class="feat-title">100% Local &amp; Private</div><div class="feat-desc">Your data never leaves your server. Powered by Llama 3.1 running entirely on-premise — zero cloud, zero data risk.</div></div>
+      <div class="feat-card reveal"><div class="feat-icon">⚡</div><div class="feat-title">Instant Answers</div><div class="feat-desc">From question to insight in under 30 seconds. No waiting for reports or analyst queues — just real-time business intelligence.</div></div>
+      <div class="feat-card reveal"><div class="feat-icon">🎯</div><div class="feat-title">Action-Oriented Output</div><div class="feat-desc">Every answer comes with a recommended next action. Not just "what happened" but "what to do next" — ready to execute.</div></div>
+      <div class="feat-card reveal"><div class="feat-icon">📈</div><div class="feat-title">Revenue Intelligence</div><div class="feat-desc">Track B2D, C2D, revenue per category, brand performance and more. Full financial picture without touching a single spreadsheet.</div></div>
+      <div class="feat-card reveal"><div class="feat-icon">🗣️</div><div class="feat-title">Natural Language Interface</div><div class="feat-desc">Ask "Which SKUs are underperforming in GSM?" and get a ranked list with context — no training required.</div></div>
+      <div class="feat-card reveal"><div class="feat-icon">📤</div><div class="feat-title">Export Ready</div><div class="feat-desc">Download any analysis as a formatted Excel report with one click — branded, structured, and ready to share with stakeholders.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section how-section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">✦ Process</div>
+      <h2 class="section-title">Get your first insight<br>in minutes</h2>
+    </div>
+    <div class="steps-row">
+      <div class="step reveal"><div class="step-num">01</div><div class="step-title">Upload Your Data</div><div class="step-desc">Drop in your Excel files — product list, sales data, GFK reports, funnel exports. DataProvido ingests them automatically.</div></div>
+      <div class="step reveal"><div class="step-num">02</div><div class="step-title">Ask Any Question</div><div class="step-desc">Type a business question in plain English or Turkish. "Which brands have the highest C2D?" "What's my best-selling SKU this week?"</div></div>
+      <div class="step reveal"><div class="step-num">03</div><div class="step-title">Get Smart Insights</div><div class="step-desc">DataProvido queries your data, runs the analysis, and returns a precise answer with numbers, trends, and context — in seconds.</div></div>
+      <div class="step reveal"><div class="step-num">04</div><div class="step-title">Take Action</div><div class="step-desc">Follow the recommended next steps or export the full analysis as an Excel report — ready to share with your team.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section trust-section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">✦ Built on Solid Ground</div>
+      <h2 class="section-title">Trusted by retail teams<br>who care about their data</h2>
+    </div>
+    <div class="trust-badges reveal">
+      <div class="trust-badge"><div class="trust-badge-icon">🦙</div><div class="trust-badge-text"><div class="label">Powered by</div><div class="value">Llama 3.1</div></div></div>
+      <div class="trust-badge"><div class="trust-badge-icon">🌐</div><div class="trust-badge-text"><div class="label">Runs</div><div class="value">100% Offline</div></div></div>
+      <div class="trust-badge"><div class="trust-badge-icon">⚡</div><div class="trust-badge-text"><div class="label">Built with</div><div class="value">FastAPI</div></div></div>
+      <div class="trust-badge"><div class="trust-badge-icon">📊</div><div class="trust-badge-text"><div class="label">Analyzes</div><div class="value">Any Excel</div></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="cta-banner reveal">
+  <h2>Ready to turn your data<br>into decisions?</h2>
+  <p>Start exploring your retail data with AI-powered intelligence — locally, privately, instantly.</p>
+  <a href="/journey" class="btn-primary" style="margin: 0 auto; display: inline-flex;">Jump to Journey &nbsp;→</a>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-left"><div class="nav-logo-dot"></div><span class="footer-logo">DataProvido</span><span class="footer-copy">· Local Intelligence. Zero Compromise.</span></div>
+  <div class="footer-right">Powered by Llama 3.1 &nbsp;·&nbsp; Runs entirely offline</div>
+</footer>
+
+<script>
+  const nav = document.getElementById('main-nav');
+  window.addEventListener('scroll', () => { 
+    if (window.scrollY > 40) { nav.style.background = 'rgba(255,255,255,0.98)'; nav.style.boxShadow = '0 2px 16px rgba(0,0,0,0.07)'; }
+    else { nav.style.background = 'rgba(255,255,255,0.95)'; nav.style.boxShadow = '0 1px 0 #dadee2'; }
+  });
+  const observer = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }); }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  // Showcase tab switcher (Yodeck-style)
+  const scTabs = document.querySelectorAll('.sc-tab');
+  const scPanels = document.querySelectorAll('.sc-slide');
+  let scCurrent = 0, scTimer;
+
+  function scGoTo(idx) {
+    scTabs[scCurrent].classList.remove('active');
+    scPanels[scCurrent].classList.remove('active');
+    const oldProg = scTabs[scCurrent].querySelector('.sc-tab-progress');
+    oldProg.style.animation = 'none';
+    oldProg.offsetHeight;
+    oldProg.style.animation = '';
+
+    scCurrent = ((idx % scTabs.length) + scTabs.length) % scTabs.length;
+    scTabs[scCurrent].classList.add('active');
+    scPanels[scCurrent].classList.add('active');
+    const newProg = scTabs[scCurrent].querySelector('.sc-tab-progress');
+    newProg.style.animation = 'none';
+    newProg.offsetHeight;
+    newProg.style.animation = 'tab-fill 5s linear forwards';
+  }
+
+  function scNext() { scGoTo(scCurrent + 1); }
+
+  scTabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => {
+      clearInterval(scTimer);
+      scGoTo(i);
+      scTimer = setInterval(scNext, 5000);
+    });
+  });
+
+  scTimer = setInterval(scNext, 5000);
+</script>
 </body>
-</html>
-"""
+</html>"""
