@@ -138,8 +138,23 @@ from schemas.tools import TOOLS
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL = "llama3.1"
+# ─────────────────────────────────────────────────────────────
+#  LLM BACKEND  (env var: LLM_BACKEND=groq | ollama)
+#  Local  → Ollama running on localhost:11434
+#  Cloud  → Groq API (free tier, LLaMA 3.1 8B)
+# ─────────────────────────────────────────────────────────────
+LLM_BACKEND   = os.getenv("LLM_BACKEND", "ollama")   # "ollama" | "groq"
+OLLAMA_URL    = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat")
+GROQ_API_KEY  = os.getenv("GROQ_API_KEY", "")
+GROQ_URL      = "https://api.groq.com/openai/v1/chat/completions"
+
+# Model names
+OLLAMA_MODEL  = os.getenv("OLLAMA_MODEL", "llama3.1")
+GROQ_MODEL    = os.getenv("GROQ_MODEL",  "llama-3.1-8b-instant")
+
+MODEL = GROQ_MODEL if LLM_BACKEND == "groq" else OLLAMA_MODEL
+
+print(f"🤖 LLM Backend: {LLM_BACKEND.upper()} | Model: {MODEL}", flush=True)
 
 SYSTEM_PROMPT = {
     "role": "system",
@@ -397,28 +412,73 @@ Tool yönlendirmeleri:
 history = [SYSTEM_PROMPT]
 
 
-def call_ollama(messages, use_tools=True):
+def call_llm(messages, use_tools=True):
+    """
+    Unified LLM caller.
+    LLM_BACKEND=ollama → Ollama local API
+    LLM_BACKEND=groq   → Groq cloud API (OpenAI-compatible)
+    """
+    if LLM_BACKEND == "groq":
+        return _call_groq(messages, use_tools)
+    return _call_ollama(messages, use_tools)
+
+
+def _call_ollama(messages, use_tools=True):
     payload = {
-        "model": MODEL,
+        "model": OLLAMA_MODEL,
         "messages": messages,
         "stream": False
     }
-
     if use_tools:
         payload["tools"] = TOOLS
         payload["tool_choice"] = "required"
-
     try:
         r = requests.post(OLLAMA_URL, json=payload, timeout=120)
         r.raise_for_status()
         return r.json()
     except Exception as e:
         print("❌ OLLAMA HATASI:", str(e), flush=True)
-        return {
-            "message": {
-                "content": f"Ollama bağlantı hatası: {str(e)}"
-            }
-        }
+        return {"message": {"content": f"Ollama bağlantı hatası: {str(e)}"}}
+
+
+def _call_groq(messages, use_tools=True):
+    """
+    Groq API caller — OpenAI-compatible format.
+    Returns a normalized response that matches Ollama's response shape
+    so the rest of the codebase works without change.
+    """
+    if not GROQ_API_KEY:
+        return {"message": {"content": "❌ GROQ_API_KEY environment variable eksik. Railway'de Variables bölümüne ekleyin."}}
+
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type":  "application/json",
+    }
+    payload = {
+        "model":    GROQ_MODEL,
+        "messages": messages,
+        "stream":   False,
+    }
+    if use_tools:
+        payload["tools"]       = TOOLS
+        payload["tool_choice"] = "required"
+
+    try:
+        r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=60)
+        r.raise_for_status()
+        groq_resp = r.json()
+        # Normalize to Ollama-compatible shape
+        choice  = groq_resp["choices"][0]
+        message = choice["message"]
+        # Groq returns tool_calls under message.tool_calls — same as Ollama
+        return {"message": message}
+    except Exception as e:
+        print("❌ GROQ HATASI:", str(e), flush=True)
+        return {"message": {"content": f"Groq API hatası: {str(e)}"}}
+
+
+# Backward-compatible alias
+call_ollama = call_llm
 
 def log_tool_json_to_terminal(raw_text: str):
     if not LOG_TOOL_JSON_TO_TERMINAL:
