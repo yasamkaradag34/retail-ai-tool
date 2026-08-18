@@ -2663,91 +2663,330 @@ def journey():
 """
 
 
-def simple_page(title, body):
-    return f"""
-<!DOCTYPE html>
+def simple_page(title, body, kicker="DataProvido"):
+    return f"""<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{title} - DataProvido</title>
+  <title>{title} – DataProvido</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
-    * {{ box-sizing: border-box; }}
+    *, *::before, *::after {{ margin: 0; padding: 0; box-sizing: border-box; }}
+    :root {{
+      --orange:       #f26f26;
+      --orange-dark:  #d85c18;
+      --orange-light: #f58c50;
+      --bg:           #ffffff;
+      --bg-2:         #f9fafb;
+      --bg-3:         #f1f3f5;
+      --text-900:     #292c2f;
+      --text-700:     #4e5359;
+      --text-500:     #6b7178;
+      --text-dim:     #a3acb6;
+      --border:       #dadee2;
+      --border-orange: rgba(242,111,38,0.25);
+      --card-bg:      #ffffff;
+      --card-shadow:  0 4px 24px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+      --radius:       20px;
+      --nav-h:        72px;
+    }}
+    html {{ scroll-behavior: smooth; }}
     body {{
-      margin: 0; min-height: 100vh;
-      background: radial-gradient(ellipse at top, #3d1a00 0%, #1a0800 45%, #050200 100%);
-      color: #f5ead2; font-family: "Montserrat", sans-serif;
-      display: flex; align-items: center; justify-content: center; padding: 32px;
+      background: linear-gradient(160deg, #fff8f4 0%, #ffffff 45%, #f0f7ff 100%);
+      color: var(--text-900);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }}
+
+    /* NAV */
+    .nav {{
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 40px;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border); box-shadow: 0 1px 0 var(--border);
+    }}
+    .nav-logo {{ display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text-900); text-decoration: none; }}
+    .nav-logo-dot {{ width: 10px; height: 10px; border-radius: 50%; background: var(--orange); animation: pulse-dot 2.5s ease-in-out infinite; }}
+    @keyframes pulse-dot {{ 0%,100% {{ box-shadow: 0 0 0 0 rgba(242,111,38,0.5); }} 50% {{ box-shadow: 0 0 0 6px rgba(242,111,38,0); }} }}
+    .nav-links {{ display: flex; align-items: center; gap: 6px; }}
+    .nav-link {{ color: var(--text-700); text-decoration: none; font-size: 14px; font-weight: 500; padding: 8px 14px; border-radius: 8px; transition: color .2s, background .2s; }}
+    .nav-link:hover {{ color: var(--orange); background: rgba(242,111,38,0.06); }}
+    .nav-cta {{ background: var(--orange); color: #fff; border: none; padding: 10px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background .2s, transform .15s; box-shadow: 0 4px 14px rgba(242,111,38,0.3); }}
+    .nav-cta:hover {{ background: var(--orange-dark); transform: translateY(-1px); }}
+
+    /* MAIN CONTAINER */
+    .page-wrapper {{
+      flex: 1;
+      padding: calc(var(--nav-h) + 40px) 24px 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }}
     .page-card {{
-      width: 100%; max-width: 860px;
-      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.16);
-      border-radius: 28px; padding: 42px; box-shadow: 0 24px 90px rgba(0,0,0,0.45);
+      width: 100%;
+      max-width: 920px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 48px;
+      box-shadow: var(--card-shadow);
+      position: relative;
+      overflow: hidden;
     }}
-    h1 {{ margin: 0 0 18px; font-family: "Playfair Display", serif; font-size: clamp(36px, 5vw, 58px); font-weight: 400; color: #fff6df; }}
-    p {{ margin: 0 0 16px; color: rgba(255,246,223,0.86); font-size: 16px; line-height: 1.8; }}
+    .page-card::before {{
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px;
+      background: linear-gradient(90deg, var(--orange) 0%, var(--orange-light) 100%);
+    }}
+    .page-badge {{
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(242,111,38,0.08); border: 1px solid var(--border-orange);
+      border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 600;
+      color: var(--orange); margin-bottom: 18px; text-transform: uppercase; letter-spacing: 0.5px;
+    }}
+    .page-card h1 {{
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(32px, 4.5vw, 48px);
+      font-weight: 700;
+      line-height: 1.15;
+      color: var(--text-900);
+      margin-bottom: 24px;
+      letter-spacing: -0.5px;
+    }}
+    .page-content {{
+      color: var(--text-700);
+      font-size: 15.5px;
+      line-height: 1.8;
+    }}
+    .page-content p {{ margin-bottom: 16px; }}
+
+    /* ACTIONS */
+    .page-actions {{
+      margin-top: 36px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+    }}
     .back-link {{
-      display: inline-flex; margin-top: 22px; color: #fff6df;
-      border: 1px solid rgba(255,255,255,0.45); border-radius: 999px;
-      padding: 12px 22px; text-decoration: none; font-size: 14px;
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--text-700); text-decoration: none; font-size: 14px; font-weight: 600;
+      padding: 10px 20px; border-radius: 999px; border: 1.5px solid var(--border);
+      transition: all 0.2s; background: #fff; box-shadow: var(--card-shadow);
     }}
-    .back-link:hover {{ background: rgba(255,255,255,0.10); }}
+    .back-link:hover {{ border-color: var(--orange); color: var(--orange); }}
+    .btn-primary {{
+      background: var(--orange); color: #fff; padding: 12px 26px; border-radius: 999px;
+      font-size: 14px; font-weight: 600; text-decoration: none; display: inline-flex;
+      align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(242,111,38,0.35);
+      transition: background .2s, transform .15s;
+    }}
+    .btn-primary:hover {{ background: var(--orange-dark); transform: translateY(-1px); }}
+
+    /* FOOTER */
+    .site-footer {{
+      background: #ffffff; border-top: 1px solid var(--border);
+      padding: 24px 40px; display: flex; align-items: center; justify-content: space-between;
+      font-size: 13px; color: var(--text-500);
+    }}
+
+    @media (max-width: 768px) {{
+      .nav {{ padding: 0 20px; }}
+      .nav-links {{ display: none; }}
+      .page-card {{ padding: 28px 20px; }}
+      .site-footer {{ flex-direction: column; gap: 8px; text-align: center; }}
+    }}
   </style>
 </head>
 <body>
-  <main class="page-card">
-    <h1>{title}</h1>
-    {body}
-    <a href="/" class="back-link">← Back to Home</a>
-  </main>
+  <nav class="nav">
+    <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>DataProvido</a>
+    <div class="nav-links">
+      <a href="/pricing" class="nav-link">Pricing</a>
+      <a href="/contact" class="nav-link">Contact</a>
+      <a href="/who-we-are" class="nav-link">Who We Are?</a>
+      <a href="/how-works" class="nav-link">How Works?</a>
+    </div>
+    <a href="/journey" class="nav-cta">Start Journey &nbsp;→</a>
+  </nav>
+
+  <div class="page-wrapper">
+    <main class="page-card">
+      <div class="page-badge">✦ {kicker}</div>
+      <h1>{title}</h1>
+      <div class="page-content">
+        {body}
+      </div>
+      <div class="page-actions">
+        <a href="/" class="back-link">← Ana Sayfaya Dön</a>
+        <a href="/journey" class="btn-primary">Console'u Başlat &nbsp;→</a>
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div><strong>DataProvido</strong> · Local Intelligence. Zero Compromise.</div>
+    <div>100% Offline AI · Powered by Llama 3.1</div>
+  </footer>
 </body>
-</html>
-"""
+</html>"""
 
 
 @app.get("/pricing", response_class=HTMLResponse)
 def pricing():
     return simple_page(
-        "Pricing",
+        "Fiyatlandırma & Lisanslama",
         """
-        <p>Retail AI is designed for teams that want fast, local and actionable retail analytics.</p>
-        <p>Pricing packages can be shaped by data size, number of users and required integrations.</p>
-        """
+        <p>DataProvido, verisini buluta göndermeden şirket içi analitik yapmak isteyen perakende ve e-ticaret ekipleri için tasarlanmıştır.</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 24px 0;">
+          <div style="background: var(--bg-2); border: 1.5px solid var(--border); border-radius: 16px; padding: 22px;">
+            <div style="font-weight: 700; color: var(--text-900); font-size: 18px; margin-bottom: 6px;">On-Premise Starter</div>
+            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 14px;">Küçük ve orta ölçekli e-ticaret ekipleri</div>
+            <ul style="padding-left: 18px; font-size: 13.5px; color: var(--text-700); line-height: 1.9;">
+              <li>Tek sunucu kurulumu</li>
+              <li>Tüm analitik modüller</li>
+              <li>Excel/CSV veri beslemesi</li>
+              <li>%100 yerel veri güvenliği</li>
+            </ul>
+          </div>
+          <div style="background: #fff8f4; border: 1.5px solid var(--orange); border-radius: 16px; padding: 22px; position: relative;">
+            <div style="position: absolute; top: 12px; right: 12px; background: var(--orange); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px;">ÖNERİLEN</div>
+            <div style="font-weight: 700; color: var(--orange-dark); font-size: 18px; margin-bottom: 6px;">Enterprise On-Prem</div>
+            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 14px;">Büyük perakende ve çoklu departman</div>
+            <ul style="padding-left: 18px; font-size: 13.5px; color: var(--text-700); line-height: 1.9;">
+              <li>Sınırsız kullanıcı & rol yönetimi</li>
+              <li>ERP & CRM doğrudan entegrasyonu</li>
+              <li>Özel SLA & yerinde IT desteği</li>
+              <li>Özelleştirilmiş LLaMA model eğitimi</li>
+            </ul>
+          </div>
+        </div>
+
+        <p style="font-size: 14px; color: var(--text-500);">Şirketinizin veri boyutu, kullanıcı sayısı ve altyapı gereksinimlerine göre özel teklif almak için <a href="/contact" style="color: var(--orange); font-weight: 600; text-decoration: none;">bizimle iletişime geçin →</a></p>
+        """,
+        kicker="Enterprise Licensing"
     )
 
 
 @app.get("/contact", response_class=HTMLResponse)
 def contact():
     return simple_page(
-        "Contact",
+        "İletişim & Kurumsal Destek",
         """
-        <p>For demos, collaboration or setup questions, you can contact the DataProvido team.</p>
-        <p>This page can later include a form, email address or calendar booking link.</p>
-        """
+        <p>DataProvido platformu, kurumsal On-Premise kurulumlar, canlı demolar veya iş ortaklığı talepleriniz için ekibimize doğrudan e-posta ile ulaşabilirsiniz.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin: 28px 0;">
+          
+          <!-- Info -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--card-shadow); transition: all 0.2s;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 18px; margin-bottom: 12px;">🏢</div>
+            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 4px;">Genel &amp; Kurumsal İletişim</div>
+            <div style="font-size: 12.5px; color: var(--text-500); margin-bottom: 12px;">Demo talepleri, lisanslama ve genel sorular</div>
+            <a href="mailto:info@dataprovido.com" style="display: inline-flex; align-items: center; gap: 6px; color: var(--orange); font-weight: 600; text-decoration: none; font-size: 14px; background: rgba(242,111,38,0.06); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-orange);">
+              ✉️ info@dataprovido.com
+            </a>
+          </div>
+
+          <!-- Y. Karadag -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--card-shadow); transition: all 0.2s;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 18px; margin-bottom: 12px;">👨‍💻</div>
+            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 4px;">Yaşam Karadağ</div>
+            <div style="font-size: 12.5px; color: var(--text-500); margin-bottom: 12px;">Teknoloji, Mimari &amp; Ürün Geliştirme</div>
+            <a href="mailto:karadagya@dataprovido.com" style="display: inline-flex; align-items: center; gap: 6px; color: var(--orange); font-weight: 600; text-decoration: none; font-size: 14px; background: rgba(242,111,38,0.06); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-orange);">
+              ✉️ karadagya@dataprovido.com
+            </a>
+          </div>
+
+          <!-- B. Aksoy -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--card-shadow); transition: all 0.2s;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 18px; margin-bottom: 12px;">💼</div>
+            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 4px;">B. Aksoy</div>
+            <div style="font-size: 12.5px; color: var(--text-500); margin-bottom: 12px;">İş Geliştirme, Strateji &amp; Ortaklıklar</div>
+            <a href="mailto:aksoyb@dataprovido.com" style="display: inline-flex; align-items: center; gap: 6px; color: var(--orange); font-weight: 600; text-decoration: none; font-size: 14px; background: rgba(242,111,38,0.06); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-orange);">
+              ✉️ aksoyb@dataprovido.com
+            </a>
+          </div>
+
+        </div>
+
+        <div style="background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; font-size: 13.5px; color: var(--text-700); line-height: 1.7;">
+          🔒 <strong>Kurumsal Gizlilik Güvencesi:</strong> İletişim mailleriniz doğrudan şirket yöneticilerine ulaşır. Talepleriniz KVKK ve gizlilik sözleşmeleri (NDA) çerçevesinde 24 saat içinde yanıtlanır.
+        </div>
+        """,
+        kicker="Direct Contact"
     )
 
 
 @app.get("/who-we-are", response_class=HTMLResponse)
 def who_we_are():
     return simple_page(
-        "Who We Are?",
+        "Biz Kimiz?",
         """
-        <p>Retail AI helps retail and e-commerce teams turn stock, sales and funnel data into clear actions.</p>
-        <p>Our goal is to make complex analysis simple, fast and usable for business teams.</p>
-        """
+        <p><strong>DataProvido</strong>, perakende ve e-ticaret sektöründeki şirketlerin karmaşık CRM, stok, satış ve dönüşüm hunisi (funnel) verilerini <strong>anlık ve aksiyon odaklı kararlara</strong> dönüştüren yeni nesil bir yapay zeka analitik platformudur.</p>
+
+        <h3 style="font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text-900); margin: 24px 0 12px;">Misyonumuz: Yerel Zeka, Sıfır Ödün</h3>
+        <p>Geleneksel bulut tabanlı analitik araçları hassas satış, stok ve müşteri verilerinizi şirket dışına taşımayı zorunlu kılar. DataProvido ise <strong>Privacy-First</strong> mimarisi ile çalışır: Yapay zeka doğrudan sizin donanımınızda çalışır, tek bir bayt dahi dışarı çıkmaz.</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0;">
+          <div style="padding: 16px; background: var(--bg-2); border-radius: 12px; border: 1px solid var(--border);">
+            <div style="font-size: 24px; font-weight: 800; color: var(--orange); margin-bottom: 4px;">%100</div>
+            <div style="font-size: 13px; color: var(--text-700); font-weight: 600;">Yerel Veri Gizliliği</div>
+          </div>
+          <div style="padding: 16px; background: var(--bg-2); border-radius: 12px; border: 1px solid var(--border);">
+            <div style="font-size: 24px; font-weight: 800; color: var(--orange); margin-bottom: 4px;">&lt;30s</div>
+            <div style="font-size: 13px; color: var(--text-700); font-weight: 600;">Soru Başına Yanıt Hızı</div>
+          </div>
+          <div style="padding: 16px; background: var(--bg-2); border-radius: 12px; border: 1px solid var(--border);">
+            <div style="font-size: 24px; font-weight: 800; color: var(--orange); margin-bottom: 4px;">15+</div>
+            <div style="font-size: 13px; color: var(--text-700); font-weight: 600;">Hazır Analiz Modülü</div>
+          </div>
+        </div>
+        """,
+        kicker="About DataProvido"
     )
 
 
 @app.get("/how-works", response_class=HTMLResponse)
 def how_works():
     return simple_page(
-        "How Works?",
+        "Nasıl Çalışır?",
         """
-        <p>Retail AI analyzes your retail data locally and answers questions about stock, sales and funnel performance.</p>
-        <p>You ask a business question, the system checks the data, then returns a clear summary with suggested actions.</p>
-        """
+        <p>DataProvido, veri analistlerine olan bağımlılığı ortadan kaldırarak iş ekiplerinin verileriyle <strong>doğal dilde konuşmasını</strong> sağlar.</p>
+
+        <div style="display: flex; flex-direction: column; gap: 16px; margin: 24px 0;">
+          <div style="display: flex; gap: 16px; align-items: flex-start; padding: 16px; background: var(--bg-2); border-radius: 14px; border: 1px solid var(--border);">
+            <div style="background: var(--orange); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; flex-shrink: 0;">1</div>
+            <div>
+              <div style="font-weight: 700; color: var(--text-900); margin-bottom: 4px;">Verilerinizi Yükleyin</div>
+              <div style="font-size: 13.5px; color: var(--text-700);">Excel, CSV veya ERP bağlantısı ile stok, satış, GfK ve funnel tablolarınızı tek tıkla sisteme aktarın.</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 16px; align-items: flex-start; padding: 16px; background: var(--bg-2); border-radius: 14px; border: 1px solid var(--border);">
+            <div style="background: var(--orange); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; flex-shrink: 0;">2</div>
+            <div>
+              <div style="font-weight: 700; color: var(--text-900); margin-bottom: 4px;">Doğal Dilde Soru Sorun</div>
+              <div style="font-size: 13.5px; color: var(--text-700);">"GSM kategorisinde C2D yüksek ama stoğu bitmek üzere olan ürünler hangileri?" veya "Pazar payımız bu hafta nasıl değişti?" diye sorun.</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 16px; align-items: flex-start; padding: 16px; background: var(--bg-2); border-radius: 14px; border: 1px solid var(--border);">
+            <div style="background: var(--orange); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; flex-shrink: 0;">3</div>
+            <div>
+              <div style="font-weight: 700; color: var(--text-900); margin-bottom: 4px;">Anlık Analiz ve Eyleme Geçilebilir Tavsiye</div>
+              <div style="font-size: 13.5px; color: var(--text-700);">Sistem veriyi yerel olarak hesaplar, özet tablo çıkarır ve ne yapmanız gerektiğine dair önerilen aksiyonları sunar.</div>
+            </div>
+          </div>
+        </div>
+        """,
+        kicker="Technology & Workflow"
     )
 
 
