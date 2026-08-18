@@ -2843,150 +2843,125 @@ def pricing():
     return simple_page(
         "Fiyatlandırma & Lisanslama",
         """
-        <p>DataProvido, verisini buluta göndermeden şirket içi analitik yapmak isteyen perakende ve e-ticaret ekipleri için tasarlanmıştır.</p>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 24px 0;">
-          <div style="background: var(--bg-2); border: 1.5px solid var(--border); border-radius: 16px; padding: 22px;">
-            <div style="font-weight: 700; color: var(--text-900); font-size: 18px; margin-bottom: 6px;">On-Premise Starter</div>
-            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 14px;">Küçük ve orta ölçekli e-ticaret ekipleri</div>
-            <ul style="padding-left: 18px; font-size: 13.5px; color: var(--text-700); line-height: 1.9;">
-              <li>Tek sunucu kurulumu</li>
-              <li>Tüm analitik modüller</li>
-              <li>Excel/CSV veri beslemesi</li>
-              <li>%100 yerel veri güvenliği</li>
+        <p style="font-size: 16px; color: var(--text-700); margin-bottom: 24px;">
+          DataProvido, verilerini üçüncü taraf bulut sağlayıcılarına göndermeden şirket içi analitik yapmak isteyen kurumsal perakende ve e-ticaret markaları için <strong>On-Premise lisanslama modeli</strong> ile sunulmaktadır.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin: 28px 0;">
+          
+          <!-- Starter -->
+          <div style="background: var(--bg-2); border: 1.5px solid var(--border); border-radius: 18px; padding: 26px; display: flex; flex-direction: column;">
+            <div style="font-weight: 800; color: var(--text-900); font-size: 19px; margin-bottom: 6px;">On-Premise Starter</div>
+            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 16px;">Büyümekte olan e-ticaret ve perakende markaları</div>
+            <ul style="padding-left: 18px; font-size: 13.5px; color: var(--text-700); line-height: 2.1; margin-bottom: 20px; flex: 1;">
+              <li>Tek sunucu / yerel bilgisayar kurulumu</li>
+              <li>15+ Hazır analitik modül (Stok, Funnel, Fiyat vb.)</li>
+              <li>Excel, CSV ve yerel dosya beslemesi</li>
+              <li>%100 Yerel LLaMA 3.1 ile sınırsız çevrimdışı sorgu</li>
+              <li>Standart e-posta desteği</li>
             </ul>
+            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Starter%20Lisans%20Talebi" style="display: block; text-align: center; background: #fff; color: var(--text-900); border: 1.5px solid var(--border); font-weight: 600; padding: 11px 16px; border-radius: 10px; text-decoration: none; font-size: 13.5px; transition: all 0.2s;">
+              Teklif İsteyin →
+            </a>
           </div>
-          <div style="background: #fff8f4; border: 1.5px solid var(--orange); border-radius: 16px; padding: 22px; position: relative;">
-            <div style="position: absolute; top: 12px; right: 12px; background: var(--orange); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px;">ÖNERİLEN</div>
-            <div style="font-weight: 700; color: var(--orange-dark); font-size: 18px; margin-bottom: 6px;">Enterprise On-Prem</div>
-            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 14px;">Büyük perakende ve çoklu departman</div>
-            <ul style="padding-left: 18px; font-size: 13.5px; color: var(--text-700); line-height: 1.9;">
-              <li>Sınırsız kullanıcı & rol yönetimi</li>
-              <li>ERP & CRM doğrudan entegrasyonu</li>
-              <li>Özel SLA & yerinde IT desteği</li>
-              <li>Özelleştirilmiş LLaMA model eğitimi</li>
+
+          <!-- Enterprise -->
+          <div style="background: #fff8f4; border: 2px solid var(--orange); border-radius: 18px; padding: 26px; position: relative; box-shadow: 0 8px 30px rgba(242,111,38,0.12); display: flex; flex-direction: column;">
+            <div style="position: absolute; top: 14px; right: 14px; background: var(--orange); color: #fff; font-size: 10.5px; font-weight: 800; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.5px;">EN ÇOK TERCİH EDİLEN</div>
+            <div style="font-weight: 800; color: var(--orange-dark); font-size: 19px; margin-bottom: 6px;">Enterprise Custom</div>
+            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 16px;">Büyük perakende zincirleri &amp; kurumsal ekipler</div>
+            <ul style="padding-left: 18px; font-size: 13.5px; color: var(--text-700); line-height: 2.1; margin-bottom: 20px; flex: 1;">
+              <li>Sınırsız kullanıcı &amp; çoklu departman yetkilendirmesi</li>
+              <li>ERP (SAP, Logo, Nebim), CRM ve SQL veritabanı entegrasyonu</li>
+              <li>GfK, Nielsen ve pazar payı özel analitik katmanı</li>
+              <li>Özel SLA, yerinde IT kurulumu ve 7/24 öncelikli destek</li>
+              <li>Şirket içi veriyle özelleştirilmiş LLaMA model adaptasyonu</li>
             </ul>
+            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Enterprise%20Lisans%20Talebi" style="display: block; text-align: center; background: var(--orange); color: #fff; font-weight: 700; padding: 12px 16px; border-radius: 10px; text-decoration: none; font-size: 14px; box-shadow: 0 4px 14px rgba(242,111,38,0.30); transition: all 0.2s;">
+              Kurumsal Teklif Alın →
+            </a>
           </div>
+
         </div>
 
-        <p style="font-size: 14px; color: var(--text-500);">Şirketinizin veri boyutu, kullanıcı sayısı ve altyapı gereksinimlerine göre özel teklif almak için <a href="/contact" style="color: var(--orange); font-weight: 600; text-decoration: none;">bizimle iletişime geçin →</a></p>
+        <!-- Direct Mail Contact Banner -->
+        <div style="background: #ffffff; border: 1.5px solid var(--border-orange); border-radius: 16px; padding: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 24px; box-shadow: var(--card-shadow);">
+          <div>
+            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 4px;">Özel Altyapı ve Lisanslama Sorularınız mı Var?</div>
+            <div style="font-size: 13.5px; color: var(--text-500);">Şirketinizin veri hacmi, sunucu altyapısı ve entegrasyon ihtiyaçlarına özel teklif hazırlıyoruz.</div>
+          </div>
+          <a href="mailto:info@dataprovido.com" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(242,111,38,0.10); color: var(--orange-dark); border: 1px solid var(--border-orange); padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 14px; text-decoration: none;">
+            ✉️ info@dataprovido.com
+          </a>
+        </div>
         """,
         kicker="Enterprise Licensing"
-    )
-
-
-@app.get("/contact", response_class=HTMLResponse)
-def contact():
-    return simple_page(
-        "İletişim & Kurumsal Destek",
-        """
-        <p>DataProvido platformu, kurumsal On-Premise kurulumlar, canlı demolar veya iş ortaklığı talepleriniz için ekibimize doğrudan e-posta ile ulaşabilirsiniz.</p>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin: 28px 0;">
-          
-          <!-- Info -->
-          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--card-shadow); transition: all 0.2s;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 18px; margin-bottom: 12px;">🏢</div>
-            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 4px;">Genel &amp; Kurumsal İletişim</div>
-            <div style="font-size: 12.5px; color: var(--text-500); margin-bottom: 12px;">Demo talepleri, lisanslama ve genel sorular</div>
-            <a href="mailto:info@dataprovido.com" style="display: inline-flex; align-items: center; gap: 6px; color: var(--orange); font-weight: 600; text-decoration: none; font-size: 14px; background: rgba(242,111,38,0.06); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-orange);">
-              ✉️ info@dataprovido.com
-            </a>
-          </div>
-
-          <!-- Y. Karadag -->
-          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--card-shadow); transition: all 0.2s;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 18px; margin-bottom: 12px;">👨‍💻</div>
-            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 4px;">Yaşam Karadağ</div>
-            <div style="font-size: 12.5px; color: var(--text-500); margin-bottom: 12px;">Teknoloji, Mimari &amp; Ürün Geliştirme</div>
-            <a href="mailto:karadagya@dataprovido.com" style="display: inline-flex; align-items: center; gap: 6px; color: var(--orange); font-weight: 600; text-decoration: none; font-size: 14px; background: rgba(242,111,38,0.06); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-orange);">
-              ✉️ karadagya@dataprovido.com
-            </a>
-          </div>
-
-          <!-- B. Aksoy -->
-          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--card-shadow); transition: all 0.2s;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 10px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 18px; margin-bottom: 12px;">💼</div>
-            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 4px;">B. Aksoy</div>
-            <div style="font-size: 12.5px; color: var(--text-500); margin-bottom: 12px;">İş Geliştirme, Strateji &amp; Ortaklıklar</div>
-            <a href="mailto:aksoyb@dataprovido.com" style="display: inline-flex; align-items: center; gap: 6px; color: var(--orange); font-weight: 600; text-decoration: none; font-size: 14px; background: rgba(242,111,38,0.06); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-orange);">
-              ✉️ aksoyb@dataprovido.com
-            </a>
-          </div>
-
-        </div>
-
-        <div style="background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; font-size: 13.5px; color: var(--text-700); line-height: 1.7;">
-          🔒 <strong>Kurumsal Gizlilik Güvencesi:</strong> İletişim mailleriniz doğrudan şirket yöneticilerine ulaşır. Talepleriniz KVKK ve gizlilik sözleşmeleri (NDA) çerçevesinde 24 saat içinde yanıtlanır.
-        </div>
-        """,
-        kicker="Direct Contact"
-    )
-
-
-@app.get("/who-we-are", response_class=HTMLResponse)
-def who_we_are():
-    return simple_page(
-        "Biz Kimiz?",
-        """
-        <p><strong>DataProvido</strong>, perakende ve e-ticaret sektöründeki şirketlerin karmaşık CRM, stok, satış ve dönüşüm hunisi (funnel) verilerini <strong>anlık ve aksiyon odaklı kararlara</strong> dönüştüren yeni nesil bir yapay zeka analitik platformudur.</p>
-
-        <h3 style="font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text-900); margin: 24px 0 12px;">Misyonumuz: Yerel Zeka, Sıfır Ödün</h3>
-        <p>Geleneksel bulut tabanlı analitik araçları hassas satış, stok ve müşteri verilerinizi şirket dışına taşımayı zorunlu kılar. DataProvido ise <strong>Privacy-First</strong> mimarisi ile çalışır: Yapay zeka doğrudan sizin donanımınızda çalışır, tek bir bayt dahi dışarı çıkmaz.</p>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0;">
-          <div style="padding: 16px; background: var(--bg-2); border-radius: 12px; border: 1px solid var(--border);">
-            <div style="font-size: 24px; font-weight: 800; color: var(--orange); margin-bottom: 4px;">%100</div>
-            <div style="font-size: 13px; color: var(--text-700); font-weight: 600;">Yerel Veri Gizliliği</div>
-          </div>
-          <div style="padding: 16px; background: var(--bg-2); border-radius: 12px; border: 1px solid var(--border);">
-            <div style="font-size: 24px; font-weight: 800; color: var(--orange); margin-bottom: 4px;">&lt;30s</div>
-            <div style="font-size: 13px; color: var(--text-700); font-weight: 600;">Soru Başına Yanıt Hızı</div>
-          </div>
-          <div style="padding: 16px; background: var(--bg-2); border-radius: 12px; border: 1px solid var(--border);">
-            <div style="font-size: 24px; font-weight: 800; color: var(--orange); margin-bottom: 4px;">15+</div>
-            <div style="font-size: 13px; color: var(--text-700); font-weight: 600;">Hazır Analiz Modülü</div>
-          </div>
-        </div>
-        """,
-        kicker="About DataProvido"
     )
 
 
 @app.get("/how-works", response_class=HTMLResponse)
 def how_works():
     return simple_page(
-        "Nasıl Çalışır?",
+        "DataProvido Nasıl Çalışır?",
         """
-        <p>DataProvido, veri analistlerine olan bağımlılığı ortadan kaldırarak iş ekiplerinin verileriyle <strong>doğal dilde konuşmasını</strong> sağlar.</p>
+        <p style="font-size: 16px; color: var(--text-700); margin-bottom: 24px; line-height: 1.8;">
+          DataProvido, veri analistlerine ve karmaşık SQL sorgularına olan bağımlılığı ortadan kaldırarak perakende iş birimlerinin şirket verileriyle <strong>doğal dilde doğrudan konuşmasını</strong> sağlayan, %100 yerel (on-premise) çalışan bir yapay zeka platformudur.
+        </p>
 
-        <div style="display: flex; flex-direction: column; gap: 16px; margin: 24px 0;">
-          <div style="display: flex; gap: 16px; align-items: flex-start; padding: 16px; background: var(--bg-2); border-radius: 14px; border: 1px solid var(--border);">
-            <div style="background: var(--orange); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; flex-shrink: 0;">1</div>
-            <div>
-              <div style="font-weight: 700; color: var(--text-900); margin-bottom: 4px;">Verilerinizi Yükleyin</div>
-              <div style="font-size: 13.5px; color: var(--text-700);">Excel, CSV veya ERP bağlantısı ile stok, satış, GfK ve funnel tablolarınızı tek tıkla sisteme aktarın.</div>
+        <!-- 1000+ Karakterlik Detaylı Kurumsal Mimari ve Çalışma Prensibi -->
+        <div style="display: flex; flex-direction: column; gap: 20px; margin: 28px 0;">
+          
+          <!-- Aşama 1: Veri Katmanı -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">1</div>
+              <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Çok Kaynaklı Yerel Veri Entegrasyonu</h3>
             </div>
+            <p style="font-size: 14.5px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
+              Şirketinizin ERP, CRM veya e-ticaret altyapısından gelen ürün katalogları, anlık stok hareketleri, sipariş geçmişleri, funnel adımları (A2C, C2D, B2D) ve GfK pazar payı raporları Excel, CSV veya doğrudan yerel veritabanı aracılığıyla sisteme aktarılır. Veriler disk üzerinde şifrelenir ve yalnızca şirket içi yetkili kullanıcıların erişimine açılır.
+            </p>
           </div>
 
-          <div style="display: flex; gap: 16px; align-items: flex-start; padding: 16px; background: var(--bg-2); border-radius: 14px; border: 1px solid var(--border);">
-            <div style="background: var(--orange); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; flex-shrink: 0;">2</div>
-            <div>
-              <div style="font-weight: 700; color: var(--text-900); margin-bottom: 4px;">Doğal Dilde Soru Sorun</div>
-              <div style="font-size: 13.5px; color: var(--text-700);">"GSM kategorisinde C2D yüksek ama stoğu bitmek üzere olan ürünler hangileri?" veya "Pazar payımız bu hafta nasıl değişti?" diye sorun.</div>
+          <!-- Aşama 2: Yerel Zeka & Gizlilik -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">2</div>
+              <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Sıfır Veri Sızıntısı (Zero Data Leak) &amp; Yerel LLM</h3>
             </div>
+            <p style="font-size: 14.5px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
+              Geleneksel bulut tabanlı yapay zeka araçlarının aksine, DataProvido'nun yapay zeka beyni (LLaMA 3.1) şirketinizin kendi sunucusunda (On-Premise / Docker) veya yerel donanımında çalışır. Kullanıcının sorduğu sorular ve şirketinizin finansal/stok verileri asla dışarıdaki bulut sunucularına iletilmez. İnternet bağlantısı kesilse dahi sistem %100 kapasiteyle çalışmayı sürdürür.
+            </p>
           </div>
 
-          <div style="display: flex; gap: 16px; align-items: flex-start; padding: 16px; background: var(--bg-2); border-radius: 14px; border: 1px solid var(--border);">
-            <div style="background: var(--orange); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; flex-shrink: 0;">3</div>
-            <div>
-              <div style="font-weight: 700; color: var(--text-900); margin-bottom: 4px;">Anlık Analiz ve Eyleme Geçilebilir Tavsiye</div>
-              <div style="font-size: 13.5px; color: var(--text-700);">Sistem veriyi yerel olarak hesaplar, özet tablo çıkarır ve ne yapmanız gerektiğine dair önerilen aksiyonları sunar.</div>
+          <!-- Aşama 3: Akıllı Motor Yönlendirme -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">3</div>
+              <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Akıllı Tool-Calling &amp; Çok Katmanlı Analiz</h3>
             </div>
+            <p style="font-size: 14.5px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
+              Kullanıcı Türkçe veya İngilizce doğal dilde bir soru sorduğunda (Örn: <em>"GSM kategorisinde C2D yüksek ama stoğu azalan kritik SKU'lar hangileri?"</em>), sistem sorunun türünü analiz eder ve 15'ten fazla yerel analitik motorundan en uygun olanını (Business Calculator, Funnel Master, Price Competition, GfK Market Share) devreye sokarak bellek içi Pandas &amp; DuckDB optimizasyonuyla milisaniyeler içinde hesaplar.
+            </p>
           </div>
+
+          <!-- Aşama 4: Eyleme Dönüştürülebilir Çıktı -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">4</div>
+              <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Eyleme Dönüştürülebilir Çıktı &amp; Tek Tık Excel Raporu</h3>
+            </div>
+            <p style="font-size: 14.5px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
+              Sistem yalnızca ham sayılar veya pasif grafikler üretmez; yöneticilerin doğrudan uygulayabileceği somut ticari aksiyon tavsiyeleri sunar (Örn: Fiyat indirimi, acil tedarik emri, sepet adımı iyileştirmesi). Analiz çıktısı tek bir tıkla kurumsal formatta Excel raporu olarak indirilebilir ve yönetim ekipleriyle paylaşılabilir.
+            </p>
+          </div>
+
+        </div>
+
+        <div style="background: #fff8f4; border: 1.5px solid var(--border-orange); border-radius: 16px; padding: 20px 24px; font-size: 14px; color: var(--text-700); line-height: 1.8;">
+          💡 <strong>Kurumunuza Özel Canlı Demo:</strong> Şirketinizin kendi veri yapılarıyla DataProvido'nun nasıl çalıştığını görmek için <a href="/contact" style="color: var(--orange); font-weight: 700; text-decoration: none;">bizimle iletişime geçebilir</a> veya <a href="mailto:info@dataprovido.com" style="color: var(--orange); font-weight: 700; text-decoration: none;">info@dataprovido.com</a> adresine e-posta gönderebilirsiniz.
         </div>
         """,
-        kicker="Technology & Workflow"
+        kicker="Enterprise Architecture & Process"
     )
 
 
