@@ -31,5 +31,6 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:8000/ || exit 1
 
-# Start server with dynamic Railway PORT
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Start server on fixed port 8000 (matching Railway domain port)
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
