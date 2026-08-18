@@ -1,10 +1,16 @@
-import whisper
 import tempfile
 import os
 
-model = whisper.load_model("base")
+model = None
+try:
+    import whisper
+    model = whisper.load_model("base")
+except Exception as e:
+    print(f"⚠️ Whisper yüklenemedi (cloud modunda normal): {e}", flush=True)
 
 def transcribe_audio(audio_bytes: bytes) -> str:
+    if model is None:
+        return "Sesli komut desteği bu ortamda aktif değil."
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
         f.write(audio_bytes)
         tmp_path = f.name
