@@ -1,0 +1,90 @@
+# ─────────────────────────────────────────────
+#  Python
+# ─────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# ─────────────────────────────────────────────
+#  Virtual environments
+# ─────────────────────────────────────────────
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ─────────────────────────────────────────────
+#  Secrets & config
+# ─────────────────────────────────────────────
+.env.local
+.env.production
+secrets.json
+
+# ─────────────────────────────────────────────
+#  Data files (sensitive business data)
+# ─────────────────────────────────────────────
+data/*.xlsx
+data/*.csv
+data/*.xls
+# Uncomment below to allow sample data:
+# !data/sample_*.xlsx
+
+# ─────────────────────────────────────────────
+#  OS & editor artifacts
+# ─────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ─────────────────────────────────────────────
+#  Logs
+# ─────────────────────────────────────────────
+*.log
+logs/
+
+# ─────────────────────────────────────────────
+#  Test & coverage
+# ─────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ─────────────────────────────────────────────
+#  Jupyter
+# ─────────────────────────────────────────────
+.ipynb_checkpoints
+*.ipynb
+
+# ─────────────────────────────────────────────
+#  Backup / temp files
+# ─────────────────────────────────────────────
+*-backup.txt
+*-backup.*
+mainpy-backup.txt
+mainpy-newcolour.txt

@@ -1,0 +1,50 @@
+# Retail AI — Deployment Guide (Railway / Render / Fly.io)
+# ============================================================
+#
+# Bu uygulama Python FastAPI + LLaMA 3.1 (Ollama) tabanlıdır.
+# Ollama olmadan LLM yanıtı üretilemez; bu yüzden cloud'da
+# Ollama'nın da çalışır durumda olması gerekir.
+#
+# ⚠️  Cloudflare Pages/Workers = UYGUN DEĞİL (Python runtime yok)
+# ✅  Railway / Render / Fly.io = UYGUN (Docker ile full deploy)
+#
+# ─────────────────────────────────────────────────────────────
+# RAILWAY (önerilen — en kolay)
+# ─────────────────────────────────────────────────────────────
+#  1. railway.app → New Project → Deploy from GitHub repo
+#  2. Service tipi: Web Service
+#  3. Build komutu: pip install -r requirements.txt
+#  4. Start komutu: uvicorn main:app --host 0.0.0.0 --port $PORT
+#  5. Ollama için ayrı bir service ekle (Docker image: ollama/ollama)
+#  6. OLLAMA_URL environment variable'ı ayarla:
+#     OLLAMA_URL=http://<ollama-service-name>:11434/api/chat
+#
+# ─────────────────────────────────────────────────────────────
+# RENDER
+# ─────────────────────────────────────────────────────────────
+#  1. render.com → New → Web Service → Connect GitHub repo
+#  2. Runtime: Python 3
+#  3. Build Command: pip install -r requirements.txt
+#  4. Start Command: uvicorn main:app --host 0.0.0.0 --port $PORT
+#  5. Environment Variables → OLLAMA_URL = <ollama endpoint>
+#
+# ─────────────────────────────────────────────────────────────
+# FLY.IO (Docker tabanlı — en esnek)
+# ─────────────────────────────────────────────────────────────
+#  fly launch --dockerfile Dockerfile
+#  fly deploy
+#
+# ─────────────────────────────────────────────────────────────
+# ENVIRONMENT VARIABLES
+# ─────────────────────────────────────────────────────────────
+#  OLLAMA_URL   = http://localhost:11434/api/chat  (veya cloud Ollama URL)
+#  MODEL        = llama3.1
+#  PORT         = 8000 (platform tarafından otomatik set edilir)
+#
+# ─────────────────────────────────────────────────────────────
+
+[build]
+command = "pip install -r requirements.txt"
+
+[deploy]
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
