@@ -2497,7 +2497,6 @@ def journey():
           "En yüksek revenue üreten ilk 10 markayı çıkar",
           "C2D ortalaması en yüksek kategoriler hangileri?",
           "B2D düşük ama PDP yüksek ürünleri listele"
-        ]
       },
       category_insights: {
         badge: "generate_category_insight", title: "Category Insights",
@@ -2660,18 +2659,19 @@ def journey():
   </script>
 </body>
 </html>
-"""
+\"\"\"
 
 
 def simple_page(title, body, kicker="DataProvido"):
-    return f"""<!DOCTYPE html>
-<html lang="tr">
+    return f\"\"\"<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title} – DataProvido</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
   <style>
     *, *::before, *::after {{ margin: 0; padding: 0; box-sizing: border-box; }}
     :root {{
@@ -2824,8 +2824,8 @@ def simple_page(title, body, kicker="DataProvido"):
         {body}
       </div>
       <div class="page-actions">
-        <a href="/" class="back-link">← Ana Sayfaya Dön</a>
-        <a href="/journey" class="btn-primary">Console'u Başlat &nbsp;→</a>
+        <a href="/" class="back-link">← Back to Home</a>
+        <a href="/journey" class="btn-primary">Launch Console &nbsp;→</a>
       </div>
     </main>
   </div>
@@ -2841,10 +2841,10 @@ def simple_page(title, body, kicker="DataProvido"):
 @app.get("/pricing", response_class=HTMLResponse)
 def pricing():
     return simple_page(
-        "Fiyatlandırma & Lisanslama",
+        "Pricing & On-Premise Licensing",
         """
         <p style="font-size: 16px; color: var(--text-700); margin-bottom: 24px;">
-          DataProvido, verilerini üçüncü taraf bulut sağlayıcılarına göndermeden şirket içi analitik yapmak isteyen kurumsal perakende ve e-ticaret markaları için <strong>On-Premise lisanslama modeli</strong> ile sunulmaktadır.
+          DataProvido is offered under an <strong>Enterprise On-Premise Licensing Model</strong> for retail and e-commerce leaders who demand real-time analytics without ever sending sensitive business data to third-party cloud providers.
         </p>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin: 28px 0;">
@@ -2852,33 +2852,33 @@ def pricing():
           <!-- Starter -->
           <div style="background: var(--bg-2); border: 1.5px solid var(--border); border-radius: 18px; padding: 26px; display: flex; flex-direction: column;">
             <div style="font-weight: 800; color: var(--text-900); font-size: 19px; margin-bottom: 6px;">On-Premise Starter</div>
-            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 16px;">Büyümekte olan e-ticaret ve perakende markaları</div>
+            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 16px;">Growing retail &amp; digital-first e-commerce brands</div>
             <ul style="padding-left: 18px; font-size: 13.5px; color: var(--text-700); line-height: 2.1; margin-bottom: 20px; flex: 1;">
-              <li>Tek sunucu / yerel bilgisayar kurulumu</li>
-              <li>15+ Hazır analitik modül (Stok, Funnel, Fiyat vb.)</li>
-              <li>Excel, CSV ve yerel dosya beslemesi</li>
-              <li>%100 Yerel LLaMA 3.1 ile sınırsız çevrimdışı sorgu</li>
-              <li>Standart e-posta desteği</li>
+              <li>Single server / local machine deployment</li>
+              <li>15+ Pre-built analytical modules (Stock, Funnel, Pricing)</li>
+              <li>Excel, CSV &amp; local flat-file automated ingestion</li>
+              <li>100% Local LLaMA 3.1 with unlimited offline queries</li>
+              <li>Standard email &amp; technical onboarding support</li>
             </ul>
-            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Starter%20Lisans%20Talebi" style="display: block; text-align: center; background: #fff; color: var(--text-900); border: 1.5px solid var(--border); font-weight: 600; padding: 11px 16px; border-radius: 10px; text-decoration: none; font-size: 13.5px; transition: all 0.2s;">
-              Teklif İsteyin →
+            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Starter%20License%20Inquiry" style="display: block; text-align: center; background: #fff; color: var(--text-900); border: 1.5px solid var(--border); font-weight: 600; padding: 11px 16px; border-radius: 10px; text-decoration: none; font-size: 13.5px; transition: all 0.2s;">
+              Request Starter Quote →
             </a>
           </div>
 
           <!-- Enterprise -->
           <div style="background: #fff8f4; border: 2px solid var(--orange); border-radius: 18px; padding: 26px; position: relative; box-shadow: 0 8px 30px rgba(242,111,38,0.12); display: flex; flex-direction: column;">
-            <div style="position: absolute; top: 14px; right: 14px; background: var(--orange); color: #fff; font-size: 10.5px; font-weight: 800; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.5px;">EN ÇOK TERCİH EDİLEN</div>
+            <div style="position: absolute; top: 14px; right: 14px; background: var(--orange); color: #fff; font-size: 10.5px; font-weight: 800; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.5px;">RECOMMENDED</div>
             <div style="font-weight: 800; color: var(--orange-dark); font-size: 19px; margin-bottom: 6px;">Enterprise Custom</div>
-            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 16px;">Büyük perakende zincirleri &amp; kurumsal ekipler</div>
+            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 16px;">Enterprise retail chains &amp; multi-department teams</div>
             <ul style="padding-left: 18px; font-size: 13.5px; color: var(--text-700); line-height: 2.1; margin-bottom: 20px; flex: 1;">
-              <li>Sınırsız kullanıcı &amp; çoklu departman yetkilendirmesi</li>
-              <li>ERP (SAP, Logo, Nebim), CRM ve SQL veritabanı entegrasyonu</li>
-              <li>GfK, Nielsen ve pazar payı özel analitik katmanı</li>
-              <li>Özel SLA, yerinde IT kurulumu ve 7/24 öncelikli destek</li>
-              <li>Şirket içi veriyle özelleştirilmiş LLaMA model adaptasyonu</li>
+              <li>Unlimited seats &amp; granular role-based access control</li>
+              <li>Direct ERP (SAP, Oracle, Nebim), CRM &amp; SQL data pipelines</li>
+              <li>GfK, Nielsen &amp; market share cross-benchmark layers</li>
+              <li>Dedicated SLA, on-site IT deployment &amp; 24/7 priority support</li>
+              <li>Custom fine-tuned domain LLaMA model adaptation</li>
             </ul>
-            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Enterprise%20Lisans%20Talebi" style="display: block; text-align: center; background: var(--orange); color: #fff; font-weight: 700; padding: 12px 16px; border-radius: 10px; text-decoration: none; font-size: 14px; box-shadow: 0 4px 14px rgba(242,111,38,0.30); transition: all 0.2s;">
-              Kurumsal Teklif Alın →
+            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Enterprise%20Custom%20License%20Inquiry" style="display: block; text-align: center; background: var(--orange); color: #fff; font-weight: 700; padding: 12px 16px; border-radius: 10px; text-decoration: none; font-size: 14px; box-shadow: 0 4px 14px rgba(242,111,38,0.30); transition: all 0.2s;">
+              Get Enterprise Proposal →
             </a>
           </div>
 
@@ -2887,8 +2887,8 @@ def pricing():
         <!-- Direct Mail Contact Banner -->
         <div style="background: #ffffff; border: 1.5px solid var(--border-orange); border-radius: 16px; padding: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 24px; box-shadow: var(--card-shadow);">
           <div>
-            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 4px;">Özel Altyapı ve Lisanslama Sorularınız mı Var?</div>
-            <div style="font-size: 13.5px; color: var(--text-500);">Şirketinizin veri hacmi, sunucu altyapısı ve entegrasyon ihtiyaçlarına özel teklif hazırlıyoruz.</div>
+            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 4px;">Looking for Custom Architecture or On-Premise SLA?</div>
+            <div style="font-size: 13.5px; color: var(--text-500);">We tailor custom deployments based on your data volume, hardware cluster, and enterprise compliance.</div>
           </div>
           <a href="mailto:info@dataprovido.com" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(242,111,38,0.10); color: var(--orange-dark); border: 1px solid var(--border-orange); padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 14px; text-decoration: none;">
             ✉️ info@dataprovido.com
