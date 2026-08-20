@@ -85,7 +85,7 @@
 #
 # =============================================================================
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request, Header
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -3419,6 +3419,88 @@ def checkout_success(plan: str = "standard", session_id: str = ""):
   </div>
 </body>
 </html>"""
+
+
+# ─────────────────────────────────────────────
+#  STRIPE WEBHOOK ENDPOINT
+#  POST /stripe-webhook
+#  - Stripe calls this after every payment event
+#  - Raw body required for signature verification
+#  - Set STRIPE_WEBHOOK_SECRET in Railway env vars
+# ─────────────────────────────────────────────
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse
+
+@app.post("/stripe-webhook")
+async def stripe_webhook(
+    request: Request,
+    stripe_signature: str = Header(None, alias="stripe-signature")
+):
+    """
+    Stripe sends signed POST requests here for all subscription events.
+    Raw body must be read before any parsing to allow signature verification.
+    """
+    raw_body = await request.body()
+    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+    if not webhook_secret:
+        print("[STRIPE WEBHOOK] Warning: STRIPE_WEBHOOK_SECRET not set — skipping verification")
+        try:
+            event = json.loads(raw_body)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid payload")
+    else:
+        try:
+            import stripe
+            stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+            event = stripe.Webhook.construct_event(raw_body, stripe_signature, webhook_secret)
+        except Exception as e:
+            print(f"[STRIPE WEBHOOK] Signature verification failed: {e}")
+            raise HTTPException(status_code=400, detail=f"Webhook signature error: {e}")
+
+    event_type = event.get("type", "")
+    data_object = event.get("data", {}).get("object", {})
+
+    # ── checkout.session.completed ──────────────────────────
+    # Fires once when user completes payment on Stripe Checkout
+    if event_type == "checkout.session.completed":
+        session_id = data_object.get("id", "")
+        customer_email = data_object.get("customer_details", {}).get("email", "")
+        subscription_id = data_object.get("subscription", "")
+        plan = data_object.get("metadata", {}).get("plan", "standard")
+        print(f"[STRIPE] ✅ New subscription! session={session_id} email={customer_email} sub={subscription_id} plan={plan}")
+        # TODO: Activate license in DB, send welcome email
+
+    # ── invoice.payment_succeeded ───────────────────────────
+    # Fires every month on successful recurring charge
+    elif event_type == "invoice.payment_succeeded":
+        subscription_id = data_object.get("subscription", "")
+        customer_email = data_object.get("customer_email", "")
+        amount_paid = data_object.get("amount_paid", 0) / 100
+        currency = data_object.get("currency", "eur").upper()
+        print(f"[STRIPE] 🔄 Renewal! {amount_paid} {currency} | sub={subscription_id} email={customer_email}")
+        # TODO: Extend license period, log payment
+
+    # ── customer.subscription.deleted ──────────────────────
+    # Fires when subscription is cancelled or payment fails too many times
+    elif event_type == "customer.subscription.deleted":
+        subscription_id = data_object.get("id", "")
+        customer_id = data_object.get("customer", "")
+        print(f"[STRIPE] ❌ Subscription cancelled! sub={subscription_id} customer={customer_id}")
+        # TODO: Revoke console access, send cancellation email
+
+    # ── invoice.payment_failed ──────────────────────────────
+    # Fires when monthly charge fails (card expired, insufficient funds)
+    elif event_type == "invoice.payment_failed":
+        customer_email = data_object.get("customer_email", "")
+        subscription_id = data_object.get("subscription", "")
+        print(f"[STRIPE] ⚠️ Payment failed! email={customer_email} sub={subscription_id}")
+        # TODO: Notify customer, suspend access after grace period
+
+    else:
+        print(f"[STRIPE WEBHOOK] Unhandled event: {event_type}")
+
+    return JSONResponse(content={"status": "ok"})
 
 
 @app.get("/contact", response_class=HTMLResponse)
