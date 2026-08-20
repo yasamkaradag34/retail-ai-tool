@@ -3116,6 +3116,7 @@ def checkout(plan: str = "standard"):
                 mode="subscription",
                 success_url=f"{base_url}/checkout/success?plan={'pro' if is_pro else 'standard'}&session_id={{CHECKOUT_SESSION_ID}}",
                 cancel_url=f"{base_url}/pricing",
+                managed_payments={"enabled": False}
             )
             from fastapi.responses import RedirectResponse
             return RedirectResponse(url=session.url, status_code=303)
