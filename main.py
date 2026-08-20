@@ -3416,10 +3416,10 @@ def contact():
             </a>
           </div>
 
-          <!-- B. Aksoy -->
+          <!-- Buse Aksoy -->
           <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 26px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
             <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 16px;">💼</div>
-            <div style="font-weight: 800; color: var(--text-900); font-size: 18px; margin-bottom: 4px;">B. Aksoy</div>
+            <div style="font-weight: 800; color: var(--text-900); font-size: 18px; margin-bottom: 4px;">Buse Aksoy</div>
             <div style="font-size: 12px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Business Strategy &amp; Partnerships</div>
             <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 20px; flex: 1;">
               For commercial partnerships, strategic retail consulting, growth modeling, and executive roadmaps.
