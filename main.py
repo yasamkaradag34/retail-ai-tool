@@ -3102,6 +3102,19 @@ def checkout(plan: str = "standard"):
             return RedirectResponse(url=session.url, status_code=303)
         except Exception as e:
             print(f"[STRIPE ERROR] Failed to create checkout session: {e}")
+            return HTMLResponse(
+                content=f"""
+                <div style="font-family: sans-serif; padding: 40px; max-width: 600px; margin: 40px auto; border: 1px solid #f87171; background: #fef2f2; border-radius: 12px; color: #991b1b;">
+                    <h2 style="margin-top: 0; font-size: 20px;">⚠️ Stripe Integration Error</h2>
+                    <p style="font-size: 14px; line-height: 1.6;">Your server has <code>STRIPE_SECRET_KEY</code> set, but the Stripe API returned an error when generating the session:</p>
+                    <pre style="background: #ffffff; padding: 16px; border-radius: 8px; border: 1px solid #fee2e2; overflow-x: auto; font-family: monospace; font-size: 13px; color: #b91c1c;">{str(e)}</pre>
+                    <p style="font-size: 13.5px; color: #7f1d1d; margin-bottom: 0;">Please check your Stripe Price IDs, API keys, or currency activation in your Stripe Dashboard.</p>
+                </div>
+                """,
+                status_code=500
+            )
+    else:
+        print("[STRIPE] Warning: STRIPE_SECRET_KEY env variable not found. Showing mockup payment page.")
 
     return f"""<!DOCTYPE html>
 <html lang="en">
