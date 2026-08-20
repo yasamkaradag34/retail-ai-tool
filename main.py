@@ -3053,12 +3053,55 @@ def checkout(plan: str = "standard"):
     plan_name = "DataProvido Pro (+ 1.5h Weekly Support)" if is_pro else "DataProvido Standard"
     price_val = "299 €" if is_pro else "199 €"
     price_cents = "299.00" if is_pro else "199.00"
+    amount_cents = 29900 if is_pro else 19900
 
-    # Check for live Stripe payment link in env vars if configured
+    # 1. Check for Stripe Payment Link in environment variables
     stripe_link = os.getenv("STRIPE_PRO_PAYMENT_LINK") if is_pro else os.getenv("STRIPE_STANDARD_PAYMENT_LINK")
     if stripe_link:
         from fastapi.responses import RedirectResponse
         return RedirectResponse(url=stripe_link, status_code=303)
+
+    # 2. Check for Stripe Secret Key in environment variables
+    stripe_secret = os.getenv("STRIPE_SECRET_KEY")
+    if stripe_secret:
+        try:
+            import stripe
+            stripe.api_key = stripe_secret
+            
+            # Base domain detection
+            base_url = os.getenv("BASE_URL") or os.getenv("RAILWAY_PUBLIC_DOMAIN") or "http://localhost:8000"
+            if not base_url.startswith("http"):
+                base_url = f"https://{base_url}"
+
+            price_id = os.getenv("STRIPE_PRO_PRICE_ID") if is_pro else os.getenv("STRIPE_STANDARD_PRICE_ID")
+            
+            if price_id:
+                line_items = [{"price": price_id, "quantity": 1}]
+            else:
+                line_items = [{
+                    "price_data": {
+                        "currency": "eur",
+                        "product_data": {
+                            "name": plan_name,
+                            "description": "100% Offline On-Premise Retail AI License" + (" with 1.5h Weekly Support" if is_pro else "")
+                        },
+                        "unit_amount": amount_cents,
+                        "recurring": {"interval": "month"}
+                    },
+                    "quantity": 1
+                }]
+
+            session = stripe.checkout.Session.create(
+                payment_method_types=["card"],
+                line_items=line_items,
+                mode="subscription",
+                success_url=f"{base_url}/checkout/success?plan={'pro' if is_pro else 'standard'}&session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{base_url}/pricing",
+            )
+            from fastapi.responses import RedirectResponse
+            return RedirectResponse(url=session.url, status_code=303)
+        except Exception as e:
+            print(f"[STRIPE ERROR] Failed to create checkout session: {e}")
 
     return f"""<!DOCTYPE html>
 <html lang="en">
