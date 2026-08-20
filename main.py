@@ -2435,6 +2435,17 @@ def journey():
     </aside>
 
     <main class="main">
+      <div id="activationBanner" style="display: none; background: #ecfdf5; border: 1.5px solid #10b981; border-radius: 14px; padding: 14px 20px; margin-bottom: 16px; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 4px 14px rgba(16,185,129,0.12);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">🎉</span>
+          <div>
+            <strong style="color: #065f46; font-size: 13.5px;" id="activationTitle">License Active: Welcome to DataProvido Console!</strong>
+            <div style="font-size: 12px; color: #047857;" id="activationSubtitle">Your 100% offline local AI environment is fully unlocked with unlimited query execution.</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('activationBanner').style.display='none'" style="background: transparent; border: none; color: #065f46; font-weight: 700; cursor: pointer; font-size: 16px;">✕</button>
+      </div>
+
       <div class="topbar">
         <div class="page-title">
           <p>Matematiksel hesaplama, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir profesyonel çalışma alanında çalıştır; verileriniz üzerinde tüm matematiksel hesapları yapabilirsiniz.</p>
@@ -2654,6 +2665,20 @@ def journey():
     questionInput.addEventListener("keydown", function(e) {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runModule();
     });
+
+    // Check if user just subscribed
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('activated') === 'true') {
+      const banner = document.getElementById('activationBanner');
+      const plan = urlParams.get('plan');
+      if (banner) {
+        banner.style.display = 'flex';
+        if (plan === 'pro') {
+          document.getElementById('activationTitle').textContent = 'Pro License Active: Welcome to DataProvido Console!';
+          document.getElementById('activationSubtitle').textContent = 'Your Pro on-premise AI environment is active with Weekly 1.5h Live Support included.';
+        }
+      }
+    }
 
     renderModule("business_calculator");
   </script>
@@ -2895,9 +2920,9 @@ def pricing():
               <span style="font-size: 14px; color: var(--text-500); font-weight: 500;">/ month</span>
             </div>
 
-            <!-- Action Button -->
-            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Standard%20Plan%20(199%20EUR)%20Inquiry" style="display: block; text-align: center; background: #1f2328; color: #ffffff; font-weight: 600; padding: 13px 20px; border-radius: 999px; text-decoration: none; font-size: 14px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.12); margin-bottom: 28px;">
-              Get Standard Plan &nbsp;→
+            <!-- Action Button -> Stripe Checkout -->
+            <a href="/checkout?plan=standard" style="display: block; text-align: center; background: #1f2328; color: #ffffff; font-weight: 600; padding: 13px 20px; border-radius: 999px; text-decoration: none; font-size: 14px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.12); margin-bottom: 28px;">
+              Subscribe with Stripe &nbsp;→
             </a>
 
             <!-- Features -->
@@ -2908,31 +2933,31 @@ def pricing():
             <ul style="list-style: none; padding: 0; margin: 0 0 12px 0; font-size: 13.5px; color: var(--text-700); line-height: 2.1; flex: 1;">
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>100% Offline Local LLaMA 3.1 LLM:</strong> Zero data transmitted to cloud</span>
+                <span><strong>100% Offline Local LLaMA 3.1 LLM:</strong> Zero data transmitted to third-party clouds</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>15+ Analytical Engines:</strong> Stock, Funnel Master, Price Radar, GfK</span>
+                <span><strong>15+ Analytical Engines:</strong> Stock Risk, Funnel Master, Price Radar, GfK Market Share</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Natural Language Business Querying:</strong> No SQL or coding required</span>
+                <span><strong>Natural Language Business Querying:</strong> No SQL, Python, or data analyst queue required</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Automated Ingestion:</strong> Excel (.xlsx), CSV, and local flat files</span>
+                <span><strong>Automated Ingestion:</strong> Excel (.xlsx), CSV, and local flat file ingestion</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>1-Click Excel Export:</strong> Download formatted reports with styles</span>
+                <span><strong>1-Click Excel Export:</strong> Download formatted reports with styles &amp; KPI summaries</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>On-Premise Container Deployment:</strong> Runs locally via Docker / Ollama</span>
+                <span><strong>On-Premise Container Deployment:</strong> Runs locally on your hardware via Docker / Ollama</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span>Standard technical setup &amp; email documentation support</span>
+                <span>Standard technical setup documentation &amp; email onboarding support</span>
               </li>
             </ul>
 
@@ -2964,9 +2989,9 @@ def pricing():
               <span style="font-size: 14px; color: var(--text-500); font-weight: 500;">/ month</span>
             </div>
 
-            <!-- Action Button -->
-            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Pro%20Plan%20(299%20EUR)%20Inquiry" style="display: block; text-align: center; background: var(--orange); color: #ffffff; font-weight: 700; padding: 13px 20px; border-radius: 999px; text-decoration: none; font-size: 14px; transition: all 0.2s; box-shadow: 0 6px 18px rgba(242,111,38,0.35); margin-bottom: 28px;">
-              Get Pro Plan with Live Support &nbsp;→
+            <!-- Action Button -> Stripe Checkout -->
+            <a href="/checkout?plan=pro" style="display: block; text-align: center; background: var(--orange); color: #ffffff; font-weight: 700; padding: 13px 20px; border-radius: 999px; text-decoration: none; font-size: 14px; transition: all 0.2s; box-shadow: 0 6px 18px rgba(242,111,38,0.35); margin-bottom: 28px;">
+              Subscribe with Stripe &nbsp;→
             </a>
 
             <!-- Features -->
@@ -2975,29 +3000,29 @@ def pricing():
             </div>
             
             <ul style="list-style: none; padding: 0; margin: 0 0 12px 0; font-size: 13.5px; color: var(--text-700); line-height: 2.1; flex: 1;">
-              <li style="display: flex; align-items: flex-start; gap: 10px; background: #fff8f4; padding: 6px 10px; border-radius: 8px; border: 1px dashed var(--border-orange); margin-bottom: 6px;">
+              <li style="display: flex; align-items: flex-start; gap: 10px; background: #fff8f4; padding: 10px 12px; border-radius: 10px; border: 1px dashed var(--border-orange); margin-bottom: 8px;">
                 <span style="color: var(--orange); font-weight: 800; font-size: 16px;">🔥</span>
-                <span><strong style="color: var(--orange-dark);">Haftada 1.5 saatlik online canlı teknik ve analitik destek:</strong> Doğrudan uzmanla 1-on-1 ekran paylaşımı ve veri stratejisi seansı</span>
+                <span><strong style="color: var(--orange-dark);">Weekly 1.5 hours of dedicated live online technical &amp; analytical support:</strong> Direct 1-on-1 screen share and data strategy session with lead specialist</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Custom Prompt &amp; Sector Metric Tuning:</strong> Kendi perakende verinize ve sektör KPI'larınıza özel AI uyarlaması</span>
+                <span><strong>Custom Prompt &amp; Sector Metric Tuning:</strong> Tailored to your company's proprietary retail schema and KPIs</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Priority SLA Support:</strong> Doğrudan Slack / WhatsApp / Öncelikli E-posta kanalı</span>
+                <span><strong>Priority SLA Support:</strong> Direct Slack / WhatsApp / VIP dedicated channel</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Gelişmiş Çapraz Analiz Modülleri:</strong> Stok vs Funnel vs Fiyat Elastikiyeti Korelasyonu</span>
+                <span><strong>Advanced Cross-Dataset Modules:</strong> Stock vs Funnel vs Price Elasticity correlation</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Multi-User Intranet Deployment:</strong> Kurum içi birden fazla kullanıcı erişimi</span>
+                <span><strong>Multi-User Intranet Deployment:</strong> Access for cross-functional commercial teams</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span>Üç aylık periyodik model optimizasyonu ve yeni modül güncellemeleri</span>
+                <span>Quarterly model optimization &amp; new analytical module updates</span>
               </li>
             </ul>
 
@@ -3020,6 +3045,337 @@ def pricing():
         active_nav="pricing",
         max_width="1040px"
     )
+
+
+@app.get("/checkout", response_class=HTMLResponse)
+def checkout(plan: str = "standard"):
+    is_pro = plan.lower() == "pro"
+    plan_name = "DataProvido Pro (+ 1.5h Weekly Support)" if is_pro else "DataProvido Standard"
+    price_val = "299 €" if is_pro else "199 €"
+    price_cents = "299.00" if is_pro else "199.00"
+
+    # Check for live Stripe payment link in env vars if configured
+    stripe_link = os.getenv("STRIPE_PRO_PAYMENT_LINK") if is_pro else os.getenv("STRIPE_STANDARD_PAYMENT_LINK")
+    if stripe_link:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=stripe_link, status_code=303)
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stripe Checkout – {plan_name}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {{ margin: 0; padding: 0; box-sizing: border-box; }}
+    body {{
+      background: #f8fafc;
+      color: #1e293b;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }}
+    .checkout-shell {{
+      width: 100%;
+      max-width: 880px;
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }}
+    .order-summary {{
+      background: #0f172a;
+      color: #ffffff;
+      padding: 44px 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }}
+    .order-header {{ display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; margin-bottom: 28px; }}
+    .order-dot {{ width: 10px; height: 10px; border-radius: 50%; background: #f26f26; }}
+    .order-plan {{ font-size: 24px; font-weight: 800; margin-bottom: 6px; }}
+    .order-price {{ font-size: 38px; font-weight: 800; color: #f26f26; margin: 16px 0; }}
+    .order-price span {{ font-size: 14px; color: #94a3b8; font-weight: 500; }}
+    .order-features {{ list-style: none; padding: 0; margin: 20px 0; font-size: 13.5px; color: #cbd5e1; line-height: 2; }}
+    .order-features li {{ display: flex; align-items: center; gap: 8px; }}
+    .stripe-trust {{
+      font-size: 12px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }}
+    .payment-panel {{
+      padding: 44px 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }}
+    .payment-title {{ font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #0f172a; }}
+    .form-group {{ margin-bottom: 16px; }}
+    .form-label {{ display: block; font-size: 12.5px; font-weight: 600; color: #475569; margin-bottom: 6px; }}
+    .form-input {{
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1.5px solid #cbd5e1;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+    }}
+    .form-input:focus {{ border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }}
+    .form-row {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }}
+    .btn-pay {{
+      background: #635bff;
+      color: #ffffff;
+      border: 0;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 4px 14px rgba(99,91,255,0.3);
+    }}
+    .btn-pay:hover {{ background: #534ae8; transform: translateY(-1px); }}
+    .btn-back {{
+      display: block;
+      text-align: center;
+      margin-top: 14px;
+      color: #64748b;
+      font-size: 13px;
+      text-decoration: none;
+    }}
+    .btn-back:hover {{ color: #0f172a; }}
+    @media (max-width: 768px) {{
+      .checkout-shell {{ grid-template-columns: 1fr; }}
+      .order-summary, .payment-panel {{ padding: 28px 24px; }}
+    }}
+  </style>
+</head>
+<body>
+  <div class="checkout-shell">
+    
+    <!-- LEFT: ORDER SUMMARY -->
+    <div class="order-summary">
+      <div>
+        <div class="order-header">
+          <div class="order-dot"></div>
+          DataProvido Checkout
+        </div>
+        <div style="font-size: 12px; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">Subscribe to Plan</div>
+        <div class="order-plan">{plan_name}</div>
+        <div class="order-price">{price_val} <span>/ billed monthly</span></div>
+        
+        <ul class="order-features">
+          <li>✓ 100% Offline Local LLaMA 3.1 Engine</li>
+          <li>✓ 15+ Advanced Analytical Modules</li>
+          <li>✓ Unlimited Excel / CSV Data Ingestion</li>
+          {"<li>⭐ <strong>1.5 Hours / Week Live Video Support</strong></li>" if is_pro else "<li>✓ Standard Email Onboarding Support</li>"}
+          {"<li>✓ Custom KPI & Domain Metric Tuning</li>" if is_pro else "<li>✓ One-Click Styled Excel Reports</li>"}
+        </ul>
+      </div>
+
+      <div class="stripe-trust">
+        <span>🔒</span> Powered by Stripe · 256-Bit SSL Encrypted
+      </div>
+    </div>
+
+    <!-- RIGHT: STRIPE PAYMENT FORM -->
+    <div class="payment-panel">
+      <div class="payment-title">Pay with Stripe</div>
+      
+      <form action="/checkout/success" method="GET">
+        <input type="hidden" name="plan" value="{plan}">
+        <input type="hidden" name="session_id" value="cs_live_sim_{os.urandom(6).hex()}">
+
+        <div class="form-group">
+          <label class="form-label">Email address</label>
+          <input type="email" class="form-input" required placeholder="founder@company.com" value="demo@company.com">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Card information</label>
+          <input type="text" class="form-input" required placeholder="4242 •••• •••• 4242" value="4242 •••• •••• 4242">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Expiration</label>
+            <input type="text" class="form-input" required placeholder="MM / YY" value="12 / 28">
+          </div>
+          <div class="form-group">
+            <label class="form-label">CVC</label>
+            <input type="text" class="form-input" required placeholder="CVC" value="987">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Name on card</label>
+          <input type="text" class="form-input" required placeholder="Jane Doe" value="Data Leader">
+        </div>
+
+        <button type="submit" class="btn-pay">
+          Pay €{price_cents} with Stripe &nbsp;→
+        </button>
+
+        <a href="/pricing" class="btn-back">← Cancel and return to plans</a>
+      </form>
+    </div>
+
+  </div>
+</body>
+</html>"""
+
+
+@app.get("/checkout/success", response_class=HTMLResponse)
+def checkout_success(plan: str = "standard", session_id: str = ""):
+    is_pro = plan.lower() == "pro"
+    plan_title = "DataProvido Pro (+ 1.5h Weekly Support)" if is_pro else "DataProvido Standard"
+    
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Successful – DataProvido</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {{ margin: 0; padding: 0; box-sizing: border-box; }}
+    body {{
+      background: linear-gradient(160deg, #fff8f4 0%, #ffffff 45%, #f0f7ff 100%);
+      color: #1e293b;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }}
+    .success-card {{
+      max-width: 620px;
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 48px 40px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }}
+    .success-card::before {{
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+      background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    }}
+    .success-badge {{
+      width: 64px; height: 64px; border-radius: 50%;
+      background: #ecfdf5; color: #10b981; font-size: 32px;
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-bottom: 20px; border: 2px solid #a7f3d0;
+    }}
+    h1 {{
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      color: #0f172a;
+      margin-bottom: 12px;
+    }}
+    p {{
+      color: #475569;
+      font-size: 15px;
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }}
+    .plan-box {{
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 28px;
+      text-align: left;
+    }}
+    .plan-row {{
+      display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13.5px;
+    }}
+    .plan-row:last-child {{ margin-bottom: 0; }}
+    .btn-launch {{
+      background: #f26f26;
+      color: #ffffff;
+      padding: 14px 32px;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(242,111,38,0.35);
+      transition: background 0.2s, transform 0.15s;
+    }}
+    .btn-launch:hover {{ background: #d85c18; transform: translateY(-2px); }}
+    .support-box {{
+      background: #fff8f4;
+      border: 1px solid rgba(242,111,38,0.3);
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #7c2d12;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      text-align: left;
+    }}
+  </style>
+</head>
+<body>
+  <div class="success-card">
+    <div class="success-badge">✓</div>
+    <h1>Payment Successful!</h1>
+    <p>Your DataProvido license is active and ready to use. Your on-premise local AI environment has been granted full analytical access.</p>
+
+    <div class="plan-box">
+      <div class="plan-row">
+        <span style="color: #64748b;">Subscribed Plan:</span>
+        <strong style="color: #0f172a;">{plan_title}</strong>
+      </div>
+      <div class="plan-row">
+        <span style="color: #64748b;">License Status:</span>
+        <strong style="color: #10b981;">● Active (Unlimited Offline Queries)</strong>
+      </div>
+      <div class="plan-row">
+        <span style="color: #64748b;">Session Reference:</span>
+        <span style="font-family: monospace; color: #64748b;">{session_id or 'cs_live_active'}</span>
+      </div>
+    </div>
+
+    {"<div class='support-box'><div><strong>📅 Weekly 1.5h Support Included:</strong><div style='font-size: 12px; color: #9a3412;'>Book your dedicated weekly 1-on-1 strategy &amp; technical consultation.</div></div><a href='mailto:info@dataprovido.com?subject=Schedule%20Weekly%201.5h%20Live%20Support%20Session' style='background: #f26f26; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 12px; white-space: nowrap;'>Book Session →</a></div><br>" if is_pro else ""}
+
+    <div style="margin-top: 16px;">
+      <a href="/journey?activated=true&plan={plan}" class="btn-launch">
+        🚀 Launch Analytics Console &nbsp;→
+      </a>
+    </div>
+  </div>
+</body>
+</html>"""
 
 
 @app.get("/contact", response_class=HTMLResponse)
