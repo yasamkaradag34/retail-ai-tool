@@ -3461,41 +3461,68 @@ async def stripe_webhook(
     event_type = event.get("type", "")
     data_object = event.get("data", {}).get("object", {})
 
-    # ── checkout.session.completed ──────────────────────────
-    # Fires once when user completes payment on Stripe Checkout
+    # ── checkout.session.completed ──────────────────────────────────────────
+    # Fires immediately when card payment is confirmed on Stripe Checkout form.
+    # NOTE: For async methods (SEPA, Bancontact, iDEAL), this fires but payment_status
+    # may still be "unpaid" — wait for async_payment_succeeded before granting access.
     if event_type == "checkout.session.completed":
         session_id = data_object.get("id", "")
         customer_email = data_object.get("customer_details", {}).get("email", "")
         subscription_id = data_object.get("subscription", "")
+        payment_status = data_object.get("payment_status", "")
         plan = data_object.get("metadata", {}).get("plan", "standard")
-        print(f"[STRIPE] ✅ New subscription! session={session_id} email={customer_email} sub={subscription_id} plan={plan}")
+        print(f"[STRIPE] ✅ Checkout completed! session={session_id} email={customer_email} sub={subscription_id} plan={plan} status={payment_status}")
         # TODO: Activate license in DB, send welcome email
 
-    # ── invoice.payment_succeeded ───────────────────────────
-    # Fires every month on successful recurring charge
+    # ── checkout.session.async_payment_succeeded ────────────────────────────
+    # Fires when a delayed/async payment method (SEPA Direct Debit, Bancontact,
+    # iDEAL, etc.) is finally confirmed after the checkout session was created.
+    # This is the definitive "payment is good, grant access" signal for those methods.
+    elif event_type == "checkout.session.async_payment_succeeded":
+        session_id = data_object.get("id", "")
+        customer_email = data_object.get("customer_details", {}).get("email", "")
+        subscription_id = data_object.get("subscription", "")
+        plan = data_object.get("metadata", {}).get("plan", "standard")
+        print(f"[STRIPE] ✅ Async payment confirmed! session={session_id} email={customer_email} sub={subscription_id} plan={plan}")
+        # TODO: Activate license, send access confirmation email
+
+    # ── checkout.session.async_payment_failed ──────────────────────────────
+    # Fires when a delayed payment method ultimately fails (e.g. bank rejects SEPA).
+    # Must revoke any provisional access granted on session.completed.
+    elif event_type == "checkout.session.async_payment_failed":
+        session_id = data_object.get("id", "")
+        customer_email = data_object.get("customer_details", {}).get("email", "")
+        plan = data_object.get("metadata", {}).get("plan", "standard")
+        print(f"[STRIPE] ❌ Async payment failed! session={session_id} email={customer_email} plan={plan}")
+        # TODO: Revoke provisional access, notify customer
+
+    # ── invoice.payment_succeeded ───────────────────────────────────────────
+    # Fires every month on each successful recurring subscription charge.
     elif event_type == "invoice.payment_succeeded":
         subscription_id = data_object.get("subscription", "")
         customer_email = data_object.get("customer_email", "")
         amount_paid = data_object.get("amount_paid", 0) / 100
         currency = data_object.get("currency", "eur").upper()
-        print(f"[STRIPE] 🔄 Renewal! {amount_paid} {currency} | sub={subscription_id} email={customer_email}")
-        # TODO: Extend license period, log payment
+        print(f"[STRIPE] 🔄 Renewal payment! {amount_paid} {currency} | sub={subscription_id} email={customer_email}")
+        # TODO: Extend license period, log payment record
 
-    # ── customer.subscription.deleted ──────────────────────
-    # Fires when subscription is cancelled or payment fails too many times
+    # ── customer.subscription.deleted ──────────────────────────────────────
+    # Fires when a subscription is cancelled or expires after failed payment retries.
     elif event_type == "customer.subscription.deleted":
         subscription_id = data_object.get("id", "")
         customer_id = data_object.get("customer", "")
-        print(f"[STRIPE] ❌ Subscription cancelled! sub={subscription_id} customer={customer_id}")
+        print(f"[STRIPE] ❌ Subscription cancelled/expired! sub={subscription_id} customer={customer_id}")
         # TODO: Revoke console access, send cancellation email
 
-    # ── invoice.payment_failed ──────────────────────────────
-    # Fires when monthly charge fails (card expired, insufficient funds)
+    # ── invoice.payment_failed ──────────────────────────────────────────────
+    # Fires when a monthly recurring charge fails (card expired, insufficient funds).
+    # Stripe will retry automatically based on your retry schedule.
     elif event_type == "invoice.payment_failed":
         customer_email = data_object.get("customer_email", "")
         subscription_id = data_object.get("subscription", "")
-        print(f"[STRIPE] ⚠️ Payment failed! email={customer_email} sub={subscription_id}")
-        # TODO: Notify customer, suspend access after grace period
+        attempt = data_object.get("attempt_count", 1)
+        print(f"[STRIPE] ⚠️ Payment failed (attempt {attempt})! email={customer_email} sub={subscription_id}")
+        # TODO: Notify customer, suspend access after grace period / max retries
 
     else:
         print(f"[STRIPE WEBHOOK] Unhandled event: {event_type}")
