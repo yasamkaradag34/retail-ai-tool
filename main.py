@@ -3384,47 +3384,73 @@ def contact():
         "Contact & Enterprise Inquiries",
         """
         <p class="page-subhead">
-          Connect directly with our executive, strategy, and AI engineering leadership for on-premise deployments, tailored demonstrations, or retail partnership inquiries.
+          Connect directly with our executive, sales, infrastructure, and AI engineering leadership for on-premise deployments, tailored demonstrations, or retail partnership inquiries.
         </p>
 
-        <!-- 3 Executive Contact Cards -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 28px 0;">
+        <!-- Executive & Team Contact Cards Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin: 28px 0;">
           
           <!-- General Desk -->
-          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 26px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 16px;">🏢</div>
-            <div style="font-weight: 800; color: var(--text-900); font-size: 18px; margin-bottom: 4px;">General &amp; Enterprise Desk</div>
-            <div style="font-size: 12px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Licensing &amp; Demonstration</div>
-            <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 20px; flex: 1;">
-              For live platform demos, pilot deployments, RFP submissions, and billing inquiries.
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 14px;">🏢</div>
+            <div style="font-weight: 800; color: var(--text-900); font-size: 17px; margin-bottom: 4px;">General &amp; Enterprise Desk</div>
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Licensing &amp; Demonstration</div>
+            <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 18px; flex: 1;">
+              For live platform demos, pilot deployments, RFP submissions, and legal NDA processes.
             </p>
-            <a href="mailto:info@dataprovido.com" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--orange); font-weight: 700; text-decoration: none; font-size: 14px; background: #fff8f4; padding: 11px 16px; border-radius: 10px; border: 1px solid var(--border-orange); transition: background .15s;">
+            <a href="mailto:info@dataprovido.com" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--orange); font-weight: 700; text-decoration: none; font-size: 13.5px; background: #fff8f4; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-orange); transition: background .15s;">
               ✉️ info@dataprovido.com
             </a>
           </div>
 
-          <!-- Yaşam Karadağ -->
-          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 26px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 16px;">👨‍💻</div>
-            <div style="font-weight: 800; color: var(--text-900); font-size: 18px; margin-bottom: 4px;">Yaşam Karadağ</div>
-            <div style="font-size: 12px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Tech, AI Architecture &amp; Product</div>
-            <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 20px; flex: 1;">
-              For technical architecture reviews, on-premise hardware sizing, LLM fine-tuning, and Docker integration.
+          <!-- Muhammet Bozkurt (Sales) -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 14px;">💼</div>
+            <div style="font-weight: 800; color: var(--text-900); font-size: 17px; margin-bottom: 4px;">Muhammet Bozkurt</div>
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Enterprise Sales &amp; Commercial Solutions</div>
+            <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 18px; flex: 1;">
+              For enterprise licensing packages, retail ROI modeling, pilot scoping, and custom contracts.
             </p>
-            <a href="mailto:karadagya@dataprovido.com" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--orange); font-weight: 700; text-decoration: none; font-size: 14px; background: #fff8f4; padding: 11px 16px; border-radius: 10px; border: 1px solid var(--border-orange); transition: background .15s;">
+            <a href="mailto:mbozkurt@dataprovido.com" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--orange); font-weight: 700; text-decoration: none; font-size: 13.5px; background: #fff8f4; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-orange); transition: background .15s;">
+              ✉️ mbozkurt@dataprovido.com
+            </a>
+          </div>
+
+          <!-- Yaşam Karadağ (AI & Product) -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 14px;">👨‍💻</div>
+            <div style="font-weight: 800; color: var(--text-900); font-size: 17px; margin-bottom: 4px;">Yaşam Karadağ</div>
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Tech, AI Architecture &amp; Product</div>
+            <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 18px; flex: 1;">
+              For LLM reasoning engines, tool dispatching architecture, prompt engineering, and retail AI logic.
+            </p>
+            <a href="mailto:karadagya@dataprovido.com" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--orange); font-weight: 700; text-decoration: none; font-size: 13.5px; background: #fff8f4; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-orange); transition: background .15s;">
               ✉️ karadagya@dataprovido.com
             </a>
           </div>
 
-          <!-- Buse Aksoy -->
-          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 26px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 16px;">💼</div>
-            <div style="font-weight: 800; color: var(--text-900); font-size: 18px; margin-bottom: 4px;">Buse Aksoy</div>
-            <div style="font-size: 12px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Business Strategy &amp; Partnerships</div>
-            <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 20px; flex: 1;">
-              For commercial partnerships, strategic retail consulting, growth modeling, and executive roadmaps.
+          <!-- Metehan Taşkan (Infrastructure & Docker) -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 14px;">⚙️</div>
+            <div style="font-weight: 800; color: var(--text-900); font-size: 17px; margin-bottom: 4px;">Metehan Taşkan</div>
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Server-Side &amp; Docker Integration</div>
+            <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 18px; flex: 1;">
+              For server-side deployments, on-premise hardware sizing, Docker orchestration, and security infra.
             </p>
-            <a href="mailto:aksoyb@dataprovido.com" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--orange); font-weight: 700; text-decoration: none; font-size: 14px; background: #fff8f4; padding: 11px 16px; border-radius: 10px; border: 1px solid var(--border-orange); transition: background .15s;">
+            <a href="mailto:mtaskan@dataprovido.com" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--orange); font-weight: 700; text-decoration: none; font-size: 13.5px; background: #fff8f4; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-orange); transition: background .15s;">
+              ✉️ mtaskan@dataprovido.com
+            </a>
+          </div>
+
+          <!-- Buse Aksoy (Strategy) -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 14px;">📈</div>
+            <div style="font-weight: 800; color: var(--text-900); font-size: 17px; margin-bottom: 4px;">Buse Aksoy</div>
+            <div style="font-size: 11.5px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Business Strategy &amp; Partnerships</div>
+            <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 18px; flex: 1;">
+              For strategic retail partnerships, CRM growth consulting, and cross-functional operations.
+            </p>
+            <a href="mailto:aksoyb@dataprovido.com" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--orange); font-weight: 700; text-decoration: none; font-size: 13.5px; background: #fff8f4; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-orange); transition: background .15s;">
               ✉️ aksoyb@dataprovido.com
             </a>
           </div>
@@ -3435,17 +3461,20 @@ def contact():
         <div style="background: var(--bg-2); border: 1.5px solid var(--border); border-radius: 18px; padding: 28px; margin-top: 24px;">
           <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin-bottom: 8px;">Direct Inquiry Quick Composer</h3>
           <p style="font-size: 13.5px; color: var(--text-500); margin-bottom: 18px;">
-            Choose a subject and launch your email client with pre-formatted details:
+            Choose a department or specialist and launch your email client with pre-formatted details:
           </p>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Standard%20(199%20EUR)%20Setup%20Inquiry" style="background: #ffffff; border: 1px solid var(--border); color: var(--text-900); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s;">
-              📦 Inquire Standard Plan (199 €)
+            <a href="mailto:mbozkurt@dataprovido.com?subject=DataProvido%20Enterprise%20Sales%20%26%20Licensing%20Inquiry" style="background: #fff3ec; border: 1px solid var(--border-orange); color: var(--orange-dark); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s;">
+              💼 Enterprise Sales (Muhammet Bozkurt)
             </a>
-            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Pro%20(299%20EUR)%20with%20Live%20Support%20Inquiry" style="background: #fff3ec; border: 1px solid var(--border-orange); color: var(--orange-dark); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s;">
-              🔥 Inquire Pro Plan with Live Support (299 €)
+            <a href="mailto:mtaskan@dataprovido.com?subject=DataProvido%20Server-Side%20%26%20Docker%20Infrastructure%20Inquiry" style="background: #ffffff; border: 1px solid var(--border); color: var(--text-900); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s;">
+              ⚙️ Server-Side &amp; Docker (Metehan Taşkan)
             </a>
-            <a href="mailto:karadagya@dataprovido.com?subject=DataProvido%20Architecture%20%26%20Technical%20Question" style="background: #ffffff; border: 1px solid var(--border); color: var(--text-900); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s;">
-              ⚙️ Technical &amp; LLM Consultation
+            <a href="mailto:karadagya@dataprovido.com?subject=DataProvido%20AI%20Architecture%20%26%20LLM%20Inquiry" style="background: #ffffff; border: 1px solid var(--border); color: var(--text-900); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s;">
+              👨‍💻 AI Architecture (Yaşam Karadağ)
+            </a>
+            <a href="mailto:aksoyb@dataprovido.com?subject=DataProvido%20Retail%20Strategy%20%26%20Partnership%20Inquiry" style="background: #ffffff; border: 1px solid var(--border); color: var(--text-900); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s;">
+              📈 Strategy &amp; Growth (Buse Aksoy)
             </a>
           </div>
         </div>
@@ -3457,7 +3486,7 @@ def contact():
         """,
         kicker="Direct Executive Contact",
         active_nav="contact",
-        max_width="1040px"
+        max_width="1080px"
     )
 
 
