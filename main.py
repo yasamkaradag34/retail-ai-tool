@@ -3112,7 +3112,6 @@ def checkout(plan: str = "standard"):
                 }]
 
             session = stripe.checkout.Session.create(
-                payment_method_types=["card"],
                 line_items=line_items,
                 mode="subscription",
                 success_url=f"{base_url}/checkout/success?plan={'pro' if is_pro else 'standard'}&session_id={{CHECKOUT_SESSION_ID}}",
