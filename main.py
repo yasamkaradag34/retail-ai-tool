@@ -2659,11 +2659,16 @@ def journey():
   </script>
 </body>
 </html>
-\"\"\"
+"""
 
 
-def simple_page(title, body, kicker="DataProvido"):
-    return f\"\"\"<!DOCTYPE html>
+def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_width="960px"):
+    nav_pricing_cls = "nav-link active" if active_nav == "pricing" else "nav-link"
+    nav_contact_cls = "nav-link active" if active_nav == "contact" else "nav-link"
+    nav_who_cls     = "nav-link active" if active_nav == "who-we-are" else "nav-link"
+    nav_how_cls     = "nav-link active" if active_nav == "how-works" else "nav-link"
+
+    return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -2712,10 +2717,24 @@ def simple_page(title, body, kicker="DataProvido"):
     .nav-logo {{ display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text-900); text-decoration: none; }}
     .nav-logo-dot {{ width: 10px; height: 10px; border-radius: 50%; background: var(--orange); animation: pulse-dot 2.5s ease-in-out infinite; }}
     @keyframes pulse-dot {{ 0%,100% {{ box-shadow: 0 0 0 0 rgba(242,111,38,0.5); }} 50% {{ box-shadow: 0 0 0 6px rgba(242,111,38,0); }} }}
-    .nav-links {{ display: flex; align-items: center; gap: 6px; }}
-    .nav-link {{ color: var(--text-700); text-decoration: none; font-size: 14px; font-weight: 500; padding: 8px 14px; border-radius: 8px; transition: color .2s, background .2s; }}
+    .nav-links {{ display: flex; align-items: center; gap: 4px; }}
+    .nav-link {{
+      color: var(--text-700); text-decoration: none; font-size: 14px; font-weight: 500;
+      padding: 7px 14px; border-radius: 10px; transition: all .18s ease;
+    }}
     .nav-link:hover {{ color: var(--orange); background: rgba(242,111,38,0.06); }}
-    .nav-cta {{ background: var(--orange); color: #fff; border: none; padding: 10px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background .2s, transform .15s; box-shadow: 0 4px 14px rgba(242,111,38,0.3); }}
+    .nav-link.active {{
+      color: var(--orange);
+      background: #fff3ec;
+      font-weight: 600;
+      box-shadow: inset 0 0 0 1px rgba(242,111,38,0.20);
+    }}
+    .nav-cta {{
+      background: var(--orange); color: #fff; border: none; padding: 10px 22px;
+      border-radius: 24px; font-size: 14px; font-weight: 600; cursor: pointer;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+      transition: background .2s, transform .15s; box-shadow: 0 4px 14px rgba(242,111,38,0.3);
+    }}
     .nav-cta:hover {{ background: var(--orange-dark); transform: translateY(-1px); }}
 
     /* MAIN CONTAINER */
@@ -2728,7 +2747,7 @@ def simple_page(title, body, kicker="DataProvido"):
     }}
     .page-card {{
       width: 100%;
-      max-width: 920px;
+      max-width: {max_width};
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -2749,23 +2768,28 @@ def simple_page(title, body, kicker="DataProvido"):
     }}
     .page-card h1 {{
       font-family: 'Playfair Display', serif;
-      font-size: clamp(32px, 4.5vw, 48px);
+      font-size: clamp(30px, 4vw, 44px);
       font-weight: 700;
-      line-height: 1.15;
+      line-height: 1.18;
       color: var(--text-900);
-      margin-bottom: 24px;
+      margin-bottom: 14px;
       letter-spacing: -0.5px;
+    }}
+    .page-subhead {{
+      font-size: 15.5px;
+      color: var(--text-500);
+      margin-bottom: 32px;
+      line-height: 1.6;
     }}
     .page-content {{
       color: var(--text-700);
-      font-size: 15.5px;
+      font-size: 15px;
       line-height: 1.8;
     }}
-    .page-content p {{ margin-bottom: 16px; }}
 
     /* ACTIONS */
     .page-actions {{
-      margin-top: 36px;
+      margin-top: 40px;
       padding-top: 24px;
       border-top: 1px solid var(--border);
       display: flex;
@@ -2808,10 +2832,10 @@ def simple_page(title, body, kicker="DataProvido"):
   <nav class="nav">
     <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>DataProvido</a>
     <div class="nav-links">
-      <a href="/pricing" class="nav-link">Pricing</a>
-      <a href="/contact" class="nav-link">Contact</a>
-      <a href="/who-we-are" class="nav-link">Who We Are?</a>
-      <a href="/how-works" class="nav-link">How Works?</a>
+      <a href="/pricing" class="{nav_pricing_cls}">Pricing</a>
+      <a href="/contact" class="{nav_contact_cls}">Contact</a>
+      <a href="/who-we-are" class="{nav_who_cls}">Who We Are?</a>
+      <a href="/how-works" class="{nav_how_cls}">How Works?</a>
     </div>
     <a href="/journey" class="nav-cta">Start Journey &nbsp;→</a>
   </nav>
@@ -2841,127 +2865,432 @@ def simple_page(title, body, kicker="DataProvido"):
 @app.get("/pricing", response_class=HTMLResponse)
 def pricing():
     return simple_page(
-        "Pricing & On-Premise Licensing",
+        "Choose the perfect plan for your journey",
         """
-        <p style="font-size: 16px; color: var(--text-700); margin-bottom: 24px;">
-          DataProvido is offered under an <strong>Enterprise On-Premise Licensing Model</strong> for retail and e-commerce leaders who demand real-time analytics without ever sending sensitive business data to third-party cloud providers.
+        <p class="page-subhead" style="margin-bottom: 28px;">
+          Deploy complete, 100% offline retail intelligence directly onto your enterprise hardware with zero cloud exposure and predictable licensing.
         </p>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin: 28px 0;">
+        <!-- 2 CARDS GRID (199 € and 299 €) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin: 28px 0 36px;">
           
-          <!-- Starter -->
-          <div style="background: var(--bg-2); border: 1.5px solid var(--border); border-radius: 18px; padding: 26px; display: flex; flex-direction: column;">
-            <div style="font-weight: 800; color: var(--text-900); font-size: 19px; margin-bottom: 6px;">On-Premise Starter</div>
-            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 16px;">Growing retail &amp; digital-first e-commerce brands</div>
-            <ul style="padding-left: 18px; font-size: 13.5px; color: var(--text-700); line-height: 2.1; margin-bottom: 20px; flex: 1;">
-              <li>Single server / local machine deployment</li>
-              <li>15+ Pre-built analytical modules (Stock, Funnel, Pricing)</li>
-              <li>Excel, CSV &amp; local flat-file automated ingestion</li>
-              <li>100% Local LLaMA 3.1 with unlimited offline queries</li>
-              <li>Standard email &amp; technical onboarding support</li>
-            </ul>
-            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Starter%20License%20Inquiry" style="display: block; text-align: center; background: #fff; color: var(--text-900); border: 1.5px solid var(--border); font-weight: 600; padding: 11px 16px; border-radius: 10px; text-decoration: none; font-size: 13.5px; transition: all 0.2s;">
-              Request Starter Quote →
+          <!-- CARD 1: 199 € / Standard -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 24px; padding: 32px 28px; display: flex; flex-direction: column; box-shadow: var(--card-shadow); transition: transform .2s, box-shadow .2s;">
+            
+            <div style="display: inline-flex; align-items: center; align-self: flex-start; background: var(--bg-2); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 600; color: var(--text-700); margin-bottom: 16px;">
+              Starter &amp; Pro
+            </div>
+            
+            <div style="font-size: 22px; font-weight: 800; color: var(--text-900); margin-bottom: 6px;">
+              DataProvido Standard
+            </div>
+            
+            <div style="font-size: 13.5px; color: var(--text-500); margin-bottom: 20px; line-height: 1.5;">
+              Full offline retail AI analytics for commercial and e-commerce leaders.
+            </div>
+
+            <!-- Price -->
+            <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+              <span style="font-size: 42px; font-weight: 800; color: var(--text-900); line-height: 1;">199 €</span>
+              <span style="font-size: 14px; color: var(--text-500); font-weight: 500;">/ month</span>
+            </div>
+
+            <!-- Action Button -->
+            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Standard%20Plan%20(199%20EUR)%20Inquiry" style="display: block; text-align: center; background: #1f2328; color: #ffffff; font-weight: 600; padding: 13px 20px; border-radius: 999px; text-decoration: none; font-size: 14px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.12); margin-bottom: 28px;">
+              Get Standard Plan &nbsp;→
             </a>
+
+            <!-- Features -->
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-500); margin-bottom: 14px;">
+              Included Features:
+            </div>
+            
+            <ul style="list-style: none; padding: 0; margin: 0 0 12px 0; font-size: 13.5px; color: var(--text-700); line-height: 2.1; flex: 1;">
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span><strong>100% Offline Local LLaMA 3.1 LLM:</strong> Zero data transmitted to cloud</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span><strong>15+ Analytical Engines:</strong> Stock, Funnel Master, Price Radar, GfK</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span><strong>Natural Language Business Querying:</strong> No SQL or coding required</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span><strong>Automated Ingestion:</strong> Excel (.xlsx), CSV, and local flat files</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span><strong>1-Click Excel Export:</strong> Download formatted reports with styles</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span><strong>On-Premise Container Deployment:</strong> Runs locally via Docker / Ollama</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span>Standard technical setup &amp; email documentation support</span>
+              </li>
+            </ul>
+
           </div>
 
-          <!-- Enterprise -->
-          <div style="background: #fff8f4; border: 2px solid var(--orange); border-radius: 18px; padding: 26px; position: relative; box-shadow: 0 8px 30px rgba(242,111,38,0.12); display: flex; flex-direction: column;">
-            <div style="position: absolute; top: 14px; right: 14px; background: var(--orange); color: #fff; font-size: 10.5px; font-weight: 800; padding: 4px 10px; border-radius: 999px; letter-spacing: 0.5px;">RECOMMENDED</div>
-            <div style="font-weight: 800; color: var(--orange-dark); font-size: 19px; margin-bottom: 6px;">Enterprise Custom</div>
-            <div style="font-size: 13px; color: var(--text-500); margin-bottom: 16px;">Enterprise retail chains &amp; multi-department teams</div>
-            <ul style="padding-left: 18px; font-size: 13.5px; color: var(--text-700); line-height: 2.1; margin-bottom: 20px; flex: 1;">
-              <li>Unlimited seats &amp; granular role-based access control</li>
-              <li>Direct ERP (SAP, Oracle, Nebim), CRM &amp; SQL data pipelines</li>
-              <li>GfK, Nielsen &amp; market share cross-benchmark layers</li>
-              <li>Dedicated SLA, on-site IT deployment &amp; 24/7 priority support</li>
-              <li>Custom fine-tuned domain LLaMA model adaptation</li>
-            </ul>
-            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Enterprise%20Custom%20License%20Inquiry" style="display: block; text-align: center; background: var(--orange); color: #fff; font-weight: 700; padding: 12px 16px; border-radius: 10px; text-decoration: none; font-size: 14px; box-shadow: 0 4px 14px rgba(242,111,38,0.30); transition: all 0.2s;">
-              Get Enterprise Proposal →
+
+          <!-- CARD 2: 299 € / Pro + 1.5h Live Support (RECOMMENDED) -->
+          <div style="background: #ffffff; border: 2px solid var(--orange); border-radius: 24px; padding: 32px 28px; display: flex; flex-direction: column; position: relative; box-shadow: 0 8px 32px rgba(242,111,38,0.14); transition: transform .2s, box-shadow .2s;">
+            
+            <div style="position: absolute; top: -13px; right: 28px; background: linear-gradient(90deg, var(--orange) 0%, var(--orange-light) 100%); color: #fff; font-size: 11px; font-weight: 800; padding: 4px 14px; border-radius: 999px; letter-spacing: 0.6px; text-transform: uppercase; box-shadow: 0 4px 12px rgba(242,111,38,0.35);">
+              ⭐ RECOMMENDED
+            </div>
+
+            <div style="display: inline-flex; align-items: center; align-self: flex-start; background: #fff3ec; border: 1px solid var(--border-orange); border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 700; color: var(--orange); margin-bottom: 16px;">
+              Pro + Live Support
+            </div>
+            
+            <div style="font-size: 22px; font-weight: 800; color: var(--text-900); margin-bottom: 6px;">
+              DataProvido Pro
+            </div>
+            
+            <div style="font-size: 13.5px; color: var(--text-500); margin-bottom: 20px; line-height: 1.5;">
+              Complete analytics + dedicated weekly 1-on-1 expert consulting &amp; custom tuning.
+            </div>
+
+            <!-- Price -->
+            <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);">
+              <span style="font-size: 42px; font-weight: 800; color: var(--orange-dark); line-height: 1;">299 €</span>
+              <span style="font-size: 14px; color: var(--text-500); font-weight: 500;">/ month</span>
+            </div>
+
+            <!-- Action Button -->
+            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Pro%20Plan%20(299%20EUR)%20Inquiry" style="display: block; text-align: center; background: var(--orange); color: #ffffff; font-weight: 700; padding: 13px 20px; border-radius: 999px; text-decoration: none; font-size: 14px; transition: all 0.2s; box-shadow: 0 6px 18px rgba(242,111,38,0.35); margin-bottom: 28px;">
+              Get Pro Plan with Live Support &nbsp;→
             </a>
+
+            <!-- Features -->
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--orange); margin-bottom: 14px;">
+              Everything in Standard, plus:
+            </div>
+            
+            <ul style="list-style: none; padding: 0; margin: 0 0 12px 0; font-size: 13.5px; color: var(--text-700); line-height: 2.1; flex: 1;">
+              <li style="display: flex; align-items: flex-start; gap: 10px; background: #fff8f4; padding: 6px 10px; border-radius: 8px; border: 1px dashed var(--border-orange); margin-bottom: 6px;">
+                <span style="color: var(--orange); font-weight: 800; font-size: 16px;">🔥</span>
+                <span><strong style="color: var(--orange-dark);">Haftada 1.5 saatlik online canlı teknik ve analitik destek:</strong> Doğrudan uzmanla 1-on-1 ekran paylaşımı ve veri stratejisi seansı</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span><strong>Custom Prompt &amp; Sector Metric Tuning:</strong> Kendi perakende verinize ve sektör KPI'larınıza özel AI uyarlaması</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span><strong>Priority SLA Support:</strong> Doğrudan Slack / WhatsApp / Öncelikli E-posta kanalı</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span><strong>Gelişmiş Çapraz Analiz Modülleri:</strong> Stok vs Funnel vs Fiyat Elastikiyeti Korelasyonu</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span><strong>Multi-User Intranet Deployment:</strong> Kurum içi birden fazla kullanıcı erişimi</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span>Üç aylık periyodik model optimizasyonu ve yeni modül güncellemeleri</span>
+              </li>
+            </ul>
+
           </div>
 
         </div>
 
-        <!-- Direct Mail Contact Banner -->
-        <div style="background: #ffffff; border: 1.5px solid var(--border-orange); border-radius: 16px; padding: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-top: 24px; box-shadow: var(--card-shadow);">
+        <!-- Custom Enterprise Banner -->
+        <div style="background: #ffffff; border: 1.5px solid var(--border-orange); border-radius: 18px; padding: 26px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px; box-shadow: var(--card-shadow);">
           <div>
-            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 4px;">Looking for Custom Architecture or On-Premise SLA?</div>
-            <div style="font-size: 13.5px; color: var(--text-500);">We tailor custom deployments based on your data volume, hardware cluster, and enterprise compliance.</div>
+            <div style="font-weight: 800; color: var(--text-900); font-size: 17px; margin-bottom: 4px;">Need Custom Enterprise Architecture or ERP Integration?</div>
+            <div style="font-size: 13.5px; color: var(--text-500);">Direct SAP, Nebim, Oracle integration or dedicated air-gapped GPU server clusters.</div>
           </div>
-          <a href="mailto:info@dataprovido.com" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(242,111,38,0.10); color: var(--orange-dark); border: 1px solid var(--border-orange); padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 14px; text-decoration: none;">
-            ✉️ info@dataprovido.com
+          <a href="/contact" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(242,111,38,0.10); color: var(--orange-dark); border: 1px solid var(--border-orange); padding: 11px 20px; border-radius: 12px; font-weight: 700; font-size: 14px; text-decoration: none;">
+            Contact Enterprise Team &nbsp;→
           </a>
         </div>
         """,
-        kicker="Enterprise Licensing"
+        kicker="Transparent Pricing",
+        active_nav="pricing",
+        max_width="1040px"
+    )
+
+
+@app.get("/contact", response_class=HTMLResponse)
+def contact():
+    return simple_page(
+        "Contact & Enterprise Inquiries",
+        """
+        <p class="page-subhead">
+          Connect directly with our executive, strategy, and AI engineering leadership for on-premise deployments, tailored demonstrations, or retail partnership inquiries.
+        </p>
+
+        <!-- 3 Executive Contact Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 28px 0;">
+          
+          <!-- General Desk -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 26px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 16px;">🏢</div>
+            <div style="font-weight: 800; color: var(--text-900); font-size: 18px; margin-bottom: 4px;">General &amp; Enterprise Desk</div>
+            <div style="font-size: 12px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Licensing &amp; Demonstration</div>
+            <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 20px; flex: 1;">
+              For live platform demos, pilot deployments, RFP submissions, and billing inquiries.
+            </p>
+            <a href="mailto:info@dataprovido.com" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--orange); font-weight: 700; text-decoration: none; font-size: 14px; background: #fff8f4; padding: 11px 16px; border-radius: 10px; border: 1px solid var(--border-orange); transition: background .15s;">
+              ✉️ info@dataprovido.com
+            </a>
+          </div>
+
+          <!-- Yaşam Karadağ -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 26px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 16px;">👨‍💻</div>
+            <div style="font-weight: 800; color: var(--text-900); font-size: 18px; margin-bottom: 4px;">Yaşam Karadağ</div>
+            <div style="font-size: 12px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Tech, AI Architecture &amp; Product</div>
+            <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 20px; flex: 1;">
+              For technical architecture reviews, on-premise hardware sizing, LLM fine-tuning, and Docker integration.
+            </p>
+            <a href="mailto:karadagya@dataprovido.com" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--orange); font-weight: 700; text-decoration: none; font-size: 14px; background: #fff8f4; padding: 11px 16px; border-radius: 10px; border: 1px solid var(--border-orange); transition: background .15s;">
+              ✉️ karadagya@dataprovido.com
+            </a>
+          </div>
+
+          <!-- B. Aksoy -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 26px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; transition: all 0.2s;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: rgba(242,111,38,0.10); color: var(--orange); font-size: 20px; margin-bottom: 16px;">💼</div>
+            <div style="font-weight: 800; color: var(--text-900); font-size: 18px; margin-bottom: 4px;">B. Aksoy</div>
+            <div style="font-size: 12px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Business Strategy &amp; Partnerships</div>
+            <p style="font-size: 13px; color: var(--text-500); line-height: 1.6; margin-bottom: 20px; flex: 1;">
+              For commercial partnerships, strategic retail consulting, growth modeling, and executive roadmaps.
+            </p>
+            <a href="mailto:aksoyb@dataprovido.com" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--orange); font-weight: 700; text-decoration: none; font-size: 14px; background: #fff8f4; padding: 11px 16px; border-radius: 10px; border: 1px solid var(--border-orange); transition: background .15s;">
+              ✉️ aksoyb@dataprovido.com
+            </a>
+          </div>
+
+        </div>
+
+        <!-- Quick Inquiry Helper Box -->
+        <div style="background: var(--bg-2); border: 1.5px solid var(--border); border-radius: 18px; padding: 28px; margin-top: 24px;">
+          <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin-bottom: 8px;">Direct Inquiry Quick Composer</h3>
+          <p style="font-size: 13.5px; color: var(--text-500); margin-bottom: 18px;">
+            Choose a subject and launch your email client with pre-formatted details:
+          </p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Standard%20(199%20EUR)%20Setup%20Inquiry" style="background: #ffffff; border: 1px solid var(--border); color: var(--text-900); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s;">
+              📦 Inquire Standard Plan (199 €)
+            </a>
+            <a href="mailto:info@dataprovido.com?subject=DataProvido%20Pro%20(299%20EUR)%20with%20Live%20Support%20Inquiry" style="background: #fff3ec; border: 1px solid var(--border-orange); color: var(--orange-dark); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s;">
+              🔥 Inquire Pro Plan with Live Support (299 €)
+            </a>
+            <a href="mailto:karadagya@dataprovido.com?subject=DataProvido%20Architecture%20%26%20Technical%20Question" style="background: #ffffff; border: 1px solid var(--border); color: var(--text-900); padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; text-decoration: none; transition: border-color .2s;">
+              ⚙️ Technical &amp; LLM Consultation
+            </a>
+          </div>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-top: 20px; font-size: 13.5px; color: var(--text-700); line-height: 1.7; display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 20px;">🔒</span>
+          <div><strong>Enterprise Privacy &amp; 24-Hour SLA:</strong> All conversations are strictly covered under NDA with guaranteed executive response within 24 hours.</div>
+        </div>
+        """,
+        kicker="Direct Executive Contact",
+        active_nav="contact",
+        max_width="1040px"
+    )
+
+
+@app.get("/who-we-are", response_class=HTMLResponse)
+def who_we_are():
+    return simple_page(
+        "Built by Retail Veterans & AI Engineers",
+        """
+        <p class="page-subhead">
+          DataProvido was founded at the convergence of <strong>10+ years of retail, e-commerce, CRM, and supply chain leadership</strong> with cutting-edge <strong>on-premise AI systems engineering</strong>.
+        </p>
+
+        <!-- The Story -->
+        <div style="background: var(--bg-2); border: 1.5px solid var(--border); border-radius: 18px; padding: 28px; margin-bottom: 28px;">
+          <h3 style="font-family: 'Playfair Display', serif; font-size: 24px; color: var(--text-900); margin-bottom: 14px; font-weight: 700;">
+            Solving the Retail Industry's Core Analytics Bottleneck
+          </h3>
+          <p style="font-size: 14.5px; color: var(--text-700); line-height: 1.85; margin-bottom: 14px;">
+            For over a decade, our multidisciplinary team has managed billion-dollar retail portfolios, optimized conversion funnels for Tier-1 e-commerce platforms, orchestrated multi-tier CRM retention campaigns, and designed high-throughput data architectures.
+          </p>
+          <p style="font-size: 14.5px; color: var(--text-700); line-height: 1.85; margin-bottom: 0;">
+            We experienced firsthand the single largest pain point in modern commerce: <em>Business leaders are drowning in disconnected spreadsheets, waiting days for data analysts to answer basic commercial questions, while cloud-based AI tools pose unacceptable data privacy and IP security risks.</em> DataProvido is the definitive solution — delivering instant, conversational, and 100% on-premise intelligence directly to commercial decision-makers.
+          </p>
+        </div>
+
+        <!-- 4 Pillars of Deep Know-How -->
+        <h3 style="font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text-900); margin: 32px 0 16px; font-weight: 700;">
+          Our 4 Core Pillars of Industry Expertise
+        </h3>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; margin-bottom: 32px;">
+          
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="font-size: 28px; margin-bottom: 12px;">👥</div>
+            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 6px;">CRM &amp; Lifecycle Marketing</div>
+            <div style="font-size: 13px; color: var(--text-700); line-height: 1.7;">Mastery of RFM segmentation, customer lifetime value (CLV), churn prediction models, and automated omnichannel reactivation across millions of customer profiles.</div>
+          </div>
+
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="font-size: 28px; margin-bottom: 12px;">📦</div>
+            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 6px;">Merchandising &amp; Category Analytics</div>
+            <div style="font-size: 13px; color: var(--text-700); line-height: 1.7;">Decade-long experience in stock coverage ratios, out-of-stock (OOS) revenue recovery, safety stock algorithms, and GfK / Nielsen retail market share benchmarking.</div>
+          </div>
+
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="font-size: 28px; margin-bottom: 12px;">📈</div>
+            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 6px;">Conversion Funnel Science</div>
+            <div style="font-size: 13px; color: var(--text-700); line-height: 1.7;">Advanced diagnosis of micro-conversion stages (PDP Views, A2C, C2D, B2D, and checkout drop-off) to pinpoint exact UX friction points and eliminate revenue leakage.</div>
+          </div>
+
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="font-size: 28px; margin-bottom: 12px;">🔒</div>
+            <div style="font-weight: 700; color: var(--text-900); font-size: 16px; margin-bottom: 6px;">Privacy-First AI Engineering</div>
+            <div style="font-size: 13px; color: var(--text-700); line-height: 1.7;">Custom engineering of air-gapped on-premise LLMs (LLaMA 3.1) and vectorized memory-optimized engines (Pandas &amp; DuckDB) guaranteeing complete data sovereignty.</div>
+          </div>
+
+        </div>
+
+        <!-- Metrics Row -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 28px 0;">
+          <div style="padding: 20px; background: #fff8f4; border: 1.5px solid var(--border-orange); border-radius: 16px; text-align: center;">
+            <div style="font-size: 28px; font-weight: 800; color: var(--orange); margin-bottom: 4px;">10+ Years</div>
+            <div style="font-size: 12.5px; color: var(--text-700); font-weight: 600;">Retail &amp; CRM Heritage</div>
+          </div>
+          <div style="padding: 20px; background: #fff8f4; border: 1.5px solid var(--border-orange); border-radius: 16px; text-align: center;">
+            <div style="font-size: 28px; font-weight: 800; color: var(--orange); margin-bottom: 4px;">100%</div>
+            <div style="font-size: 12.5px; color: var(--text-700); font-weight: 600;">Air-Gapped Privacy</div>
+          </div>
+          <div style="padding: 20px; background: #fff8f4; border: 1.5px solid var(--border-orange); border-radius: 16px; text-align: center;">
+            <div style="font-size: 28px; font-weight: 800; color: var(--orange); margin-bottom: 4px;">15+</div>
+            <div style="font-size: 12.5px; color: var(--text-700); font-weight: 600;">Specialized AI Engines</div>
+          </div>
+          <div style="padding: 20px; background: #fff8f4; border: 1.5px solid var(--border-orange); border-radius: 16px; text-align: center;">
+            <div style="font-size: 28px; font-weight: 800; color: var(--orange); margin-bottom: 4px;">&lt;30s</div>
+            <div style="font-size: 12.5px; color: var(--text-700); font-weight: 600;">Instant Decision Speed</div>
+          </div>
+        </div>
+        """,
+        kicker="Leadership & Industry Heritage",
+        active_nav="who-we-are",
+        max_width="960px"
     )
 
 
 @app.get("/how-works", response_class=HTMLResponse)
 def how_works():
     return simple_page(
-        "DataProvido Nasıl Çalışır?",
+        "How DataProvido Works: Architecture & LLM Routing",
         """
-        <p style="font-size: 16px; color: var(--text-700); margin-bottom: 24px; line-height: 1.8;">
-          DataProvido, veri analistlerine ve karmaşık SQL sorgularına olan bağımlılığı ortadan kaldırarak perakende iş birimlerinin şirket verileriyle <strong>doğal dilde doğrudan konuşmasını</strong> sağlayan, %100 yerel (on-premise) çalışan bir yapay zeka platformudur.
+        <p class="page-subhead">
+          DataProvido transforms complex retail data into instant, prescriptive actions through an <strong>autonomous LLM tool-calling loop and high-performance in-memory engines</strong> — completely self-hosted on your own infrastructure.
         </p>
 
-        <!-- 1000+ Karakterlik Detaylı Kurumsal Mimari ve Çalışma Prensibi -->
+        <!-- 5-Step Technical Architecture -->
         <div style="display: flex; flex-direction: column; gap: 20px; margin: 28px 0;">
           
-          <!-- Aşama 1: Veri Katmanı -->
-          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-              <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">1</div>
-              <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Çok Kaynaklı Yerel Veri Entegrasyonu</h3>
+          <!-- Step 1 -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+              <div style="width: 38px; height: 38px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">1</div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--orange); letter-spacing: 0.5px;">DATA LAYER (/data)</div>
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Multi-Source Enterprise Ingestion</h3>
+              </div>
             </div>
-            <p style="font-size: 14.5px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
-              Şirketinizin ERP, CRM veya e-ticaret altyapısından gelen ürün katalogları, anlık stok hareketleri, sipariş geçmişleri, funnel adımları (A2C, C2D, B2D) ve GfK pazar payı raporları Excel, CSV veya doğrudan yerel veritabanı aracılığıyla sisteme aktarılır. Veriler disk üzerinde şifrelenir ve yalnızca şirket içi yetkili kullanıcıların erişimine açılır.
+            <p style="font-size: 14px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
+              Ingest enterprise stock balances (<code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">stok.xlsx</code>), transaction orders (<code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">orders.xlsx</code>), GfK market share panels (<code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">GfK_Leaderpanel.xlsx</code>, <code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">gfk_sku.xlsx</code>), and funnel tracking data. All files are loaded locally without any cloud exposure.
             </p>
           </div>
 
-          <!-- Aşama 2: Yerel Zeka & Gizlilik -->
-          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-              <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">2</div>
-              <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Sıfır Veri Sızıntısı (Zero Data Leak) &amp; Yerel LLM</h3>
+          <!-- Step 2 -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+              <div style="width: 38px; height: 38px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">2</div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--orange); letter-spacing: 0.5px;">INFERENCE ENGINE (Ollama / LLaMA 3.1)</div>
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">100% Offline Air-Gapped Intelligence</h3>
+              </div>
             </div>
-            <p style="font-size: 14.5px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
-              Geleneksel bulut tabanlı yapay zeka araçlarının aksine, DataProvido'nun yapay zeka beyni (LLaMA 3.1) şirketinizin kendi sunucusunda (On-Premise / Docker) veya yerel donanımında çalışır. Kullanıcının sorduğu sorular ve şirketinizin finansal/stok verileri asla dışarıdaki bulut sunucularına iletilmez. İnternet bağlantısı kesilse dahi sistem %100 kapasiteyle çalışmayı sürdürür.
+            <p style="font-size: 14px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
+              Queries are processed by a self-hosted LLaMA 3.1 model running in an isolated Docker container on your internal network. Unlike cloud AI APIs, no company turnover, SKU profit margins, or customer volumes ever leave your enterprise firewall — guaranteeing full KVKK and GDPR compliance.
             </p>
           </div>
 
-          <!-- Aşama 3: Akıllı Motor Yönlendirme -->
-          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-              <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">3</div>
-              <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Akıllı Tool-Calling &amp; Çok Katmanlı Analiz</h3>
+          <!-- Step 3 -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+              <div style="width: 38px; height: 38px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">3</div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--orange); letter-spacing: 0.5px;">ROUTER &amp; SCHEMAS (/schemas/tools.py)</div>
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Autonomous Tool-Calling &amp; Function Dispatch</h3>
+              </div>
             </div>
-            <p style="font-size: 14.5px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
-              Kullanıcı Türkçe veya İngilizce doğal dilde bir soru sorduğunda (Örn: <em>"GSM kategorisinde C2D yüksek ama stoğu azalan kritik SKU'lar hangileri?"</em>), sistem sorunun türünü analiz eder ve 15'ten fazla yerel analitik motorundan en uygun olanını (Business Calculator, Funnel Master, Price Competition, GfK Market Share) devreye sokarak bellek içi Pandas &amp; DuckDB optimizasyonuyla milisaniyeler içinde hesaplar.
+            <p style="font-size: 14px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
+              When a user asks a question (e.g., <em>"Which SKUs in Small Appliances have high traffic but critical stock risk?"</em>), the model selects the optimal tool from our structured schemas and dispatches execution to specialized Python micro-engines in <code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">/functions</code>:
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 14px;">
+              <div style="background: var(--bg-2); padding: 10px 12px; border-radius: 8px; font-size: 12.5px; border: 1px solid var(--border);">📊 <strong>business_calculator.py:</strong> SQL-style math &amp; aggregations</div>
+              <div style="background: var(--bg-2); padding: 10px 12px; border-radius: 8px; font-size: 12.5px; border: 1px solid var(--border);">🛒 <strong>funnel_master.py:</strong> PDP → Cart → Checkout drop-offs</div>
+              <div style="background: var(--bg-2); padding: 10px 12px; border-radius: 8px; font-size: 12.5px; border: 1px solid var(--border);">💰 <strong>price_competition.py:</strong> Market price gap benchmark</div>
+              <div style="background: var(--bg-2); padding: 10px 12px; border-radius: 8px; font-size: 12.5px; border: 1px solid var(--border);">📦 <strong>stock.py:</strong> Live stock &amp; OOS revenue risk</div>
+              <div style="background: var(--bg-2); padding: 10px 12px; border-radius: 8px; font-size: 12.5px; border: 1px solid var(--border);">🏆 <strong>gfk_analyzer.py:</strong> Market share &amp; brand rankings</div>
+              <div style="background: var(--bg-2); padding: 10px 12px; border-radius: 8px; font-size: 12.5px; border: 1px solid var(--border);">⚡ <strong>action_executor.py:</strong> Automated business action generation</div>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+              <div style="width: 38px; height: 38px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">4</div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--orange); letter-spacing: 0.5px;">EXECUTION LAYER (Pandas &amp; DuckDB)</div>
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Sub-Second In-Memory Vector Computation</h3>
+              </div>
+            </div>
+            <p style="font-size: 14px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
+              Calculations execute in memory using vectorized Pandas operations, computing complex multi-table aggregations, margin percentages, and stock coverage velocities across hundreds of thousands of rows in sub-seconds.
             </p>
           </div>
 
-          <!-- Aşama 4: Eyleme Dönüştürülebilir Çıktı -->
-          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow);">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-              <div style="width: 36px; height: 36px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">4</div>
-              <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Eyleme Dönüştürülebilir Çıktı &amp; Tek Tık Excel Raporu</h3>
+          <!-- Step 5 -->
+          <div style="background: #ffffff; border: 1.5px solid var(--border); border-radius: 18px; padding: 24px; box-shadow: var(--card-shadow);">
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+              <div style="width: 38px; height: 38px; border-radius: 10px; background: var(--orange); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 16px;">5</div>
+              <div>
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--orange); letter-spacing: 0.5px;">ACTION &amp; EXPORT (OpenPyXL / UI)</div>
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--text-900); margin: 0;">Prescriptive Action Plans &amp; 1-Click Excel Reports</h3>
+              </div>
             </div>
-            <p style="font-size: 14.5px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
-              Sistem yalnızca ham sayılar veya pasif grafikler üretmez; yöneticilerin doğrudan uygulayabileceği somut ticari aksiyon tavsiyeleri sunar (Örn: Fiyat indirimi, acil tedarik emri, sepet adımı iyileştirmesi). Analiz çıktısı tek bir tıkla kurumsal formatta Excel raporu olarak indirilebilir ve yönetim ekipleriyle paylaşılabilir.
+            <p style="font-size: 14px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
+              Rather than raw tables, DataProvido generates structured business conclusions with ranked next actions (e.g., immediate stock replenishment, dynamic price discount rule). With one click, users can export an executive-ready formatted <code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">.xlsx</code> report with custom header styles and KPI summaries.
             </p>
           </div>
 
         </div>
 
-        <div style="background: #fff8f4; border: 1.5px solid var(--border-orange); border-radius: 16px; padding: 20px 24px; font-size: 14px; color: var(--text-700); line-height: 1.8;">
-          💡 <strong>Kurumunuza Özel Canlı Demo:</strong> Şirketinizin kendi veri yapılarıyla DataProvido'nun nasıl çalıştığını görmek için <a href="/contact" style="color: var(--orange); font-weight: 700; text-decoration: none;">bizimle iletişime geçebilir</a> veya <a href="mailto:info@dataprovido.com" style="color: var(--orange); font-weight: 700; text-decoration: none;">info@dataprovido.com</a> adresine e-posta gönderebilirsiniz.
+        <!-- Tech Stack Strip -->
+        <div style="background: #fff8f4; border: 1.5px solid var(--border-orange); border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+          <div style="font-size: 13.5px; color: var(--text-700);">
+            🚀 <strong>Ready to test the engine on your proprietary retail schema?</strong>
+          </div>
+          <a href="/pricing" style="background: var(--orange); color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 8px;">
+            Explore Plans (199 € &amp; 299 €) &nbsp;→
+          </a>
         </div>
         """,
-        kicker="Enterprise Architecture & Process"
+        kicker="Enterprise Architecture & Process",
+        active_nav="how-works",
+        max_width="1000px"
     )
 
 
@@ -3166,7 +3495,7 @@ def index():
     <a href="/who-we-are" class="nav-link">Who We Are?</a>
     <a href="/how-works" class="nav-link">How Works?</a>
   </div>
-  <a href="/journey" class="nav-cta">🔒 Privacy Information</a>
+  <a href="/journey" class="nav-cta">Start Journey &nbsp;→</a>
 </nav>
 
 <section class="hero" id="hero">
