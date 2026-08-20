@@ -3047,6 +3047,26 @@ def pricing():
     )
 
 
+@app.get("/debug-env")
+def debug_env():
+    import os
+    stripe_key = os.getenv("STRIPE_SECRET_KEY")
+    stripe_key_status = f"Set (Length: {len(stripe_key)}, Starts with: {stripe_key[:7]}...)" if stripe_key else "Not Set (None)"
+    
+    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+    webhook_secret_status = f"Set (Length: {len(webhook_secret)}, Starts with: {webhook_secret[:7]}...)" if webhook_secret else "Not Set (None)"
+    
+    return {
+        "STRIPE_SECRET_KEY": stripe_key_status,
+        "STRIPE_WEBHOOK_SECRET": webhook_secret_status,
+        "STRIPE_STANDARD_PRICE_ID": os.getenv("STRIPE_STANDARD_PRICE_ID"),
+        "STRIPE_PRO_PRICE_ID": os.getenv("STRIPE_PRO_PRICE_ID"),
+        "BASE_URL": os.getenv("BASE_URL"),
+        "PORT": os.getenv("PORT"),
+        "LLM_BACKEND": os.getenv("LLM_BACKEND")
+    }
+
+
 @app.get("/checkout", response_class=HTMLResponse)
 def checkout(plan: str = "standard"):
     is_pro = plan.lower() == "pro"
