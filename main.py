@@ -3152,8 +3152,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         let errMsg = "";
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
           errMsg = (currentLang === 'en')
-            ? "⚠️ Microphone permission denied.\n\nPlease click the 🔒 lock / 🎙️ mic icon near your browser address bar (dataprovido.com) and click 'Allow' for Microphone."
-            : "⚠️ Mikrofon izni engellendi.\n\nLütfen tarayıcı adres çubuğundaki (dataprovido.com) 🔒 kilit / 🎙️ simgesine tıklayıp Mikrofon İznini 'İzin Ver' olarak değiştirin.";
+            ? "⚠️ Microphone permission denied. Please click the 🔒 lock / 🎙️ mic icon near your browser address bar (dataprovido.com) and click 'Allow' for Microphone."
+            : "⚠️ Mikrofon izni engellendi. Lütfen tarayıcı adres çubuğundaki (dataprovido.com) 🔒 kilit / 🎙️ simgesine tıklayıp Mikrofon İznini 'İzin Ver' olarak değiştirin.";
         } else if (event.error === 'no-speech') {
           errMsg = (currentLang === 'en')
             ? "⚠️ No speech detected. Please speak into your microphone and try again."
@@ -3293,8 +3293,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         let errMsg = "";
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
           errMsg = (currentLang === 'en')
-            ? "⚠️ Microphone permission denied.\n\nPlease click the 🔒 lock / 🎙️ mic icon near your browser address bar (dataprovido.com) and click 'Allow' for Microphone."
-            : "⚠️ Mikrofon izni engellendi.\n\nLütfen tarayıcı adres çubuğundaki (dataprovido.com) 🔒 kilit / 🎙️ simgesine tıklayıp Mikrofon İznini 'İzin Ver' olarak değiştirin.";
+            ? "⚠️ Microphone permission denied. Please click the 🔒 lock / 🎙️ mic icon near your browser address bar (dataprovido.com) and click 'Allow' for Microphone."
+            : "⚠️ Mikrofon izni engellendi. Lütfen tarayıcı adres çubuğundaki (dataprovido.com) 🔒 kilit / 🎙️ simgesine tıklayıp Mikrofon İznini 'İzin Ver' olarak değiştirin.";
         } else if (event.error === 'no-speech') {
           errMsg = (currentLang === 'en')
             ? "⚠️ No speech detected. Please speak into your microphone and try again."
