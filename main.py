@@ -2586,10 +2586,15 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               <h3 class="module-title" id="moduleTitle">Excel Wizard</h3>
               <p class="module-desc" id="moduleDesc">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
             </div>
+          <div class="module-head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px;">
+            <div style="flex: 1;">
+              <h3 class="module-title" id="moduleTitle">Excel Wizard</h3>
+              <p class="module-desc" id="moduleDesc">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
+            </div>
             <!-- TOP RIGHT LANGUAGE SWITCHER PILLS -->
             <div style="display: flex; gap: 4px; background: #f8fafc; padding: 4px; border-radius: 12px; border: 1px solid var(--border); flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
-              <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid var(--orange); background: var(--orange); color: #ffffff; padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 2px 6px rgba(242,111,38,0.20);">🇬🇧 EN (English)</button>
-              <button id="langBtnTR" onclick="setLanguage('tr')" type="button" style="border: 1px solid transparent; background: transparent; color: var(--text-700); padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.18s;">🇹🇷 TR (Türkçe)</button>
+              <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid var(--orange); background: var(--orange); color: #ffffff; padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 2px 6px rgba(242,111,38,0.20);">🇬🇧 English Voice</button>
+              <button id="langBtnTR" onclick="setLanguage('tr')" type="button" style="border: 1px solid transparent; background: transparent; color: var(--text-700); padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.18s;">🇹🇷 Turkish Voice</button>
             </div>
           </div>
 
@@ -2603,19 +2608,19 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           </div>
 
           <div class="input-area" style="margin-top: 0;">
-            <div style="display: flex; gap: 10px; align-items: stretch; margin-bottom: 14px;">
-              <textarea id="questionInput" placeholder="Örn: APPLE ürünlerinin ortalama fiyatı ve toplam stok değeri nedir? (veya 🎙️ mikrofon butonuna basıp söyleyin)..." style="flex: 1; height: 86px; resize: vertical; padding: 14px; font-size: 13.5px; border-radius: 14px; border: 1.4px solid var(--border); outline: none; transition: border-color 0.2s; font-family: inherit; line-height: 1.5;"></textarea>
-              <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #fff8f4; border: 1.5px solid var(--border-orange); color: var(--orange); padding: 10px 16px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; transition: all 0.2s; min-width: 110px; box-shadow: 0 2px 8px rgba(242,111,38,0.12);">
-                <span id="voiceIcon" style="font-size: 22px;">🎙️</span>
-                <span id="voiceText" style="font-size: 11px; font-weight: 700;">Sesle Söyle</span>
+            <div style="display: flex; gap: 12px; align-items: stretch; margin-bottom: 16px;">
+              <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or click 🎙️ Voice Command)..." style="flex: 1; min-height: 130px; resize: vertical; padding: 16px 18px; font-size: 14px; border-radius: 16px; border: 1.5px solid var(--border); outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; line-height: 1.6; box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);"></textarea>
+              <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #fff8f4; border: 1.5px solid var(--border-orange); color: var(--orange); padding: 12px 18px; border-radius: 16px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; transition: all 0.2s; min-width: 120px; box-shadow: 0 2px 8px rgba(242,111,38,0.12);">
+                <span id="voiceIcon" style="font-size: 24px;">🎙️</span>
+                <span id="voiceText" style="font-size: 11.5px; font-weight: 700;">Voice Command</span>
               </button>
             </div>
 
             <!-- EXCEL WIZARD ACTION TOOLBAR -->
             <div class="action-row" id="actionRow">
-              <button class="primary-btn" onclick="runModule()" id="runBtnLabel">🚀 Çalıştır</button>
-              <button class="secondary-btn" onclick="openExcelPreview()" id="previewBtnLabel">📊 Excel Preview</button>
-              <button class="secondary-btn" onclick="downloadExcel()" id="downloadBtnLabel">📥 Excel İndir</button>
+              <button class="primary-btn" onclick="runModule()" id="runBtnLabel" style="background: #cbd5e1; color: #64748b; border: none; opacity: 0.65; cursor: not-allowed; transition: all 0.25s ease; box-shadow: none; padding: 12px 26px; border-radius: 14px; font-weight: 700;" disabled>🚀 Run Analysis</button>
+              <button class="secondary-btn" onclick="openExcelPreview()" id="previewBtnLabel" style="padding: 12px 22px; border-radius: 14px; font-weight: 600;">📊 Excel Preview</button>
+              <button class="secondary-btn" onclick="downloadExcel()" id="downloadBtnLabel" style="padding: 12px 22px; border-radius: 14px; font-weight: 600;">📥 Export Excel</button>
             </div>
           </div>
 
@@ -2904,10 +2909,10 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         btnTR.style.fontWeight = "700";
         btnTR.style.boxShadow = "0 2px 6px rgba(242,111,38,0.20)";
 
-        if (!isListening) voiceText.textContent = "Sesle Söyle";
-        runBtnLabel.textContent = "🚀 Çalıştır";
+        if (!isListening) voiceText.textContent = "Voice Command";
+        runBtnLabel.textContent = "🚀 Run Analysis";
         previewBtnLabel.textContent = "📊 Excel Preview";
-        downloadBtnLabel.textContent = "📥 Excel İndir";
+        downloadBtnLabel.textContent = "📥 Export Excel";
         clearBtnLabel.textContent = "Temizle";
         resultHeaderTitle.textContent = "Analiz Çıktısı";
         resultHeaderSub.textContent = "Sonuç burada yönetici özeti formatında gösterilir.";
@@ -2936,10 +2941,36 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       renderHowToUse();
       const activeBtn = document.querySelector(".menu-btn.active");
       if (activeBtn) renderModule(activeBtn.dataset.key);
+      updateRunButtonState();
+    }
+
+    function updateRunButtonState() {
+      const input = document.getElementById("questionInput");
+      const runBtn = document.getElementById("runBtnLabel");
+      if (!input || !runBtn) return;
+      const hasText = input.value.trim().length > 0;
+      if (hasText) {
+        runBtn.style.background = "#2563eb";
+        runBtn.style.color = "#ffffff";
+        runBtn.style.opacity = "1";
+        runBtn.style.cursor = "pointer";
+        runBtn.style.boxShadow = "0 4px 14px rgba(37,99,235,0.35)";
+        runBtn.disabled = false;
+      } else {
+        runBtn.style.background = "#cbd5e1";
+        runBtn.style.color = "#64748b";
+        runBtn.style.opacity = "0.65";
+        runBtn.style.cursor = "not-allowed";
+        runBtn.style.boxShadow = "none";
+        runBtn.disabled = true;
+      }
     }
 
     function selectQuestion(val) {
-      if (val) { questionInput.value = val; }
+      if (val) {
+        questionInput.value = val;
+        updateRunButtonState();
+      }
     }
 
     menuButtons.forEach(btn => btn.addEventListener("click", () => renderModule(btn.dataset.key)));
@@ -2986,6 +3017,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           transcript += event.results[i][0].transcript;
         }
         questionInput.value = transcript;
+        updateRunButtonState();
       };
 
       recognition.onerror = function(event) {
