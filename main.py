@@ -136,6 +136,24 @@ from functions.voice import transcribe_audio
 from schemas.tools import TOOLS
 
 app = FastAPI()
+
+@app.middleware("http")
+async def enforce_https_middleware(request: Request, call_next):
+    # Check X-Forwarded-Proto header set by Cloudflare / Railway proxy
+    proto = request.headers.get("x-forwarded-proto", "http")
+    host = request.headers.get("host", "")
+    
+    # If a user accesses via http:// on dataprovido.com or railway.app, 301 redirect to https://www.dataprovido.com
+    if proto == "http" and ("dataprovido.com" in host or "railway.app" in host):
+        url = request.url.replace(scheme="https")
+        if host == "dataprovido.com":
+            url = url.replace(netloc="www.dataprovido.com")
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=str(url), status_code=301)
+    
+    response = await call_next(request)
+    return response
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # ─────────────────────────────────────────────────────────────
@@ -3327,213 +3345,6 @@ def privacy():
         active_nav="privacy",
         max_width="1040px"
     )
-
-    # Only on Pricing page do we link to /journey?demo=true for testing. Otherwise, CTA goes to /pricing
-    cta_url = "/journey?demo=true" if active_nav == "pricing" else "/pricing"
-    cta_label = "Start Journey (Test) &nbsp;→" if active_nav == "pricing" else "Start Journey &nbsp;→"
-    bottom_cta_url = "/journey?demo=true" if active_nav == "pricing" else "/pricing"
-    bottom_cta_label = "Test Sandbox Console &nbsp;→" if active_nav == "pricing" else "View Plans &amp; Subscribe &nbsp;→"
-
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <!-- Google Tag Manager -->
-  <script>(function(w,d,s,l,i){{w[l]=w[l]||[];w[l].push({{'gtm.start':
-  new Date().getTime(),event:'gtm.js'}});var f=d.getElementsByTagName(s)[0],
-  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-  }})(window,document,'script','dataLayer','GTM-TVKFC4P6');</script>
-  <!-- End Google Tag Manager -->
-
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{title} – DataProvido</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-
-  <style>
-    *, *::before, *::after {{ margin: 0; padding: 0; box-sizing: border-box; }}
-    :root {{
-      --orange:       #f26f26;
-      --orange-dark:  #d85c18;
-      --orange-light: #f58c50;
-      --bg:           #ffffff;
-      --bg-2:         #f9fafb;
-      --bg-3:         #f1f3f5;
-      --text-900:     #292c2f;
-      --text-700:     #4e5359;
-      --text-500:     #6b7178;
-      --text-dim:     #a3acb6;
-      --border:       #dadee2;
-      --border-orange: rgba(242,111,38,0.25);
-      --card-bg:      #ffffff;
-      --card-shadow:  0 4px 24px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
-      --radius:       20px;
-      --nav-h:        72px;
-    }}
-    html {{ scroll-behavior: smooth; }}
-    body {{
-      background: linear-gradient(160deg, #fff8f4 0%, #ffffff 45%, #f0f7ff 100%);
-      color: var(--text-900);
-      font-family: 'Inter', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }}
-
-    /* NAV */
-    .nav {{
-      position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: var(--nav-h);
-      display: flex; align-items: center; justify-content: space-between; padding: 0 40px;
-      background: rgba(255,255,255,0.95); backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border); box-shadow: 0 1px 0 var(--border);
-    }}
-    .nav-logo {{ display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text-900); text-decoration: none; }}
-    .nav-logo-dot {{ width: 10px; height: 10px; border-radius: 50%; background: var(--orange); animation: pulse-dot 2.5s ease-in-out infinite; }}
-    @keyframes pulse-dot {{ 0%,100% {{ box-shadow: 0 0 0 0 rgba(242,111,38,0.5); }} 50% {{ box-shadow: 0 0 0 6px rgba(242,111,38,0); }} }}
-    .nav-links {{ display: flex; align-items: center; gap: 4px; }}
-    .nav-link {{
-      color: var(--text-700); text-decoration: none; font-size: 14px; font-weight: 500;
-      padding: 7px 14px; border-radius: 10px; transition: all .18s ease;
-    }}
-    .nav-link:hover {{ color: var(--orange); background: rgba(242,111,38,0.06); }}
-    .nav-link.active {{
-      color: var(--orange);
-      background: #fff3ec;
-      font-weight: 600;
-      box-shadow: inset 0 0 0 1px rgba(242,111,38,0.20);
-    }}
-    .nav-cta {{
-      background: var(--orange); color: #fff; border: none; padding: 10px 22px;
-      border-radius: 24px; font-size: 14px; font-weight: 600; cursor: pointer;
-      text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
-      box-shadow: 0 4px 14px rgba(242,111,38,0.30); transition: all .2s ease;
-    }}
-    .nav-cta:hover {{ background: var(--orange-dark); transform: translateY(-1px); }}
-
-    /* PAGE WRAPPER */
-    .page-wrapper {{
-      flex: 1;
-      padding: calc(var(--nav-h) + 40px) 24px 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }}
-    .page-card {{
-      width: 100%;
-      max-width: {max_width};
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 48px;
-      box-shadow: var(--card-shadow);
-      position: relative;
-      overflow: hidden;
-    }}
-    .page-card::before {{
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px;
-      background: linear-gradient(90deg, var(--orange) 0%, var(--orange-light) 100%);
-    }}
-    .page-badge {{
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(242,111,38,0.08); border: 1px solid var(--border-orange);
-      border-radius: 999px; padding: 6px 14px; font-size: 12px; font-weight: 600;
-      color: var(--orange); margin-bottom: 18px; text-transform: uppercase; letter-spacing: 0.5px;
-    }}
-    .page-card h1 {{
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(30px, 4vw, 44px);
-      font-weight: 700;
-      line-height: 1.18;
-      color: var(--text-900);
-      margin-bottom: 14px;
-      letter-spacing: -0.5px;
-    }}
-    .page-subhead {{
-      font-size: 15.5px;
-      color: var(--text-500);
-      margin-bottom: 32px;
-      line-height: 1.6;
-    }}
-    .page-content {{
-      color: var(--text-700);
-      font-size: 15px;
-      line-height: 1.8;
-    }}
-
-    /* ACTIONS */
-    .page-actions {{
-      margin-top: 40px;
-      padding-top: 24px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 14px;
-    }}
-    .back-link {{
-      display: inline-flex; align-items: center; gap: 8px;
-      color: var(--text-700); text-decoration: none; font-size: 14px; font-weight: 600;
-      padding: 10px 20px; border-radius: 999px; border: 1.5px solid var(--border);
-      transition: all 0.2s; background: #fff; box-shadow: var(--card-shadow);
-    }}
-    .back-link:hover {{ border-color: var(--orange); color: var(--orange); }}
-    .btn-primary {{
-      background: var(--orange); color: #fff; padding: 12px 26px; border-radius: 999px;
-      font-size: 14px; font-weight: 600; text-decoration: none; display: inline-flex;
-      align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(242,111,38,0.35);
-      transition: background .2s, transform .15s;
-    }}
-    .btn-primary:hover {{ background: var(--orange-dark); transform: translateY(-1px); }}
-
-    /* FOOTER */
-    .site-footer {{
-      background: #ffffff; border-top: 1px solid var(--border);
-      padding: 24px 40px; display: flex; align-items: center; justify-content: space-between;
-      font-size: 13px; color: var(--text-500);
-    }}
-
-    @media (max-width: 768px) {{
-      .nav {{ padding: 0 20px; }}
-      .nav-links {{ display: none; }}
-      .page-card {{ padding: 28px 20px; }}
-      .site-footer {{ flex-direction: column; gap: 8px; text-align: center; }}
-    }}
-  </style>
-</head>
-<body>
-  <nav class="nav">
-    <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>DataProvido</a>
-    <div class="nav-links">
-      <a href="/pricing" class="{nav_pricing_cls}">Pricing</a>
-      <a href="/contact" class="{nav_contact_cls}">Contact</a>
-      <a href="/who-we-are" class="{nav_who_cls}">Who We Are?</a>
-      <a href="/how-works" class="{nav_how_cls}">How Works?</a>
-    </div>
-    <a href="/journey" class="nav-cta">Start Journey &nbsp;→</a>
-  </nav>
-
-  <div class="page-wrapper">
-    <main class="page-card">
-      <div class="page-badge">✦ {kicker}</div>
-      <h1>{title}</h1>
-      <div class="page-content">
-        {body}
-      </div>
-      <div class="page-actions">
-        <a href="/" class="back-link">← Back to Home</a>
-        <a href="/journey" class="btn-primary">Launch Console &nbsp;→</a>
-      </div>
-    </main>
-  </div>
-
-  <footer class="site-footer">
-    <div><strong>DataProvido</strong> · Local Intelligence. Zero Compromise.</div>
-    <div>100% Offline AI · Powered by Llama 3.1</div>
-  </footer>
-</body>
-</html>"""
 
 
 @app.get("/pricing", response_class=HTMLResponse)
