@@ -2379,69 +2379,293 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     .loading { opacity: 0.72; font-style: italic; color: var(--orange); }
 
-    @media (m          "APPLE ürünlerinin ortalama fiyatı nedir?",
-          "En yüksek revenue üreten ilk 10 markayı çıkar",
-          "C2D ortalaması en yüksek kategoriler hangileri?",
-          "B2D düşük ama PDP yüksek ürünleri listele"
-        ]
+    @media (max-width: 1180px) {
+      .workspace { grid-template-columns: 1fr; }
+      .module-panel, .result-panel { min-height: auto; }
+      .result-box { min-height: 300px; }
+    }
+
+    @media (max-width: 760px) {
+      body { overflow: auto; }
+      .app-shell { grid-template-columns: 1fr; height: auto; }
+      .sidebar { position: relative; height: auto; }
+      .main { height: auto; padding: 20px; }
+      .topbar { flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TVKFC4P6"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">
+          <div class="brand-icon">R</div>
+          <div>
+            <h1>Retail AI</h1>
+            <p>Analytics Console</p>
+          </div>
+        </div>
+        <div class="nav-label">Kategoriler / Categories</div>
+        <nav class="menu" id="menu">
+          <button class="menu-btn active" data-key="business_calculator">Excel Wizard<span>Sesli &amp; yazılı Excel komutları</span></button>
+          <button class="menu-btn" data-key="category_insights">Category Insights<span>Kategori &amp; sektör analizi</span></button>
+          <button class="menu-btn" data-key="price_competition">Price Competition<span>Merchant benchmark</span></button>
+          <button class="menu-btn" data-key="action_executor">Action Executor<span>Aksiyon planı</span></button>
+          <button class="menu-btn" data-key="funnel_stock">Funnel &amp; Stock<span>Dönüşüm &amp; stok riski</span></button>
+          <button class="menu-btn" data-key="excel_outputs">Excel Outputs<span>Rapor çıktıları</span></button>
+          <button class="menu-btn" data-key="data_upload">Veri Kaynakları Yükle<span>Excel / CSV Yükleme</span></button>
+        </nav>
+      </div>
+      <div class="sidebar-footer">
+        <strong>Demo akışı</strong>
+        <p>Modül seç, sesli veya yazılı iş sorunu belirt, yönetici özetini al ve Excel'e indir.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div id="activationBanner" style="display: none; background: #ecfdf5; border: 1.5px solid #10b981; border-radius: 14px; padding: 14px 20px; margin-bottom: 16px; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 4px 14px rgba(16,185,129,0.12);">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">🎉</span>
+          <div>
+            <strong style="color: #065f46; font-size: 13.5px;" id="activationTitle">License Active: Welcome to DataProvido Console!</strong>
+            <div style="font-size: 12px; color: #047857;" id="activationSubtitle">Your 100% offline local AI environment is fully unlocked with unlimited query execution.</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('activationBanner').style.display='none'" style="background: transparent; border: none; color: #065f46; font-weight: 700; cursor: pointer; font-size: 16px;">✕</button>
+      </div>
+
+      <div class="topbar">
+        <div class="page-title">
+          <p>Excel Wizard, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir çalışma alanında çalıştırın; verileriniz üzerinde sesli veya yazılı Excel komutları verin.</p>
+        </div>
+        <a class="home-link" href="/">← Ana Sayfa</a>
+      </div>
+
+      <section class="workspace">
+        <div class="module-panel">
+          <div class="module-head">
+            <div>
+              <div class="module-kicker" id="moduleBadge">excel_wizard_engine</div>
+              <h3 class="module-title" id="moduleTitle">Excel Wizard</h3>
+              <p class="module-desc" id="moduleDesc">Satış, stok, fiyat ve e-ticaret Excel verileriniz üzerinde; sesli komutlar veya yazılı sorular ile ortalama, toplam, filtreleme, marka ve kategori bazlı kırılımlar gibi gelişmiş Excel hesaplamalarını anında yapmanızı sağlar.</p>
+            </div>
+          </div>
+
+          <!-- LANGUAGE SWITCHER BAR -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; background: #fafafa; border: 1px solid var(--border); border-radius: 12px; padding: 6px 12px;">
+            <span style="font-size: 12px; font-weight: 700; color: var(--text-700); display: flex; align-items: center; gap: 6px;">
+              🌐 <span id="langSelectLabel">Ses & Metin Dili (Voice & Prompt Language):</span>
+            </span>
+            <div style="display: flex; gap: 4px;">
+              <button id="langBtnTR" onclick="setLanguage('tr')" type="button" style="border: 1px solid var(--orange); background: var(--orange); color: #ffffff; padding: 4px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.15s;">🇹🇷 TR (Türkçe)</button>
+              <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid var(--border); background: #ffffff; color: var(--text-700); padding: 4px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: all 0.15s;">🇬🇧 EN (English)</button>
+            </div>
+          </div>
+
+          <div class="quick-title" style="margin-top: 0; margin-bottom: 6px;" id="quickTitleLabel">Hazır sorular / Presets</div>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+            <select id="questionSelect" class="question-select" onchange="selectQuestion(this.value)">
+            </select>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="newQuestionInput" class="question-add-input" placeholder="Bu menüye yeni hazır soru ekle / Add new question..." style="flex: 1;" />
+              <button class="secondary-btn" onclick="addNewQuestion()" id="addBtnLabel">Soru Ekle</button>
+            </div>
+          </div>
+
+          <div class="input-area" style="margin-top: 0;">
+            <div style="display: flex; gap: 10px; align-items: stretch; margin-bottom: 12px;">
+              <textarea id="questionInput" placeholder="Örn: APPLE ürünlerinin ortalama fiyatı ve toplam stok değeri nedir? (veya 🎙️ mikrofon butonuna basıp söyleyin)..." style="flex: 1; height: 74px; resize: vertical; padding: 12px; font-size: 13px; border-radius: 12px; border: 1.4px solid var(--border); outline: none; transition: border-color 0.2s; font-family: inherit;"></textarea>
+              <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #fff8f4; border: 1.5px solid var(--border-orange); color: var(--orange); padding: 10px 16px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; transition: all 0.2s; min-width: 105px; box-shadow: 0 2px 8px rgba(242,111,38,0.12);">
+                <span id="voiceIcon" style="font-size: 22px;">🎙️</span>
+                <span id="voiceText" style="font-size: 11px; font-weight: 700;">Sesle Söyle</span>
+              </button>
+            </div>
+            <div class="action-row">
+              <button class="primary-btn" onclick="runModule()" id="runBtnLabel">Çalıştır</button>
+              <button class="secondary-btn" onclick="downloadExcel()" id="downloadBtnLabel">Excel İndir</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="result-panel">
+          <div class="result-header">
+            <div>
+              <h3 id="resultHeaderTitle">Analiz Çıktısı</h3>
+              <p id="resultHeaderSub">Sonuç burada yönetici özeti formatında gösterilir.</p>
+            </div>
+            <button class="ghost-btn" onclick="clearResult()" id="clearBtnLabel">Temizle</button>
+          </div>
+          <div class="result-box placeholder" id="resultBox">Soldaki modüllerden birini seç ve sesle veya yazıyla sorunu sorup demoyu başlat.</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /* ── Global Language State ── */
+    let currentLang = 'tr';
+
+    /* ── Module configs (Bilingual Support) ── */
+    const modules = {
+      business_calculator: {
+        badge: "excel_wizard_engine", title: "Excel Wizard",
+        desc: {
+          tr: "Satış, stok, fiyat ve e-ticaret Excel verileriniz üzerinde; sesli komutlar veya yazılı sorular ile ortalama, toplam, filtreleme, marka ve kategori bazlı kırılımlar gibi gelişmiş Excel hesaplamalarını anında yapmanızı sağlar.",
+          en: "Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail & e-commerce Excel data using English or Turkish voice commands."
+        },
+        placeholder: {
+          tr: "Örn: APPLE markasının ortalama fiyatı ve stok tutarı nedir? (veya 🎙️ Sesle söyleyin)",
+          en: "E.g.: Calculate average price and total inventory value for APPLE products (or 🎙️ use Voice Command)"
+        },
+        suggestions: {
+          tr: [
+            "🎙️ [Sesli] APPLE markasının ortalama fiyatını ve stok değerini hesapla",
+            "🎙️ [Sesli] Ciroya göre en yüksek ilk 10 ürünü filtrelere ayır",
+            "Fiyatı 1000 TL üzeri olan ürünlerin ortalama stok adedini hesapla",
+            "C2D ortalaması en yüksek kategorileri listele",
+            "En yüksek stok tutarına sahip markaları çıkar"
+          ],
+          en: [
+            "🎙️ [Voice] Calculate average price and total stock value for APPLE products",
+            "🎙️ [Voice] Filter top 10 products ranked by total revenue",
+            "Calculate average stock quantity for products with price > $1000",
+            "List categories with highest Click-to-Detail (C2D) ratios",
+            "Extract top retail brands with maximum stock holding value"
+          ]
+        }
       },
       category_insights: {
         badge: "generate_category_insight", title: "Category Insights",
-        desc: "Seçilen kategori için performans, kazanan segmentler, riskler ve yönetici özeti çıkarır.",
-        placeholder: "Örn: Tablet kategorisinin performans insightını ver",
-        suggestions: [
-          "Hangi SKU'da pahalıyız?",
-          "Hangi SKU'da ucuzuz ama satış alamıyoruz?",
-          "Hangi SKU'da benchmark üstündeyiz ama hâlâ iyi satıyoruz?",
-          "Hangi markada/kategoride fiyat rekabetini kaybediyoruz?",
-          "Hangi ürünlerde fiyat indirimi gerçekten satış getirebilir?",
-          "Tablet kategorisinin performans insightını ver",
-          "Cep Telefonları kategorisini detaylı analiz et"
-        ]
+        desc: {
+          tr: "Seçilen kategori için performans, kazanan segmentler, riskler ve yönetici özeti çıkarır.",
+          en: "Generates category performance metrics, winning segments, risk analysis, and executive summaries."
+        },
+        placeholder: {
+          tr: "Örn: Tablet kategorisinin performans insightını ver",
+          en: "E.g.: Provide detailed performance insight for Tablets category"
+        },
+        suggestions: {
+          tr: [
+            "Hangi SKU'da pahalıyız?",
+            "Hangi SKU'da ucuzuz ama satış alamıyoruz?",
+            "Hangi SKU'da benchmark üstündeyiz ama hâlâ iyi satıyoruz?",
+            "Hangi markada/kategoride fiyat rekabetini kaybediyoruz?",
+            "Tablet kategorisinin performans insightını ver",
+            "Cep Telefonları kategorisini detaylı analiz et"
+          ],
+          en: [
+            "Which SKUs have a price premium above market benchmark?",
+            "Which SKUs are cheaper than competitors but failing to convert sales?",
+            "Which brands are losing price competitiveness?",
+            "Provide detailed category performance insight for Tablets",
+            "Analyze Smartphones category in detail"
+          ]
+        }
       },
       price_competition: {
         badge: "generate_price_competition_from_uploaded_inputs", title: "Price Competition",
-        desc: "Merchant benchmark datasına göre pahalı, ucuz, rekabetçi ve riskli ürünleri analiz eder.",
-        placeholder: "Örn: Cep Telefonları kategorisinde fiyat rekabeti analizi yap",
-        suggestions: [
-          "Cep Telefonları kategorisinde fiyat rekabeti analizi yap",
-          "APPLE markasında benchmarka göre pahalı ürünleri çıkar",
-          "Rakibe göre en pahalı 10 SKU hangileri?",
-          "Median competitor price altında kalan ürünleri bul"
-        ]
+        desc: {
+          tr: "Merchant benchmark datasına göre pahalı, ucuz, rekabetçi ve riskli ürünleri analiz eder.",
+          en: "Analyzes benchmark price positioning (expensive, cheap, competitive, at-risk SKUs)."
+        },
+        placeholder: {
+          tr: "Örn: Cep Telefonları kategorisinde fiyat rekabeti analizi yap",
+          en: "E.g.: Analyze price competition in Mobile Phones category"
+        },
+        suggestions: {
+          tr: [
+            "Cep Telefonları kategorisinde fiyat rekabeti analizi yap",
+            "APPLE markasında benchmarka göre pahalı ürünleri çıkar",
+            "Rakibe göre en pahalı 10 SKU hangileri?",
+            "Median competitor price altında kalan ürünleri bul"
+          ],
+          en: [
+            "Analyze price competition in Mobile Phones category",
+            "Identify expensive APPLE products relative to market benchmark",
+            "List top 10 most expensive SKUs vs competitor pricing",
+            "Find products priced below median competitor price"
+          ]
+        }
       },
       action_executor: {
         badge: "execute_recommended_action", title: "Action Executor",
-        desc: "Insight çıktılarından aksiyon planı üretir: replenishment, kampanya, görünürlük ve risk azaltma önerileri.",
-        placeholder: "Örn: C2D/B2D güçlü ama stok riski olan SKU'lar için aksiyon planı çıkar",
-        suggestions: [
-          "C2D/B2D güçlü ama stok riski olan SKU'lar için aksiyon planı çıkar",
-          "Tablet kategorisi için büyüme aksiyonlarını öner",
-          "OOS riski olan ürünler için replenishment planı yap",
-          "Sepete eklenip satın alınmayan ürünler için aksiyon öner"
-        ]
+        desc: {
+          tr: "Insight çıktılarından aksiyon planı üretir: replenishment, kampanya, görünürlük ve risk azaltma önerileri.",
+          en: "Generates actionable execution plans: replenishment, campaigns, visibility, and risk mitigation."
+        },
+        placeholder: {
+          tr: "Örn: C2D/B2D güçlü ama stok riski olan SKU'lar için aksiyon planı çıkar",
+          en: "E.g.: Generate action plan for high-intent SKUs with stock risk"
+        },
+        suggestions: {
+          tr: [
+            "C2D/B2D güçlü ama stok riski olan SKU'lar için aksiyon planı çıkar",
+            "Tablet kategorisi için büyüme aksiyonlarını öner",
+            "OOS riski olan ürünler için replenishment planı yap",
+            "Sepete eklenip satın alınmayan ürünler için aksiyon öner"
+          ],
+          en: [
+            "Generate action plan for SKUs with high C2D/B2D but inventory risk",
+            "Recommend growth action items for Tablet category",
+            "Create replenishment schedule for items with high OOS risk",
+            "Propose conversion action plan for high Add-to-Cart items"
+          ]
+        }
       },
       funnel_stock: {
         badge: "analyze_ecommerce_sample", title: "Funnel & Stock",
-        desc: "Funnel kırılımı, stok riski, dönüşüm kaybı ve kategori bazlı e-ticaret performans sorularını cevaplar.",
-        placeholder: "Örn: C2D yüksek ama stoğu az SKU'lar hangileri?",
-        suggestions: [
-          "C2D yüksek ama stoğu az SKU'lar hangileri?",
-          "A2C yüksek ama transaction düşük SKU'ları listele",
-          "En büyük funnel kaybı hangi adımda?",
-          "OOS ürün PDP view alıyor mu?"
-        ]
+        desc: {
+          tr: "Funnel kırılımı, stok riski, dönüşüm kaybı ve kategori bazlı e-ticaret performans sorularını cevaplar.",
+          en: "Analyzes funnel conversion steps, inventory depletion risks, and e-commerce leakage points."
+        },
+        placeholder: {
+          tr: "Örn: C2D yüksek ama stoğu az SKU'lar hangileri?",
+          en: "E.g.: Which SKUs have high C2D but low stock inventory?"
+        },
+        suggestions: {
+          tr: [
+            "C2D yüksek ama stoğu az SKU'lar hangileri?",
+            "A2C yüksek ama transaction düşük SKU'ları listele",
+            "En büyük funnel kaybı hangi adımda?",
+            "OOS ürün PDP view alıyor mu?"
+          ],
+          en: [
+            "Which SKUs have high C2D but low stock level?",
+            "List SKUs with high Add-to-Cart but low transaction volume",
+            "Which conversion step experiences the highest drop-off rate?",
+            "Are out-of-stock items still receiving high PDP traffic?"
+          ]
+        }
       },
       excel_outputs: {
         badge: "download_last_result", title: "Excel Outputs",
-        desc: "Son üretilen analiz sonucunu Excel olarak indirebilirsin. Çıktılar sheet bazında düzenlenir.",
-        placeholder: "Örn: Son aksiyon planını Excel olarak indir",
-        suggestions: [
-          "Son price competition çıktısını Excel'e hazırla",
-          "Son aksiyon planını Excel olarak indir",
-          "Çıktıyı sheet bazında özetle",
-          "Download için hazır son sonucu kontrol et"
-        ]
+        desc: {
+          tr: "Son üretilen analiz sonucunu Excel olarak indirebilirsin. Çıktılar sheet bazında düzenlenir.",
+          en: "Download the last generated analytical report as a multi-sheet Excel spreadsheet."
+        },
+        placeholder: {
+          tr: "Örn: Son aksiyon planını Excel olarak indir",
+          en: "E.g.: Export latest action plan to Excel format"
+        },
+        suggestions: {
+          tr: [
+            "Son price competition çıktısını Excel'e hazırla",
+            "Son aksiyon planını Excel olarak indir",
+            "Çıktıyı sheet bazında özetle",
+            "Download için hazır son sonucu kontrol et"
+          ],
+          en: [
+            "Export last price competition output to Excel",
+            "Download latest action plan in Excel format",
+            "Summarize analytical output per worksheet",
+            "Verify prepared output file for download"
+          ]
+        }
       }
     };
 
@@ -2459,24 +2683,83 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       menuButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.key === moduleKey));
       moduleBadge.textContent = mod.badge;
       moduleTitle.textContent = mod.title;
-      moduleDesc.textContent = mod.desc;
-      questionInput.placeholder = mod.placeholder;
+      
+      const descText = (typeof mod.desc === 'object') ? mod.desc[currentLang] : mod.desc;
+      const placeholderText = (typeof mod.placeholder === 'object') ? mod.placeholder[currentLang] : mod.placeholder;
+      const suggestionList = (typeof mod.suggestions === 'object' && !Array.isArray(mod.suggestions)) ? mod.suggestions[currentLang] : mod.suggestions;
+
+      moduleDesc.textContent = descText;
+      questionInput.placeholder = placeholderText;
       questionInput.value = "";
       
       questionSelect.innerHTML = "";
       const placeholderOpt = document.createElement("option");
       placeholderOpt.value = "";
-      placeholderOpt.textContent = "Bir hazır soru seçin...";
+      placeholderOpt.textContent = (currentLang === 'en') ? "Select a preset question..." : "Bir hazır soru seçin...";
       placeholderOpt.disabled = true;
       placeholderOpt.selected = true;
       questionSelect.appendChild(placeholderOpt);
       
-      mod.suggestions.forEach(q => {
+      suggestionList.forEach(q => {
         const opt = document.createElement("option");
         opt.value = q;
         opt.textContent = q;
         questionSelect.appendChild(opt);
       });
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      const btnTR = document.getElementById("langBtnTR");
+      const btnEN = document.getElementById("langBtnEN");
+      const voiceText = document.getElementById("voiceText");
+      const addBtnLabel = document.getElementById("addBtnLabel");
+      const runBtnLabel = document.getElementById("runBtnLabel");
+      const downloadBtnLabel = document.getElementById("downloadBtnLabel");
+      const clearBtnLabel = document.getElementById("clearBtnLabel");
+      const resultHeaderTitle = document.getElementById("resultHeaderTitle");
+      const resultHeaderSub = document.getElementById("resultHeaderSub");
+
+      if (lang === 'en') {
+        btnTR.style.background = "#ffffff";
+        btnTR.style.borderColor = "var(--border)";
+        btnTR.style.color = "var(--text-700)";
+        btnTR.style.fontWeight = "600";
+        
+        btnEN.style.background = "var(--orange)";
+        btnEN.style.borderColor = "var(--orange)";
+        btnEN.style.color = "#ffffff";
+        btnEN.style.fontWeight = "700";
+
+        voiceText.textContent = "Voice Command";
+        addBtnLabel.textContent = "Add Question";
+        runBtnLabel.textContent = "Run Analysis";
+        downloadBtnLabel.textContent = "Export Excel";
+        clearBtnLabel.textContent = "Clear";
+        resultHeaderTitle.textContent = "Analytical Output";
+        resultHeaderSub.textContent = "Executive summary and data table outputs are displayed here.";
+      } else {
+        btnEN.style.background = "#ffffff";
+        btnEN.style.borderColor = "var(--border)";
+        btnEN.style.color = "var(--text-700)";
+        btnEN.style.fontWeight = "600";
+
+        btnTR.style.background = "var(--orange)";
+        btnTR.style.borderColor = "var(--orange)";
+        btnTR.style.color = "#ffffff";
+        btnTR.style.fontWeight = "700";
+
+        voiceText.textContent = "Sesle Söyle";
+        addBtnLabel.textContent = "Soru Ekle";
+        runBtnLabel.textContent = "Çalıştır";
+        downloadBtnLabel.textContent = "Excel İndir";
+        clearBtnLabel.textContent = "Temizle";
+        resultHeaderTitle.textContent = "Analiz Çıktısı";
+        resultHeaderSub.textContent = "Sonuç burada yönetici özeti formatında gösterilir.";
+      }
+
+      const activeBtn = document.querySelector(".menu-btn.active");
+      if (activeBtn) renderModule(activeBtn.dataset.key);
     }
 
     function selectQuestion(val) {
@@ -2493,7 +2776,12 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const moduleKey = activeBtn.dataset.key;
       
       if (modules[moduleKey]) {
-        modules[moduleKey].suggestions.push(val);
+        let suggestionList = modules[moduleKey].suggestions;
+        if (typeof suggestionList === 'object' && !Array.isArray(suggestionList)) {
+          suggestionList[currentLang].push(val);
+        } else {
+          suggestionList.push(val);
+        }
       }
       
       const opt = document.createElement("option");
@@ -2508,7 +2796,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     menuButtons.forEach(btn => btn.addEventListener("click", () => renderModule(btn.dataset.key)));
 
-    /* ── Voice-to-Excel SpeechRecognition Engine ── */
+    /* ── Voice-to-Excel SpeechRecognition Engine (Bilingual TR / EN) ── */
     let recognition = null;
     let isListening = false;
 
@@ -2520,7 +2808,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        alert("Tarayıcınız canlı ses tanımayı desteklemiyor. Lütfen Chrome, Edge veya Safari kullanın.");
+        alert(currentLang === 'en' ? "Your browser does not support live speech recognition. Please use Google Chrome, Edge, or Safari." : "Tarayıcınız canlı ses tanımayı desteklemiyor. Lütfen Chrome, Edge veya Safari kullanın.");
         return;
       }
 
@@ -2530,7 +2818,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       }
 
       recognition = new SpeechRecognition();
-      recognition.lang = 'tr-TR';
+      recognition.lang = (currentLang === 'en') ? 'en-US' : 'tr-TR';
       recognition.interimResults = true;
       recognition.continuous = false;
 
@@ -2540,8 +2828,10 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         voiceBtn.style.borderColor = "#ef4444";
         voiceBtn.style.color = "#dc2626";
         voiceIcon.textContent = "🔴";
-        voiceText.textContent = "Dinleniyor...";
-        questionInput.placeholder = "Dinleniyor... Lütfen Excel komutunuzu söyleyin (Örn: APPLE stok tutarını hesapla)";
+        voiceText.textContent = (currentLang === 'en') ? "Listening..." : "Dinleniyor...";
+        questionInput.placeholder = (currentLang === 'en') 
+          ? "Listening in English... Speak your Excel command (e.g. Calculate average price for APPLE)" 
+          : "Dinleniyor... Lütfen Excel komutunuzu söyleyin (Örn: APPLE stok tutarını hesapla)";
       };
 
       recognition.onresult = function(event) {
@@ -2561,7 +2851,9 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         stopListeningUI();
         if (questionInput.value.trim().length > 0) {
           resultBox.className = "result-box placeholder";
-          resultBox.innerHTML = "<div style='color: #10b981; font-weight: 600; text-align: center;'>✨ Sesli Excel Komutu Algılandı:<br><span style='font-size: 15px; color: #0f172a; display: block; margin: 6px 0;'>\"" + questionInput.value + "\"</span><span style='font-size: 12px; color: #64748b; font-weight: normal;'>Çalıştırmak için <b>'Çalıştır'</b> butonuna basın veya Command+Enter'a dokunun.</span></div>";
+          const titleMsg = (currentLang === 'en') ? "✨ Voice Command Recognized (EN):" : "✨ Sesli Excel Komutu Algılandı:";
+          const subMsg = (currentLang === 'en') ? "Click <b>'Run Analysis'</b> or press Command+Enter to execute." : "Çalıştırmak için <b>'Çalıştır'</b> butonuna basın veya Command+Enter'a dokunun.";
+          resultBox.innerHTML = "<div style='color: #10b981; font-weight: 600; text-align: center;'>" + titleMsg + "<br><span style='font-size: 15px; color: #0f172a; display: block; margin: 6px 0;'>\"" + questionInput.value + "\"</span><span style='font-size: 12px; color: #64748b; font-weight: normal;'>" + subMsg + "</span></div>";
         }
       };
 
@@ -2571,7 +2863,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         voiceBtn.style.borderColor = "var(--border-orange)";
         voiceBtn.style.color = "var(--orange)";
         voiceIcon.textContent = "🎙️";
-        voiceText.textContent = "Sesle Söyle";
+        voiceText.textContent = (currentLang === 'en') ? "Voice Command" : "Sesle Söyle";
       }
 
       recognition.start();
@@ -2582,7 +2874,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       if (!question) return;
       resultBox.classList.remove("placeholder");
       resultBox.classList.add("loading");
-      resultBox.textContent = "Analiz çalışıyor...";
+      resultBox.textContent = (currentLang === 'en') ? "Running analysis..." : "Analiz çalışıyor...";
       try {
         const res = await fetch("/chat", {
           method: "POST",
@@ -2591,10 +2883,10 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         });
         const data = await res.json();
         resultBox.classList.remove("loading");
-        resultBox.textContent = data.reply || "Sonuç alınamadı.";
+        resultBox.textContent = data.reply || ((currentLang === 'en') ? "No output returned." : "Sonuç alınamadı.");
       } catch (err) {
         resultBox.classList.remove("loading");
-        resultBox.textContent = "Bir hata oluştu: " + err;
+        resultBox.textContent = ((currentLang === 'en') ? "An error occurred: " : "Bir hata oluştu: ") + err;
       }
     }
 
@@ -2602,7 +2894,9 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     function clearResult() {
       resultBox.className = "result-box placeholder";
-      resultBox.textContent = "Soldaki modüllerden birini seç ve hazır sorulardan biriyle demoyu başlat.";
+      resultBox.textContent = (currentLang === 'en') 
+        ? "Select a module on the left and start the analysis using voice or text." 
+        : "Soldaki modüllerden birini seç ve sesle veya yazıyla sorunu sorup demoyu başlat.";
     }
 
     questionInput.addEventListener("keydown", function(e) {
