@@ -2213,19 +2213,20 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     /* ── WORKSPACE ── */
     .workspace {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 20px;
-      align-items: stretch;
+      width: 100%;
     }
 
-    .module-panel, .result-panel {
+    .module-panel {
       background: var(--panel-bg);
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 24px;
+      padding: 28px 32px;
       box-shadow: var(--card-shadow);
-      min-height: 580px;
+      width: 100%;
+      min-height: 520px;
     }
 
     .module-head {
@@ -2588,21 +2589,24 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
             <div class="action-row" id="actionRow">
               <button class="primary-btn" onclick="runModule()" id="runBtnLabel">🚀 Çalıştır</button>
               <button class="secondary-btn" onclick="openExcelPreview()" id="previewBtnLabel">📊 Excel Preview</button>
-              <button class="secondary-btn" onclick="openResultPreview()" id="resultPreviewBtnLabel">👁️ Result Preview</button>
               <button class="secondary-btn" onclick="downloadExcel()" id="downloadBtnLabel">📥 Excel İndir</button>
             </div>
           </div>
-        </div>
 
-        <div class="result-panel">
-          <div class="result-header">
-            <div>
-              <h3 id="resultHeaderTitle">Analiz Çıktısı</h3>
-              <p id="resultHeaderSub">Sonuç burada yönetici özeti formatında gösterilir.</p>
+          <!-- INTEGRATED FULL-WIDTH OUTPUT BOX -->
+          <div class="result-section" style="margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--border);">
+            <div class="result-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">📈</span>
+                <div>
+                  <h3 id="resultHeaderTitle" style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--text-900);">Analiz Çıktısı</h3>
+                  <p id="resultHeaderSub" style="font-size: 12px; color: var(--text-500);">Sonuç burada yönetici özeti formatında gösterilir.</p>
+                </div>
+              </div>
+              <button class="ghost-btn" onclick="clearResult()" id="clearBtnLabel" style="font-size: 12.5px;">Temizle</button>
             </div>
-            <button class="ghost-btn" onclick="clearResult()" id="clearBtnLabel">Temizle</button>
+            <div class="result-box placeholder" id="resultBox" style="min-height: 280px; width: 100%;">Modüllerden birini seç ve sesle veya yazıyla sorunu sorup analizi başlat.</div>
           </div>
-          <div class="result-box placeholder" id="resultBox">Soldaki modüllerden birini seç ve sesle veya yazıyla sorunu sorup analizi başlat.</div>
         </div>
       </section>
     </main>
@@ -2945,7 +2949,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const voiceText = document.getElementById("voiceText");
       const runBtnLabel = document.getElementById("runBtnLabel");
       const previewBtnLabel = document.getElementById("previewBtnLabel");
-      const resultPreviewBtnLabel = document.getElementById("resultPreviewBtnLabel");
       const downloadBtnLabel = document.getElementById("downloadBtnLabel");
       const clearBtnLabel = document.getElementById("clearBtnLabel");
       const resultHeaderTitle = document.getElementById("resultHeaderTitle");
@@ -2966,7 +2969,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         voiceText.textContent = "Voice Command";
         runBtnLabel.textContent = "🚀 Run Analysis";
         previewBtnLabel.textContent = "📊 Excel Preview";
-        resultPreviewBtnLabel.textContent = "👁️ Result Preview";
         downloadBtnLabel.textContent = "📥 Export Excel";
         clearBtnLabel.textContent = "Clear";
         resultHeaderTitle.textContent = "Analytical Output";
@@ -2986,7 +2988,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         voiceText.textContent = "Sesle Söyle";
         runBtnLabel.textContent = "🚀 Çalıştır";
         previewBtnLabel.textContent = "📊 Excel Preview";
-        resultPreviewBtnLabel.textContent = "👁️ Result Preview";
         downloadBtnLabel.textContent = "📥 Excel İndir";
         clearBtnLabel.textContent = "Temizle";
         resultHeaderTitle.textContent = "Analiz Çıktısı";
