@@ -3116,7 +3116,7 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
       <a href="/contact" class="{nav_contact_cls}">Contact</a>
       <a href="/who-we-are" class="{nav_who_cls}">Who We Are?</a>
       <a href="/how-works" class="{nav_how_cls}">How Works?</a>
-      <a href="/privacy" class="{nav_privacy_cls}">Privacy</a>
+      <a href="/privacy" class="{nav_privacy_cls}">Privacy Policy</a>
     </div>
     <a href="{cta_url}" class="nav-cta">{cta_label}</a>
   </nav>
