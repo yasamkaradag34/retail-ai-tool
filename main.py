@@ -3176,7 +3176,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           resultBox.className = "result-box placeholder";
           const titleMsg = (currentLang === 'en') ? "✨ Voice Command Recognized (EN):" : "✨ Sesli Excel Komutu Algılandı:";
           const subMsg = (currentLang === 'en') ? "Click <b>'Run Analysis'</b> or press Command+Enter to execute." : "Çalıştırmak için <b>'Çalıştır'</b> butonuna basın veya Command+Enter'a dokunun.";
-          resultBox.innerHTML = "<div style='color: #10b981; font-weight: 600; text-align: center;'>" + titleMsg + "<br><span style='font-size: 15px; color: #0f172a; display: block; margin: 6px 0;'>\"" + questionInput.value + "\"</span><span style='font-size: 12px; color: #64748b; font-weight: normal;'>" + subMsg + "</span></div>";
+          resultBox.innerHTML = "<div style='color: #10b981; font-weight: 600; text-align: center;'>" + titleMsg + "<br><span style='font-size: 15px; color: #0f172a; display: block; margin: 6px 0;'>&quot;" + questionInput.value + "&quot;</span><span style='font-size: 12px; color: #64748b; font-weight: normal;'>" + subMsg + "</span></div>";
         }
       };
 
@@ -3317,7 +3317,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           resultBox.className = "result-box placeholder";
           const titleMsg = (currentLang === 'en') ? "✨ Voice Command Recognized (EN):" : "✨ Sesli Excel Komutu Algılandı:";
           const subMsg = (currentLang === 'en') ? "Click <b>'Run Analysis'</b> or press Command+Enter to execute." : "Çalıştırmak için <b>'Çalıştır'</b> butonuna basın veya Command+Enter'a dokunun.";
-          resultBox.innerHTML = "<div style='color: #10b981; font-weight: 600; text-align: center;'>" + titleMsg + "<br><span style='font-size: 15px; color: #0f172a; display: block; margin: 6px 0;'>\"" + questionInput.value + "\"</span><span style='font-size: 12px; color: #64748b; font-weight: normal;'>" + subMsg + "</span></div>";
+          resultBox.innerHTML = "<div style='color: #10b981; font-weight: 600; text-align: center;'>" + titleMsg + "<br><span style='font-size: 15px; color: #0f172a; display: block; margin: 6px 0;'>&quot;" + questionInput.value + "&quot;</span><span style='font-size: 12px; color: #64748b; font-weight: normal;'>" + subMsg + "</span></div>";
         }
       };
 
