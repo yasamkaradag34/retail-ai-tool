@@ -1950,15 +1950,28 @@ def build_excel_from_tool_result(raw_text: str) -> BytesIO:
                 row_flat = {k: v for k, v in r.items() if k != "weekly_share_series"}
                 series = r.get("weekly_share_series", {})
                 row_flat.update(series)
+
 @app.get("/journey", response_class=HTMLResponse)
-def journey():
-    return """
-<!DOCTYPE html>
+def journey(activated: str = None, plan: str = None, demo: str = None):
+    # Task 1 Scoping: Only allow console access if user purchased (activated=true) or clicked demo on pricing (demo=true)
+    if not (activated == "true" or demo == "true" or plan):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/pricing?notice=direct_access_restricted", status_code=303)
+
+    return """<!DOCTYPE html>
 <html lang="tr">
 <head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-TVKFC4P6');</script>
+  <!-- End Google Tag Manager -->
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Retail AI Console</title>
+  <title>Excel Wizard & Retail AI Console – DataProvido</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2149,31 +2162,32 @@ def journey():
       border-radius: 999px;
       padding: 9px 18px;
       font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      font-weight: 500;
+      font-size: 12.5px;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
       white-space: nowrap;
-      transition: all 0.18s;
-      box-shadow: var(--card-shadow);
     }
     .home-link:hover {
       border-color: var(--orange);
       color: var(--orange);
-      box-shadow: 0 4px 16px rgba(242,111,38,0.12);
     }
 
     /* ── WORKSPACE ── */
     .workspace {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: stretch;
     }
 
     .module-panel, .result-panel {
+      background: var(--panel-bg);
       border: 1px solid var(--border);
       border-radius: 20px;
+      padding: 24px;
       box-shadow: var(--card-shadow);
-      background: var(--panel-bg);
-      padding: 22px;
+      min-height: 580px;
     }
 
     .module-head {
@@ -2181,117 +2195,41 @@ def journey():
       justify-content: space-between;
       align-items: flex-start;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
-    .module-kicker { display: none; }
+    .module-kicker {
+      font-size: 10.5px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--orange);
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
 
     .module-title {
       font-family: 'Playfair Display', serif;
-      font-size: 24px;
+      font-size: 26px;
       line-height: 1.15;
       letter-spacing: -0.02em;
       font-weight: 700;
       color: var(--text-900);
-      margin-bottom: 8px;
     }
 
     .module-desc {
-      color: var(--text-700);
+      margin-top: 8px;
       font-size: 13px;
-      line-height: 1.6;
-      max-width: 680px;
-    }
-
-    .input-area { margin-top: 18px; }
-
-    textarea {
-      width: 100%;
-      min-height: 124px;
-      max-height: 220px;
-      resize: vertical;
-      border: 1.4px solid var(--border);
-      border-radius: 14px;
-      padding: 14px 15px;
-      font-size: 13.5px;
-      line-height: 1.55;
-      color: var(--text-900);
-      outline: none;
-      background: #ffffff;
-      font-family: 'Inter', sans-serif;
-      transition: all 0.18s ease;
-    }
-
-    textarea:focus {
-      border-color: var(--orange);
-      box-shadow: 0 0 0 4px rgba(242,111,38,0.10);
-    }
-
-    textarea::placeholder { color: var(--text-dim); }
-
-    .action-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .primary-btn, .secondary-btn, .ghost-btn {
-      border: 0;
-      cursor: pointer;
-      height: 40px;
-      padding: 0 20px;
-      border-radius: 999px;
-      font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.18s ease;
-    }
-
-    .primary-btn {
-      background: var(--orange);
-      color: #ffffff;
-      box-shadow: 0 4px 14px rgba(242,111,38,0.30);
-    }
-    .primary-btn:hover {
-      background: var(--orange-dark);
-      box-shadow: 0 6px 20px rgba(242,111,38,0.40);
-      transform: translateY(-1px);
-    }
-
-    .secondary-btn {
-      background: #fff;
-      border: 1.5px solid var(--border);
-      color: var(--text-900);
-      box-shadow: var(--card-shadow);
-    }
-    .secondary-btn:hover {
-      border-color: var(--orange);
-      color: var(--orange);
-    }
-
-    .ghost-btn {
-      background: transparent;
-      border: 1.5px solid var(--border);
       color: var(--text-500);
-    }
-    .ghost-btn:hover {
-      border-color: var(--border);
-      color: var(--text-900);
-      background: var(--bg-2);
+      line-height: 1.6;
     }
 
     .quick-title {
-      margin: 12px 0 6px;
-      font-size: 11px;
-      letter-spacing: 0.10em;
+      font-size: 11.5px;
+      font-weight: 600;
       text-transform: uppercase;
+      letter-spacing: 0.08em;
       color: var(--text-dim);
-      font-weight: 700;
+      margin: 18px 0 10px;
     }
 
     .question-select {
@@ -2335,6 +2273,57 @@ def journey():
       box-shadow: 0 0 0 4px rgba(242,111,38,0.10);
     }
 
+    .action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .primary-btn {
+      background: var(--orange);
+      color: #fff;
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 22px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(242,111,38,0.25);
+      transition: all 0.18s ease;
+    }
+    .primary-btn:hover {
+      background: var(--orange-dark);
+      transform: translateY(-1px);
+    }
+
+    .secondary-btn {
+      background: #ffffff;
+      color: var(--text-700);
+      border: 1.4px solid var(--border);
+      border-radius: 12px;
+      padding: 11px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .secondary-btn:hover {
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+
+    .ghost-btn {
+      background: transparent;
+      border: 0;
+      color: var(--text-dim);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 8px;
+      transition: color 0.15s ease;
+    }
+    .ghost-btn:hover { color: var(--text-900); }
+
     .result-panel {
       display: flex;
       flex-direction: column;
@@ -2364,7 +2353,6 @@ def journey():
     .result-box {
       flex: 1;
       min-height: 360px;
-      background: var(--bg-2);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 18px;
@@ -2391,123 +2379,11 @@ def journey():
 
     .loading { opacity: 0.72; font-style: italic; color: var(--orange); }
 
-    @media (max-width: 1180px) {
-      .workspace { grid-template-columns: 1fr; }
-      .module-panel, .result-panel { min-height: auto; }
-      .result-box { min-height: 300px; }
-    }
-
-    @media (max-width: 760px) {
-      body { overflow: auto; }
-      .app-shell { grid-template-columns: 1fr; height: auto; }
-      .sidebar { position: relative; height: auto; }
-      .main { height: auto; padding: 20px; }
-      .topbar { flex-direction: column; gap: 12px; }
-    }
-  </style>
-</head>
-<body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div>
-        <div class="brand">
-          <div class="brand-icon">R</div>
-          <div>
-            <h1>Retail AI</h1>
-            <p>Analytics Console</p>
-          </div>
-        </div>
-        <div class="nav-label">Kategoriler</div>
-        <nav class="menu" id="menu">
-          <button class="menu-btn active" data-key="business_calculator">Data Calculator<span>Matematiksel hesaplama</span></button>
-          <button class="menu-btn" data-key="category_insights">Category Insights<span>Kategori &amp; sektör analizi</span></button>
-          <button class="menu-btn" data-key="price_competition">Price Competition<span>Merchant benchmark</span></button>
-          <button class="menu-btn" data-key="action_executor">Action Executor<span>Aksiyon planı</span></button>
-          <button class="menu-btn" data-key="funnel_stock">Funnel &amp; Stock<span>Dönüşüm &amp; stok riski</span></button>
-          <button class="menu-btn" data-key="excel_outputs">Excel Outputs<span>Rapor çıktıları</span></button>
-          <button class="menu-btn" data-key="data_upload">Analiz Edilecek Veri Kaynaklarını Yükle<span>Analiz Edilecek Veri Kaynaklarını Yükle</span></button>
-        </nav>
-      </div>
-      <div class="sidebar-footer">
-        <strong>Demo akışı</strong>
-        <p>Modül seç, iş sorunu yaz, sonucu yönetici özeti olarak al ve Excel çıktısını indir.</p>
-      </div>
-    </aside>
-
-    <main class="main">
-      <div id="activationBanner" style="display: none; background: #ecfdf5; border: 1.5px solid #10b981; border-radius: 14px; padding: 14px 20px; margin-bottom: 16px; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 4px 14px rgba(16,185,129,0.12);">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 20px;">🎉</span>
-          <div>
-            <strong style="color: #065f46; font-size: 13.5px;" id="activationTitle">License Active: Welcome to DataProvido Console!</strong>
-            <div style="font-size: 12px; color: #047857;" id="activationSubtitle">Your 100% offline local AI environment is fully unlocked with unlimited query execution.</div>
-          </div>
-        </div>
-        <button onclick="document.getElementById('activationBanner').style.display='none'" style="background: transparent; border: none; color: #065f46; font-weight: 700; cursor: pointer; font-size: 16px;">✕</button>
-      </div>
-
-      <div class="topbar">
-        <div class="page-title">
-          <p>Matematiksel hesaplama, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir profesyonel çalışma alanında çalıştır; verileriniz üzerinde tüm matematiksel hesapları yapabilirsiniz.</p>
-        </div>
-        <a class="home-link" href="/">← Ana Sayfa</a>
-      </div>
-
-      <section class="workspace">
-        <div class="module-panel">
-          <div class="module-head">
-            <div>
-              <div class="module-kicker" id="moduleBadge">calculate_business_metric</div>
-              <h3 class="module-title" id="moduleTitle">Data Calculator</h3>
-              <p class="module-desc" id="moduleDesc">Satış, stok, fiyat ve funnel gibi tüm Excel verileriniz üzerinde; ortalama, toplam, en yüksek/en düşük, marka ve kategori bazlı kırılımlar gibi gelişmiş matematiksel analizleri hızla yapmanızı sağlar.</p>
-            </div>
-          </div>
-
-          <div class="quick-title" style="margin-top: 0; margin-bottom: 6px;">Hazır sorular</div>
-          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
-            <select id="questionSelect" class="question-select" onchange="selectQuestion(this.value)">
-            </select>
-            <div style="display: flex; gap: 8px;">
-              <input type="text" id="newQuestionInput" class="question-add-input" placeholder="Bu menüye yeni hazır soru ekle..." style="flex: 1;" />
-              <button class="secondary-btn" onclick="addNewQuestion()">Soru Ekle</button>
-            </div>
-          </div>
-
-          <div class="input-area" style="margin-top: 0;">
-            <textarea id="questionInput" placeholder="Örn: APPLE ürünlerinin ortalama fiyatı nedir?"></textarea>
-            <div class="action-row">
-              <button class="primary-btn" onclick="runModule()">Çalıştır</button>
-              <button class="secondary-btn" onclick="downloadExcel()">Excel İndir</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="result-panel">
-          <div class="result-header">
-            <div>
-              <h3>Analiz Çıktısı</h3>
-              <p>Sonuç burada yönetici özeti formatında gösterilir.</p>
-            </div>
-            <button class="ghost-btn" onclick="clearResult()">Temizle</button>
-          </div>
-          <div class="result-box placeholder" id="resultBox">Soldaki modüllerden birini seç ve hazır sorulardan biriyle demoyu başlat.</div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <script>
-    /* ── Module logic ── */
-    const modules = {
-      business_calculator: {
-        badge: "calculate_business_metric", title: "Data Calculator",
-        desc: "Satış, stok, fiyat ve funnel gibi tüm Excel verileriniz üzerinde; ortalama, toplam, en yüksek/en düşük, marka ve kategori bazlı kırılımlar gibi gelişmiş matematiksel analizleri hızla yapmanızı sağlar.",
-        placeholder: "Örn: APPLE ürünlerinin ortalama fiyatı nedir?",
-        suggestions: [
-          "APPLE ürünlerinin ortalama fiyatı nedir?",
+    @media (m          "APPLE ürünlerinin ortalama fiyatı nedir?",
           "En yüksek revenue üreten ilk 10 markayı çıkar",
           "C2D ortalaması en yüksek kategoriler hangileri?",
           "B2D düşük ama PDP yüksek ürünleri listele"
+        ]
       },
       category_insights: {
         badge: "generate_category_insight", title: "Category Insights",
@@ -2579,6 +2455,7 @@ def journey():
 
     function renderModule(moduleKey) {
       const mod = modules[moduleKey];
+      if (!mod) return;
       menuButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.key === moduleKey));
       moduleBadge.textContent = mod.badge;
       moduleTitle.textContent = mod.title;
@@ -2615,24 +2492,90 @@ def journey():
       if (!activeBtn) return;
       const moduleKey = activeBtn.dataset.key;
       
-      // Add to suggestions list of the active module
-      modules[moduleKey].suggestions.push(val);
+      if (modules[moduleKey]) {
+        modules[moduleKey].suggestions.push(val);
+      }
       
-      // Update dropdown select options
       const opt = document.createElement("option");
       opt.value = val;
       opt.textContent = val;
       questionSelect.appendChild(opt);
       
-      // Select the newly added option
       questionSelect.value = val;
       questionInput.value = val;
-      
-      // Clear the add input
       newQInput.value = "";
     }
 
     menuButtons.forEach(btn => btn.addEventListener("click", () => renderModule(btn.dataset.key)));
+
+    /* ── Voice-to-Excel SpeechRecognition Engine ── */
+    let recognition = null;
+    let isListening = false;
+
+    function toggleVoiceRecognition() {
+      const voiceBtn = document.getElementById("voiceBtn");
+      const voiceIcon = document.getElementById("voiceIcon");
+      const voiceText = document.getElementById("voiceText");
+      const questionInput = document.getElementById("questionInput");
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Tarayıcınız canlı ses tanımayı desteklemiyor. Lütfen Chrome, Edge veya Safari kullanın.");
+        return;
+      }
+
+      if (isListening) {
+        if (recognition) recognition.stop();
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.lang = 'tr-TR';
+      recognition.interimResults = true;
+      recognition.continuous = false;
+
+      recognition.onstart = function() {
+        isListening = true;
+        voiceBtn.style.background = "#fee2e2";
+        voiceBtn.style.borderColor = "#ef4444";
+        voiceBtn.style.color = "#dc2626";
+        voiceIcon.textContent = "🔴";
+        voiceText.textContent = "Dinleniyor...";
+        questionInput.placeholder = "Dinleniyor... Lütfen Excel komutunuzu söyleyin (Örn: APPLE stok tutarını hesapla)";
+      };
+
+      recognition.onresult = function(event) {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        questionInput.value = transcript;
+      };
+
+      recognition.onerror = function(event) {
+        console.error("Speech error:", event.error);
+        stopListeningUI();
+      };
+
+      recognition.onend = function() {
+        stopListeningUI();
+        if (questionInput.value.trim().length > 0) {
+          resultBox.className = "result-box placeholder";
+          resultBox.innerHTML = "<div style='color: #10b981; font-weight: 600; text-align: center;'>✨ Sesli Excel Komutu Algılandı:<br><span style='font-size: 15px; color: #0f172a; display: block; margin: 6px 0;'>\"" + questionInput.value + "\"</span><span style='font-size: 12px; color: #64748b; font-weight: normal;'>Çalıştırmak için <b>'Çalıştır'</b> butonuna basın veya Command+Enter'a dokunun.</span></div>";
+        }
+      };
+
+      function stopListeningUI() {
+        isListening = false;
+        voiceBtn.style.background = "#fff8f4";
+        voiceBtn.style.borderColor = "var(--border-orange)";
+        voiceBtn.style.color = "var(--orange)";
+        voiceIcon.textContent = "🎙️";
+        voiceText.textContent = "Sesle Söyle";
+      }
+
+      recognition.start();
+    }
 
     async function runModule() {
       const question = questionInput.value.trim();
@@ -2692,10 +2635,25 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
     nav_contact_cls = "nav-link active" if active_nav == "contact" else "nav-link"
     nav_who_cls     = "nav-link active" if active_nav == "who-we-are" else "nav-link"
     nav_how_cls     = "nav-link active" if active_nav == "how-works" else "nav-link"
+    nav_privacy_cls = "nav-link active" if active_nav == "privacy" else "nav-link"
+
+    # Only on Pricing page do we link to /journey?demo=true for testing. Otherwise, CTA goes to /pricing
+    cta_url = "/journey?demo=true" if active_nav == "pricing" else "/pricing"
+    cta_label = "Start Journey (Test) &nbsp;→" if active_nav == "pricing" else "Start Journey &nbsp;→"
+    bottom_cta_url = "/journey?demo=true" if active_nav == "pricing" else "/pricing"
+    bottom_cta_label = "Test Sandbox Console &nbsp;→" if active_nav == "pricing" else "View Plans &amp; Subscribe &nbsp;→"
 
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){{w[l]=w[l]||[];w[l].push({{'gtm.start':
+  new Date().getTime(),event:'gtm.js'}});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  }})(window,document,'script','dataLayer','GTM-TVKFC4P6');</script>
+  <!-- End Google Tag Manager -->
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title} – DataProvido</title>
@@ -2758,11 +2716,408 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
       background: var(--orange); color: #fff; border: none; padding: 10px 22px;
       border-radius: 24px; font-size: 14px; font-weight: 600; cursor: pointer;
       text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
-      transition: background .2s, transform .15s; box-shadow: 0 4px 14px rgba(242,111,38,0.3);
+      box-shadow: 0 4px 14px rgba(242,111,38,0.30); transition: all .2s ease;
     }}
     .nav-cta:hover {{ background: var(--orange-dark); transform: translateY(-1px); }}
 
-    /* MAIN CONTAINER */
+    /* PAGE WRAPPER */
+    .page-wrapper {{
+      margin-top: calc(var(--nav-h) + 32px);
+      margin-bottom: 60px;
+      padding: 0 24px;
+      display: flex; justify-content: center;
+      flex: 1;
+    }}
+    .page-card {{
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--card-shadow);
+      padding: 48px 48px;
+      width: 100%;
+      max-width: {max_width};
+      position: relative;
+    }}
+    .page-badge {{
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fff3ec; border: 1px solid var(--border-orange);
+      color: var(--orange); font-size: 12px; font-weight: 700;
+      padding: 5px 14px; border-radius: 999px; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 16px;
+    }}
+    h1 {{
+      font-family: 'Playfair Display', serif;
+      font-size: 38px; font-weight: 700; color: var(--text-900);
+      letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 12px;
+    }}
+    .page-subhead {{
+      font-size: 16px; color: var(--text-500); line-height: 1.6; margin-bottom: 32px;
+    }}
+    .page-content {{ font-size: 15px; line-height: 1.75; color: var(--text-700); }}
+
+    .page-actions {{
+      margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }}
+    .back-link {{
+      color: var(--text-500); text-decoration: none; font-size: 14px; font-weight: 500;
+      transition: color .15s;
+    }}
+    .back-link:hover {{ color: var(--orange); }}
+
+    .btn-primary {{
+      background: var(--orange); color: #fff; text-decoration: none;
+      padding: 12px 24px; border-radius: 999px; font-weight: 600; font-size: 14px;
+      display: inline-flex; align-items: center; gap: 8px;
+      box-shadow: 0 4px 14px rgba(242,111,38,0.25); transition: all .18s;
+    }}
+    .btn-primary:hover {{ background: var(--orange-dark); transform: translateY(-1px); }}
+
+    /* FOOTER */
+    .site-footer {{
+      margin-top: auto; border-top: 1px solid var(--border);
+      padding: 24px 40px; display: flex; align-items: center; justify-content: space-between;
+      font-size: 13px; color: var(--text-500); background: #ffffff;
+    }}
+    .footer-links {{ display: flex; gap: 16px; align-items: center; }}
+    .footer-link {{ color: var(--text-500); text-decoration: none; transition: color .15s; }}
+    .footer-link:hover {{ color: var(--orange); }}
+
+    @media (max-width: 860px) {{
+      .nav {{ padding: 0 20px; }}
+      .nav-links {{ display: none; }}
+      .page-card {{ padding: 28px 20px; }}
+      .site-footer {{ flex-direction: column; gap: 12px; text-align: center; }}
+    }}
+  </style>
+</head>
+<body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TVKFC4P6"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+
+  <nav class="nav">
+    <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>DataProvido</a>
+    <div class="nav-links">
+      <a href="/pricing" class="{nav_pricing_cls}">Pricing</a>
+      <a href="/contact" class="{nav_contact_cls}">Contact</a>
+      <a href="/who-we-are" class="{nav_who_cls}">Who We Are?</a>
+      <a href="/how-works" class="{nav_how_cls}">How Works?</a>
+      <a href="/privacy" class="{nav_privacy_cls}">Privacy</a>
+    </div>
+    <a href="{cta_url}" class="nav-cta">{cta_label}</a>
+  </nav>
+
+  <div class="page-wrapper">
+    <main class="page-card">
+      <div class="page-badge">✦ {kicker}</div>
+      <h1>{title}</h1>
+      <div class="page-content">
+        {body}
+      </div>
+      <div class="page-actions">
+        <a href="/" class="back-link">← Back to Home</a>
+        <a href="{bottom_cta_url}" class="btn-primary">{bottom_cta_label}</a>
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div><strong>DataProvido</strong> · Local Intelligence. Zero Compromise.</div>
+    <div class="footer-links">
+      <a href="/pricing" class="footer-link">Pricing</a> ·
+      <a href="/privacy" class="footer-link">Privacy Policy</a> ·
+      <a href="/contact" class="footer-link">Contact</a> ·
+      <span>100% Offline AI</span>
+    </div>
+  </footer>
+</body>
+</html>"""
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+def privacy():
+    return simple_page(
+        "Privacy & Cookie Documentation",
+        """
+        <p class="page-subhead">
+          Comprehensive compliance framework governing DataProvido local intelligence architecture, GDPR (EU) and KVKK (TR) dual-regime protection, sub-processors, and cookie preferences.
+        </p>
+
+        <!-- SUMMARY BADGES -->
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px;">
+          <div style="background: #ecfdf5; border: 1px solid #6ee7b7; color: #047857; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;">
+            🛡️ Dual GDPR &amp; KVKK Compliant
+          </div>
+          <div style="background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;">
+            🔒 Zero Data Uploading (100% Local AI)
+          </div>
+          <div style="background: #fff7ed; border: 1px solid #fdba74; color: #c2410c; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;">
+            🍪 Google Consent Mode v2 &amp; Meta Pixel
+          </div>
+        </div>
+
+        <!-- SECTION 1: PRIVACY POLICY -->
+        <div style="margin-bottom: 40px;">
+          <h2 style="font-family: 'Playfair Display', serif; font-size: 24px; color: var(--text-900); margin-bottom: 16px; border-bottom: 1.5px solid var(--border); padding-bottom: 10px;">
+            1. Privacy Policy
+          </h2>
+
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.1 Who We Are</h3>
+          <p style="margin-bottom: 14px;">
+            DataProvido ("we", "us", "the Platform") is operated by <strong>DataProvido Inc.</strong>, registered in Türkiye. Contact: <a href="mailto:privacy@dataprovido.com" style="color: var(--orange); font-weight: 600;">privacy@dataprovido.com</a>.
+          </p>
+          <p style="margin-bottom: 14px;">
+            If you are located in the European Economic Area (EEA), your personal data is processed under the General Data Protection Regulation (GDPR). If you are located in Türkiye, your personal data is processed under Law No. 6698 on the Protection of Personal Data (KVKK).
+          </p>
+
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.1a Cross-Border &amp; Extraterritorial Scope</h3>
+          <p style="margin-bottom: 14px;">
+            DataProvido is established in Türkiye. However, because we run advertising campaigns (Google Ads, Meta) targeting individuals located in the European Union/EEA, GDPR applies to us extraterritorially under <strong>Article 3(2)</strong>.
+          </p>
+          <ul style="list-style-type: disc; padding-left: 24px; margin-bottom: 16px; line-height: 1.7;">
+            <li><strong>EU Representative (GDPR Art. 27):</strong> We maintain a designated EU representative for supervisory authority contact. Representative details: <code>privacy@dataprovido.com</code>.</li>
+            <li><strong>Dual Regime:</strong> Turkish visitors are governed by KVKK; EU-based visitors reached via EU campaigns are governed by GDPR. Both apply concurrently.</li>
+            <li><strong>Lead Authority:</strong> EU data subjects may lodge complaints with the supervisory authority of their Member State of residence.</li>
+          </ul>
+
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.2 Two Roles: Website Visitor Data vs. Customer Business Data</h3>
+          <ul style="list-style-type: disc; padding-left: 24px; margin-bottom: 16px; line-height: 1.7;">
+            <li><strong>As a Data Controller:</strong> For website visitors and subscribing accounts (billing/contact details), DataProvido determines processing purpose and means.</li>
+            <li><strong>As a Data Processor:</strong> Subscribing brands connect their own CRM, GA, and retail data to their self-serve 100% local workspace. We do not access or store the content of your retail data; the subscribing brand remains the Data Controller under a separate Data Processing Agreement (DPA).</li>
+          </ul>
+
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.3 What We Collect</h3>
+          <div style="overflow-x: auto; margin-bottom: 24px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: left;">
+              <thead>
+                <tr style="background: var(--bg-2); border-bottom: 2px solid var(--border);">
+                  <th style="padding: 12px 16px; font-weight: 700;">Category</th>
+                  <th style="padding: 12px 16px; font-weight: 700;">Examples</th>
+                  <th style="padding: 12px 16px; font-weight: 700;">Purpose</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Identity &amp; Contact</td>
+                  <td style="padding: 12px 16px;">Name, work email, company name</td>
+                  <td style="padding: 12px 16px;">Account creation, billing, SLA support</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Usage Data</td>
+                  <td style="padding: 12px 16px;">Pages visited, session duration, click events</td>
+                  <td style="padding: 12px 16px;">Product analytics &amp; performance tuning</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Technical Data</td>
+                  <td style="padding: 12px 16px;">IP address, device type, location</td>
+                  <td style="padding: 12px 16px;">Security, fraud prevention, infrastructure</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 16px; font-weight: 600;">Marketing Data</td>
+                  <td style="padding: 12px 16px;">Ad click IDs (GCLID), campaign source</td>
+                  <td style="padding: 12px 16px;">Campaign attribution, retargeting measurement</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.4 Legal Basis for Processing</h3>
+          <ul style="list-style-type: disc; padding-left: 24px; margin-bottom: 16px; line-height: 1.7;">
+            <li><strong>Contract (Art. 6(1)(b) GDPR / KVKK Art. 5/2-c):</strong> Account provisioning, billing, support delivery.</li>
+            <li><strong>Legitimate Interest (Art. 6(1)(f) GDPR / KVKK Art. 5/2-f):</strong> Product security, infrastructure optimization.</li>
+            <li><strong>Consent (Art. 6(1)(a) GDPR / KVKK Art. 5/1):</strong> Analytics, Google Ads, Meta retargeting via cookie consent banner.</li>
+          </ul>
+
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.5 Third-Party Sub-processors</h3>
+          <div style="overflow-x: auto; margin-bottom: 24px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: left;">
+              <thead>
+                <tr style="background: var(--bg-2); border-bottom: 2px solid var(--border);">
+                  <th style="padding: 12px 16px; font-weight: 700;">Tool</th>
+                  <th style="padding: 12px 16px; font-weight: 700;">Purpose</th>
+                  <th style="padding: 12px 16px; font-weight: 700;">Data Transferred</th>
+                  <th style="padding: 12px 16px; font-weight: 700;">Location</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Google Analytics (GA4)</td>
+                  <td style="padding: 12px 16px;">Website usage analytics</td>
+                  <td style="padding: 12px 16px;">Anonymized IP, behavioral events</td>
+                  <td style="padding: 12px 16px;">Google EU/US (SCCs)</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Google Ads &amp; GTM</td>
+                  <td style="padding: 12px 16px;">Conversion tracking (GTM-TVKFC4P6)</td>
+                  <td style="padding: 12px 16px;">GCLID, conversion status</td>
+                  <td style="padding: 12px 16px;">Google EU/US</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Stripe Payments</td>
+                  <td style="padding: 12px 16px;">Payment &amp; subscription processing</td>
+                  <td style="padding: 12px 16px;">Billing info, card details (PCI-DSS)</td>
+                  <td style="padding: 12px 16px;">Stripe Inc. US/EU</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 16px; font-weight: 600;">Meta Pixel</td>
+                  <td style="padding: 12px 16px;">Ad performance measurement</td>
+                  <td style="padding: 12px 16px;">Hashed interaction events</td>
+                  <td style="padding: 12px 16px;">Meta Platforms US/EU</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.6 Data Retention &amp; Rights</h3>
+          <p style="margin-bottom: 14px;">
+            Account data is retained for active subscription duration + 5 years for tax compliance. Under GDPR (Art. 15–22) and KVKK (Art. 11), you may request access, rectification, erasure, or portability of your data by emailing <a href="mailto:privacy@dataprovido.com" style="color: var(--orange); font-weight: 600;">privacy@dataprovido.com</a>.
+          </p>
+        </div>
+
+        <!-- SECTION 2: COOKIE POLICY -->
+        <div style="margin-bottom: 40px;">
+          <h2 style="font-family: 'Playfair Display', serif; font-size: 24px; color: var(--text-900); margin-bottom: 16px; border-bottom: 1.5px solid var(--border); padding-bottom: 10px;">
+            2. Cookie Policy &amp; Consent Management
+          </h2>
+          <p style="margin-bottom: 14px;">
+            We use cookies and Google Tag Manager (GTM-TVKFC4P6) to deliver secure functionality and measure campaign effectiveness.
+          </p>
+          <div style="overflow-x: auto; margin-bottom: 24px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: left;">
+              <thead>
+                <tr style="background: var(--bg-2); border-bottom: 2px solid var(--border);">
+                  <th style="padding: 12px 16px; font-weight: 700;">Category</th>
+                  <th style="padding: 12px 16px; font-weight: 700;">Examples</th>
+                  <th style="padding: 12px 16px; font-weight: 700;">Default State</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Strictly Necessary</td>
+                  <td style="padding: 12px 16px;">Session state, CSRF tokens, security</td>
+                  <td style="padding: 12px 16px; color: #10b981; font-weight: 700;">Always Active</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Analytics</td>
+                  <td style="padding: 12px 16px;">GA4 <code>_ga</code> cookies</td>
+                  <td style="padding: 12px 16px; color: var(--orange); font-weight: 700;">Consent Required</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 16px; font-weight: 600;">Advertising</td>
+                  <td style="padding: 12px 16px;">Google Ads conversion &amp; Meta Pixel</td>
+                  <td style="padding: 12px 16px; color: var(--orange); font-weight: 700;">Consent Required</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECTION 3: DATA PROCESSING AGREEMENT SUMMARY -->
+        <div style="background: var(--bg-2); border: 1.5px solid var(--border-orange); border-radius: 18px; padding: 24px;">
+          <h2 style="font-family: 'Playfair Display', serif; font-size: 20px; color: var(--text-900); margin-bottom: 12px;">
+            3. Data Processing Agreement (DPA) Summary for Subscribing Brands
+          </h2>
+          <p style="font-size: 13.5px; line-height: 1.7; color: var(--text-700); margin-bottom: 12px;">
+            Subscribing enterprise brands connect their commercial Excel and CRM data directly into their private local environment. Under our B2B DPA:
+          </p>
+          <ul style="list-style-type: check; padding-left: 20px; font-size: 13.5px; line-height: 1.8; color: var(--text-700);">
+            <li><strong>DataProvido acts solely as Data Processor;</strong> the customer retains full Data Controller ownership.</li>
+            <li><strong>Zero Third-Party LLM Transmission:</strong> All analytical queries execute 100% locally on dedicated LLaMA 3.1 architecture.</li>
+            <li><strong>No Cross-Tenant Data Access:</strong> Your enterprise data is strictly isolated and never used to train global AI models.</li>
+          </ul>
+        </div>
+        """,
+        kicker="Legal & Compliance",
+        active_nav="privacy",
+        max_width="1040px"
+    )
+
+    # Only on Pricing page do we link to /journey?demo=true for testing. Otherwise, CTA goes to /pricing
+    cta_url = "/journey?demo=true" if active_nav == "pricing" else "/pricing"
+    cta_label = "Start Journey (Test) &nbsp;→" if active_nav == "pricing" else "Start Journey &nbsp;→"
+    bottom_cta_url = "/journey?demo=true" if active_nav == "pricing" else "/pricing"
+    bottom_cta_label = "Test Sandbox Console &nbsp;→" if active_nav == "pricing" else "View Plans &amp; Subscribe &nbsp;→"
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){{w[l]=w[l]||[];w[l].push({{'gtm.start':
+  new Date().getTime(),event:'gtm.js'}});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  }})(window,document,'script','dataLayer','GTM-TVKFC4P6');</script>
+  <!-- End Google Tag Manager -->
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title} – DataProvido</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after {{ margin: 0; padding: 0; box-sizing: border-box; }}
+    :root {{
+      --orange:       #f26f26;
+      --orange-dark:  #d85c18;
+      --orange-light: #f58c50;
+      --bg:           #ffffff;
+      --bg-2:         #f9fafb;
+      --bg-3:         #f1f3f5;
+      --text-900:     #292c2f;
+      --text-700:     #4e5359;
+      --text-500:     #6b7178;
+      --text-dim:     #a3acb6;
+      --border:       #dadee2;
+      --border-orange: rgba(242,111,38,0.25);
+      --card-bg:      #ffffff;
+      --card-shadow:  0 4px 24px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+      --radius:       20px;
+      --nav-h:        72px;
+    }}
+    html {{ scroll-behavior: smooth; }}
+    body {{
+      background: linear-gradient(160deg, #fff8f4 0%, #ffffff 45%, #f0f7ff 100%);
+      color: var(--text-900);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }}
+
+    /* NAV */
+    .nav {{
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 40px;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border); box-shadow: 0 1px 0 var(--border);
+    }}
+    .nav-logo {{ display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text-900); text-decoration: none; }}
+    .nav-logo-dot {{ width: 10px; height: 10px; border-radius: 50%; background: var(--orange); animation: pulse-dot 2.5s ease-in-out infinite; }}
+    @keyframes pulse-dot {{ 0%,100% {{ box-shadow: 0 0 0 0 rgba(242,111,38,0.5); }} 50% {{ box-shadow: 0 0 0 6px rgba(242,111,38,0); }} }}
+    .nav-links {{ display: flex; align-items: center; gap: 4px; }}
+    .nav-link {{
+      color: var(--text-700); text-decoration: none; font-size: 14px; font-weight: 500;
+      padding: 7px 14px; border-radius: 10px; transition: all .18s ease;
+    }}
+    .nav-link:hover {{ color: var(--orange); background: rgba(242,111,38,0.06); }}
+    .nav-link.active {{
+      color: var(--orange);
+      background: #fff3ec;
+      font-weight: 600;
+      box-shadow: inset 0 0 0 1px rgba(242,111,38,0.20);
+    }}
+    .nav-cta {{
+      background: var(--orange); color: #fff; border: none; padding: 10px 22px;
+      border-radius: 24px; font-size: 14px; font-weight: 600; cursor: pointer;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+      box-shadow: 0 4px 14px rgba(242,111,38,0.30); transition: all .2s ease;
+    }}
+    .nav-cta:hover {{ background: var(--orange-dark); transform: translateY(-1px); }}
+
+    /* PAGE WRAPPER */
     .page-wrapper {{
       flex: 1;
       padding: calc(var(--nav-h) + 40px) 24px 60px;
