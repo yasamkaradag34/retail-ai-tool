@@ -2424,6 +2424,43 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       50% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(242,111,38,0); }
     }
 
+    /* Google AI Overview Style Animated Voice Listening Indicator */
+    @keyframes ai-voice-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6), 0 0 0 0 rgba(242, 111, 38, 0.4); transform: scale(1); }
+      50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0.25), 0 0 0 18px rgba(242, 111, 38, 0); transform: scale(1.03); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), 0 0 0 0 rgba(242, 111, 38, 0); transform: scale(1); }
+    }
+
+    .voice-listening-active {
+      background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%) !important;
+      border-color: #ef4444 !important;
+      color: #dc2626 !important;
+      animation: ai-voice-pulse 1.5s infinite ease-in-out !important;
+    }
+
+    .sound-wave-bars {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      height: 18px;
+    }
+
+    .sound-wave-bars .bar {
+      width: 3.5px;
+      background: #ef4444;
+      border-radius: 3px;
+      animation: wave-bounce 0.8s ease-in-out infinite alternate;
+    }
+    .sound-wave-bars .bar:nth-child(1) { animation-delay: 0.1s; height: 40%; }
+    .sound-wave-bars .bar:nth-child(2) { animation-delay: 0.35s; height: 100%; }
+    .sound-wave-bars .bar:nth-child(3) { animation-delay: 0.2s; height: 75%; }
+    .sound-wave-bars .bar:nth-child(4) { animation-delay: 0.45s; height: 50%; }
+
+    @keyframes wave-bounce {
+      0% { transform: scaleY(0.3); }
+      100% { transform: scaleY(1.15); }
+    }
+
     @media (max-width: 1180px) {
       .workspace { grid-template-columns: 1fr; }
       .module-panel, .result-panel { min-height: auto; }
@@ -2553,22 +2590,16 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
             </div>
           </div>
 
-          <div class="module-head">
-            <div>
+          <div class="module-head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px;">
+            <div style="flex: 1;">
               <div class="module-kicker" id="moduleBadge">excel_wizard_engine</div>
               <h3 class="module-title" id="moduleTitle">Excel Wizard</h3>
               <p class="module-desc" id="moduleDesc">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
             </div>
-          </div>
-
-          <!-- LANGUAGE SWITCHER BAR -->
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: #fafafa; border: 1px solid var(--border); border-radius: 12px; padding: 8px 14px;">
-            <span style="font-size: 12px; font-weight: 700; color: var(--text-700); display: flex; align-items: center; gap: 6px;">
-              🌐 <span id="langSelectLabel">Voice &amp; Prompt Language:</span>
-            </span>
-            <div style="display: flex; gap: 4px;">
-              <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid var(--orange); background: var(--orange); color: #ffffff; padding: 4px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.15s;">🇬🇧 EN (English)</button>
-              <button id="langBtnTR" onclick="setLanguage('tr')" type="button" style="border: 1px solid var(--border); background: #ffffff; color: var(--text-700); padding: 4px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: all 0.15s;">🇹🇷 TR (Türkçe)</button>
+            <!-- TOP RIGHT LANGUAGE SWITCHER PILLS -->
+            <div style="display: flex; gap: 4px; background: #f8fafc; padding: 4px; border-radius: 12px; border: 1px solid var(--border); flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+              <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid var(--orange); background: var(--orange); color: #ffffff; padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 2px 6px rgba(242,111,38,0.20);">🇬🇧 EN (English)</button>
+              <button id="langBtnTR" onclick="setLanguage('tr')" type="button" style="border: 1px solid transparent; background: transparent; color: var(--text-700); padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.18s;">🇹🇷 TR (Türkçe)</button>
             </div>
           </div>
 
@@ -2798,163 +2829,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       action_executor: {
         badge: "execute_recommended_action", title: "Action Executor",
         desc: {
-          tr: "Insight çıktılarından aksiyon planı üretir: replenishment, kampanya, görünürlük ve risk azaltma önerileri.",
-          en: "Generates actionable execution plans: replenishment, campaigns, visibility, and risk mitigation."
-        },
-        placeholder: {
-          tr: "Örn: C2D/B2D güçlü ama stok riski olan SKU'lar için aksiyon planı çıkar",
-          en: "E.g.: Generate action plan for high-intent SKUs with stock risk"
-        },
-        suggestions: {
-          tr: [
-            "C2D/B2D güçlü ama stok riski olan SKU'lar için aksiyon planı çıkar",
-            "Tablet kategorisi için büyüme aksiyonlarını öner",
-            "OOS riski olan ürünler için replenishment planı yap",
-            "Sepete eklenip satın alınmayan ürünler için aksiyon öner"
-          ],
-          en: [
-            "Generate action plan for SKUs with high C2D/B2D but inventory risk",
-            "Recommend growth action items for Tablet category",
-            "Create replenishment schedule for items with high OOS risk",
-            "Propose conversion action plan for high Add-to-Cart items"
-          ]
-        }
-      },
-      funnel_stock: {
-        badge: "analyze_ecommerce_sample", title: "Funnel & Stock",
-        desc: {
-          tr: "Funnel kırılımı, stok riski, dönüşüm kaybı ve kategori bazlı e-ticaret performans sorularını cevaplar.",
-          en: "Analyzes funnel conversion steps, inventory depletion risks, and e-commerce leakage points."
-        },
-        placeholder: {
-          tr: "Örn: C2D yüksek ama stoğu az SKU'lar hangileri?",
-          en: "E.g.: Which SKUs have high C2D but low stock inventory?"
-        },
-        suggestions: {
-          tr: [
-            "C2D yüksek ama stoğu az SKU'lar hangileri?",
-            "A2C yüksek ama transaction düşük SKU'ları listele",
-            "En büyük funnel kaybı hangi adımda?",
-            "OOS ürün PDP view alıyor mu?"
-          ],
-          en: [
-            "Which SKUs have high C2D but low stock level?",
-            "List SKUs with high Add-to-Cart but low transaction volume",
-            "Which conversion step experiences the highest drop-off rate?",
-            "Are out-of-stock items still receiving high PDP traffic?"
-          ]
-        }
-      },
-      excel_outputs: {
-        badge: "download_last_result", title: "Excel Outputs",
-        desc: {
-          tr: "Son üretilen analiz sonucunu Excel olarak indirebilirsin. Çıktılar sheet bazında düzenlenir.",
-          en: "Download the last generated analytical report as a multi-sheet Excel spreadsheet."
-        },
-        placeholder: {
-          tr: "Örn: Son aksiyon planını Excel olarak indir",
-          en: "E.g.: Export latest action plan to Excel format"
-        },
-        suggestions: {
-          tr: [
-            "Son price competition çıktısını Excel'e hazırla",
-            "Son aksiyon planını Excel olarak indir",
-            "Çıktıyı sheet bazında özetle",
-            "Download için hazır son sonucu kontrol et"
-          ],
-          en: [
-            "Export last price competition output to Excel",
-            "Download latest action plan in Excel format",
-            "Summarize analytical output per worksheet",
-            "Verify prepared output file for download"
-          ]
-        }
-      }
-    };
-
-    const menuButtons = document.querySelectorAll(".menu-btn");
-    const moduleBadge = document.getElementById("moduleBadge");
-    const moduleTitle = document.getElementById("moduleTitle");
-    const moduleDesc = document.getElementById("moduleDesc");
-    const questionInput = document.getElementById("questionInput");
-    const questionSelect = document.getElementById("questionSelect");
-    const presetSection = document.getElementById("presetSection");
-    const resultBox = document.getElementById("resultBox");
-
-    function toggleHowToUse() {
-      const content = document.getElementById("howToUseContent");
-      const chevron = document.getElementById("howToUseChevron");
-      isHowToUseOpen = !isHowToUseOpen;
-
-      if (isHowToUseOpen) {
-        content.style.maxHeight = "320px";
-        content.style.opacity = "1";
-        content.style.padding = "0 16px";
-        chevron.style.transform = "rotate(180deg)";
-      } else {
-        content.style.maxHeight = "0";
-        content.style.opacity = "0";
-        content.style.padding = "0 16px";
-        chevron.style.transform = "rotate(0deg)";
-      }
-    }
-
-    function renderHowToUse() {
-      const body = document.getElementById("howToUseBody");
-      const guide = howToUseGuide[currentModule];
-      if (guide && guide[currentLang]) {
-        body.innerHTML = guide[currentLang];
-      }
-    }
-
-    function renderModule(moduleKey) {
-      currentModule = moduleKey;
-      const mod = modules[moduleKey];
-      if (!mod) return;
-      menuButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.key === moduleKey));
-      moduleBadge.textContent = mod.badge;
-      moduleTitle.textContent = mod.title;
-      
-      const descText = (typeof mod.desc === 'object') ? mod.desc[currentLang] : mod.desc;
-      const placeholderText = (typeof mod.placeholder === 'object') ? mod.placeholder[currentLang] : mod.placeholder;
-      const suggestionList = (typeof mod.suggestions === 'object' && !Array.isArray(mod.suggestions)) ? mod.suggestions[currentLang] : (mod.suggestions || []);
-
-      moduleDesc.textContent = descText;
-      questionInput.placeholder = placeholderText;
-      questionInput.value = "";
-      
-      renderHowToUse();
-
-      // Excel Wizard does NOT show Preset questions dropdown or Analiz Ciktisi box
-      const resultSection = document.getElementById("resultSection");
-      if (moduleKey === 'business_calculator') {
-        presetSection.style.display = 'none';
-        if (resultSection) resultSection.style.display = 'none';
-      } else {
-        if (resultSection) resultSection.style.display = 'block';
-        if (suggestionList.length === 0) {
-          presetSection.style.display = 'none';
-        } else {
-          presetSection.style.display = 'block';
-          questionSelect.innerHTML = "";
-          const placeholderOpt = document.createElement("option");
-          placeholderOpt.value = "";
-          placeholderOpt.textContent = (currentLang === 'en') ? "Select a preset question..." : "Bir hazır soru seçin...";
-          placeholderOpt.disabled = true;
-          placeholderOpt.selected = true;
-          questionSelect.appendChild(placeholderOpt);
-          
-          suggestionList.forEach(q => {
-            const opt = document.createElement("option");
-            opt.value = q;
-            opt.textContent = q;
-            questionSelect.appendChild(opt);
-          });
-        }
-      }
-    }
-
-    function setLanguage(lang) {
+          tr: "Insight çıktılarından aksiyon planı üretir: replenishment, kampa    function setLanguage(lang) {
       currentLang = lang;
       const btnTR = document.getElementById("langBtnTR");
       const btnEN = document.getElementById("langBtnEN");
@@ -2971,7 +2846,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const heroSubHeading = document.getElementById("heroSubHeading");
       const homeLinkText = document.getElementById("homeLinkText");
       const navLabelCategories = document.getElementById("navLabelCategories");
-      const langSelectLabel = document.getElementById("langSelectLabel");
 
       const subBusiness = document.getElementById("sub_business_calculator");
       const subCategory = document.getElementById("sub_category_insights");
@@ -2988,17 +2862,19 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const modalCloseBtn = document.getElementById("modalCloseBtn");
 
       if (lang === 'en') {
-        btnTR.style.background = "#ffffff";
-        btnTR.style.borderColor = "var(--border)";
+        btnTR.style.background = "transparent";
+        btnTR.style.borderColor = "transparent";
         btnTR.style.color = "var(--text-700)";
         btnTR.style.fontWeight = "600";
+        btnTR.style.boxShadow = "none";
         
         btnEN.style.background = "var(--orange)";
         btnEN.style.borderColor = "var(--orange)";
         btnEN.style.color = "#ffffff";
         btnEN.style.fontWeight = "700";
+        btnEN.style.boxShadow = "0 2px 6px rgba(242,111,38,0.20)";
 
-        voiceText.textContent = "Voice Command";
+        if (!isListening) voiceText.textContent = "Voice Command";
         runBtnLabel.textContent = "🚀 Run Analysis";
         previewBtnLabel.textContent = "📊 Excel Preview";
         downloadBtnLabel.textContent = "📥 Export Excel";
@@ -3011,7 +2887,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         if (heroSubHeading) heroSubHeading.textContent = "Execute Excel Wizard, category insights, price competition, and action plans in a single workspace; give voice or text Excel commands over your data.";
         if (homeLinkText) homeLinkText.textContent = "← Home Page";
         if (navLabelCategories) navLabelCategories.textContent = "CATEGORIES";
-        if (langSelectLabel) langSelectLabel.textContent = "Voice & Prompt Language:";
 
         if (subBusiness) subBusiness.textContent = "Voice & text Excel commands";
         if (subCategory) subCategory.textContent = "Category & sector analysis";
@@ -3027,17 +2902,19 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         if (modalStatusText) modalStatusText.textContent = "✓ Excel data is loaded and ready for AI analysis.";
         if (modalCloseBtn) modalCloseBtn.textContent = "Close";
       } else {
-        btnEN.style.background = "#ffffff";
-        btnEN.style.borderColor = "var(--border)";
+        btnEN.style.background = "transparent";
+        btnEN.style.borderColor = "transparent";
         btnEN.style.color = "var(--text-700)";
         btnEN.style.fontWeight = "600";
+        btnEN.style.boxShadow = "none";
 
         btnTR.style.background = "var(--orange)";
         btnTR.style.borderColor = "var(--orange)";
         btnTR.style.color = "#ffffff";
         btnTR.style.fontWeight = "700";
+        btnTR.style.boxShadow = "0 2px 6px rgba(242,111,38,0.20)";
 
-        voiceText.textContent = "Sesle Söyle";
+        if (!isListening) voiceText.textContent = "Sesle Söyle";
         runBtnLabel.textContent = "🚀 Çalıştır";
         previewBtnLabel.textContent = "📊 Excel Preview";
         downloadBtnLabel.textContent = "📥 Excel İndir";
@@ -3050,7 +2927,130 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         if (heroSubHeading) heroSubHeading.textContent = "Excel Wizard, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir çalışma alanında çalıştırın; verileriniz üzerinde sesli veya yazılı Excel komutları verin.";
         if (homeLinkText) homeLinkText.textContent = "← Ana Sayfa";
         if (navLabelCategories) navLabelCategories.textContent = "KATEGORİLER";
-        if (langSelectLabel) langSelectLabel.textContent = "Ses & Metin Dili (Voice & Prompt Language):";
+
+        if (subBusiness) subBusiness.textContent = "Sesli & yazılı Excel komutları";
+        if (subCategory) subCategory.textContent = "Kategori & sektör analizi";
+        if (subPrice) subPrice.textContent = "Merchant benchmark";
+        if (subAction) subAction.textContent = "Aksiyon planı";
+        if (subFunnel) subFunnel.textContent = "Dönüşüm & stok riski";
+        if (subExcel) subExcel.textContent = "Rapor çıktıları";
+        if (labelUpload) labelUpload.textContent = "Veri Kaynakları Yükle";
+        if (subUpload) subUpload.textContent = "Excel / CSV Yükleme";
+
+        if (modalTableSub) modalTableSub.textContent = "Canlı Excel tablosu önizlemesi, filtreleme ve sütun analizi";
+        if (modalTableSearch) modalTableSearch.placeholder = "🔍 Tablo içinde ara (SKU, Marka, Kategori)...";
+        if (modalStatusText) modalStatusText.textContent = "✓ Excel verisi analize hazır durumdadır.";
+        if (modalCloseBtn) modalCloseBtn.textContent = "Kapat";
+      }
+
+      renderHowToUse();
+      const activeBtn = document.querySelector(".menu-btn.active");
+      if (activeBtn) renderModule(activeBtn.dataset.key);
+    }
+
+    function selectQuestion(val) {
+      if (val) { questionInput.value = val; }
+    }
+
+    menuButtons.forEach(btn => btn.addEventListener("click", () => renderModule(btn.dataset.key)));
+
+    /* ── Voice-to-Excel SpeechRecognition Engine (Bilingual TR / EN) ── */
+    let recognition = null;
+    let isListening = false;
+
+    function toggleVoiceRecognition() {
+      const voiceBtn = document.getElementById("voiceBtn");
+      const voiceIcon = document.getElementById("voiceIcon");
+      const voiceText = document.getElementById("voiceText");
+      const questionInput = document.getElementById("questionInput");
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert(currentLang === 'en' ? "Your browser does not support live speech recognition. Please use Google Chrome, Edge, or Safari." : "Tarayıcınız canlı ses tanımayı desteklemiyor. Lütfen Chrome, Edge veya Safari kullanın.");
+        return;
+      }
+
+      if (isListening) {
+        if (recognition) recognition.stop();
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.lang = (currentLang === 'en') ? 'en-US' : 'tr-TR';
+      recognition.interimResults = true;
+      recognition.continuous = false;
+
+      recognition.onstart = function() {
+        isListening = true;
+        voiceBtn.classList.add("voice-listening-active");
+        voiceIcon.innerHTML = `<div class="sound-wave-bars"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>`;
+        voiceText.textContent = (currentLang === 'en') ? "Listening..." : "Dinleniyor...";
+        questionInput.placeholder = (currentLang === 'en') 
+          ? "🔴 Google AI Listening... Speak your Excel command (e.g. Calculate average price for APPLE)" 
+          : "🔴 Dinleniyor... Lütfen Excel komutunuzu söyleyin (Örn: APPLE stok tutarını hesapla)";
+      };
+
+      recognition.onresult = function(event) {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        questionInput.value = transcript;
+      };
+
+      recognition.onerror = function(event) {
+        console.error("Speech error:", event.error);
+        stopListeningUI();
+        let errMsg = "";
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          errMsg = (currentLang === 'en')
+            ? "⚠️ Microphone permission denied.\n\nPlease click the 🔒 lock / 🎙️ mic icon near your browser address bar (dataprovido.com) and click 'Allow' for Microphone."
+            : "⚠️ Mikrofon izni engellendi.\n\nLütfen tarayıcı adres çubuğundaki (dataprovido.com) 🔒 kilit / 🎙️ simgesine tıklayıp Mikrofon İznini 'İzin Ver' olarak değiştirin.";
+        } else if (event.error === 'no-speech') {
+          errMsg = (currentLang === 'en')
+            ? "⚠️ No speech detected. Please speak into your microphone and try again."
+            : "⚠️ Ses algılanamadı. Lütfen mikrofona konuşarak tekrar deneyin.";
+        } else if (event.error === 'audio-capture') {
+          errMsg = (currentLang === 'en')
+            ? "⚠️ No microphone input device found on your computer."
+            : "⚠️ Bilgisayarınızda bağlı mikrofon bulunamadı.";
+        } else {
+          errMsg = (currentLang === 'en')
+            ? "⚠️ Voice recognition notice: " + event.error
+            : "⚠️ Ses tanıma uyarısı: " + event.error;
+        }
+        alert(errMsg);
+      };
+
+      recognition.onend = function() {
+        stopListeningUI();
+        if (questionInput.value.trim().length > 0) {
+          resultBox.className = "result-box placeholder";
+          const titleMsg = (currentLang === 'en') ? "✨ Voice Command Recognized (EN):" : "✨ Sesli Excel Komutu Algılandı:";
+          const subMsg = (currentLang === 'en') ? "Click <b>'Run Analysis'</b> or press Command+Enter to execute." : "Çalıştırmak için <b>'Çalıştır'</b> butonuna basın veya Command+Enter'a dokunun.";
+          resultBox.innerHTML = "<div style='color: #10b981; font-weight: 600; text-align: center;'>" + titleMsg + "<br><span style='font-size: 15px; color: #0f172a; display: block; margin: 6px 0;'>\"" + questionInput.value + "\"</span><span style='font-size: 12px; color: #64748b; font-weight: normal;'>" + subMsg + "</span></div>";
+        }
+      };
+
+      function stopListeningUI() {
+        isListening = false;
+        voiceBtn.classList.remove("voice-listening-active");
+        voiceBtn.style.background = "#fff8f4";
+        voiceBtn.style.borderColor = "var(--border-orange)";
+        voiceBtn.style.color = "var(--orange)";
+        voiceIcon.innerHTML = "🎙️";
+        voiceText.textContent = (currentLang === 'en') ? "Voice Command" : "Sesle Söyle";
+      }
+
+      recognition.start();
+    }ultHeaderTitle.textContent = "Analiz Çıktısı";
+        resultHeaderSub.textContent = "Sonuç burada yönetici özeti formatında gösterilir.";
+        howToUseHeaderTitle.textContent = "Nasıl Kullanılır? (How to Use Guide)";
+
+        if (heroMainHeading) heroMainHeading.textContent = "Excel Wizard, elinizle yaptığınız Excel işlemlerini sesiniz ve yazılı komutunuz ile yapmanızı sağlar.";
+        if (heroSubHeading) heroSubHeading.textContent = "Excel Wizard, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir çalışma alanında çalıştırın; verileriniz üzerinde sesli veya yazılı Excel komutları verin.";
+        if (homeLinkText) homeLinkText.textContent = "← Ana Sayfa";
+        if (navLabelCategories) navLabelCategories.textContent = "KATEGORİLER";
 
         if (subBusiness) subBusiness.textContent = "Sesli & yazılı Excel komutları";
         if (subCategory) subCategory.textContent = "Kategori & sektör analizi";
