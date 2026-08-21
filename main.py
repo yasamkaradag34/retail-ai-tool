@@ -2815,9 +2815,56 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         }
       },
       action_executor: {
-        badge: "execute_recommended_action", title: "Action Executor",
+        title: "Action Executor",
         desc: {
-          tr: "Insight çıktılarından aksiyon planı üretir: replenishment, kampa    function setLanguage(lang) {
+          tr: "Insight çıktılarından aksiyon planı üretir: replenishment, kampanya ve stok riski aksiyonları.",
+          en: "Generates action plans: replenishment, marketing, and stock risk mitigation."
+        },
+        placeholder: {
+          tr: "Örn: Aksiyon planı üret",
+          en: "E.g.: Generate action plan for at-risk items"
+        },
+        suggestions: { tr: [], en: [] }
+      },
+      funnel_stock: {
+        title: "Funnel & Stock",
+        desc: {
+          tr: "PDP görünürlüğü yüksek ancak stoğu az olan riskli ürünleri sorgular.",
+          en: "Queries high-traffic SKUs with low stock and conversion bottlenecks."
+        },
+        placeholder: {
+          tr: "Örn: Stok riski taşıyan ürünleri listele",
+          en: "E.g.: List SKUs with stock risk"
+        },
+        suggestions: { tr: [], en: [] }
+      },
+      excel_outputs: {
+        title: "Excel Outputs",
+        desc: {
+          tr: "Daha önce çalıştırılan analiz sonuçlarını çoklu sheet formatında gösterir.",
+          en: "Displays previous analysis run results in multi-sheet Excel format."
+        },
+        placeholder: {
+          tr: "Örn: Excel rapor çıktılarını göster",
+          en: "E.g.: Display Excel report outputs"
+        },
+        suggestions: { tr: [], en: [] }
+      },
+      data_upload: {
+        title: "Upload Data Sources",
+        desc: {
+          tr: "Kendi e-ticaret Excel/CSV dosyalarınızı yükleyin.",
+          en: "Upload your custom e-commerce Excel/CSV files."
+        },
+        placeholder: {
+          tr: "Örn: Dosya yükleme modülünü aç",
+          en: "E.g.: Open data source upload manager"
+        },
+        suggestions: { tr: [], en: [] }
+      }
+    };
+
+    function setLanguage(lang) {
       currentLang = lang;
       const btnTR = document.getElementById("langBtnTR");
       const btnEN = document.getElementById("langBtnEN");
@@ -3144,33 +3191,48 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       }
 
       recognition.start();
-    }ultHeaderTitle.textContent = "Analiz Çıktısı";
-        resultHeaderSub.textContent = "Sonuç burada yönetici özeti formatında gösterilir.";
-        howToUseHeaderTitle.textContent = "Nasıl Kullanılır? (How to Use Guide)";
+    }
 
-        if (heroMainHeading) heroMainHeading.textContent = "Excel Wizard, elinizle yaptığınız Excel işlemlerini sesiniz ve yazılı komutunuz ile yapmanızı sağlar.";
-        if (heroSubHeading) heroSubHeading.textContent = "Excel Wizard, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir çalışma alanında çalıştırın; verileriniz üzerinde sesli veya yazılı Excel komutları verin.";
-        if (homeLinkText) homeLinkText.textContent = "← Ana Sayfa";
-        if (navLabelCategories) navLabelCategories.textContent = "KATEGORİLER";
-
-        if (subBusiness) subBusiness.textContent = "Sesli & yazılı Excel komutları";
-        if (subCategory) subCategory.textContent = "Kategori & sektör analizi";
-        if (subPrice) subPrice.textContent = "Merchant benchmark";
-        if (subAction) subAction.textContent = "Aksiyon planı";
-        if (subFunnel) subFunnel.textContent = "Dönüşüm & stok riski";
-        if (subExcel) subExcel.textContent = "Rapor çıktıları";
-        if (labelUpload) labelUpload.textContent = "Veri Kaynakları Yükle";
-        if (subUpload) subUpload.textContent = "Excel / CSV Yükleme";
-
-        if (modalTableSub) modalTableSub.textContent = "Canlı Excel tablosu önizlemesi, filtreleme ve sütun analizi";
-        if (modalTableSearch) modalTableSearch.placeholder = "🔍 Tablo içinde ara (SKU, Marka, Kategori)...";
-        if (modalStatusText) modalStatusText.textContent = "✓ Excel verisi analize hazır durumdadır.";
-        if (modalCloseBtn) modalCloseBtn.textContent = "Kapat";
+    function toggleHowToUse() {
+      isHowToUseOpen = !isHowToUseOpen;
+      const body = document.getElementById("howToUseBody");
+      const icon = document.getElementById("howToUseIcon");
+      if (body && icon) {
+        body.style.display = isHowToUseOpen ? "block" : "none";
+        icon.style.transform = isHowToUseOpen ? "rotate(180deg)" : "rotate(0deg)";
       }
+    }
+
+    function renderHowToUse() {
+      const body = document.getElementById("howToUseBody");
+      if (!body) return;
+      const content = howToUseGuide[currentModule] || howToUseGuide.business_calculator;
+      body.innerHTML = content[currentLang] || content.tr;
+    }
+
+    function renderModule(key) {
+      currentModule = key;
+      const conf = modules[key] || modules.business_calculator;
+
+      const menuButtons = document.querySelectorAll(".menu-btn");
+      menuButtons.forEach(btn => {
+        if (btn.dataset.key === key) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+
+      const moduleTitle = document.getElementById("moduleTitle");
+      const moduleDesc = document.getElementById("moduleDesc");
+      const questionInput = document.getElementById("questionInput");
+
+      if (moduleTitle) moduleTitle.textContent = conf.title;
+      if (moduleDesc) moduleDesc.textContent = conf.desc[currentLang] || conf.desc.tr;
+      if (questionInput) questionInput.placeholder = conf.placeholder[currentLang] || conf.placeholder.tr;
 
       renderHowToUse();
-      const activeBtn = document.querySelector(".menu-btn.active");
-      if (activeBtn) renderModule(activeBtn.dataset.key);
+      updateRunButtonState();
     }
 
     function selectQuestion(val) {
