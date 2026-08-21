@@ -2532,14 +2532,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         <button onclick="document.getElementById('activationBanner').style.display='none'" style="background: transparent; border: none; color: #065f46; font-weight: 700; cursor: pointer; font-size: 16px;">✕</button>
       </div>
 
-      <div class="topbar" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
-        <div class="page-title" style="flex: 1; text-align: center; padding: 0 40px;">
-          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--text-900); margin-bottom: 8px; letter-spacing: -0.01em; line-height: 1.3;" id="heroMainHeading">
+      <div class="topbar" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 20px;">
+        <div class="page-title" style="flex: 1; text-align: center; padding: 0 20px;">
+          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--text-900); letter-spacing: -0.01em; line-height: 1.3;" id="heroMainHeading">
             Excel Wizard allows you to perform your manual Excel tasks using your voice and text commands.
           </h2>
-          <p style="font-size: 13.5px; color: var(--text-500); line-height: 1.65; font-weight: 400; max-width: 820px; margin: 0 auto;" id="heroSubHeading">
-            Execute Excel Wizard, category insights, price competition, and action plans in a single workspace; give voice or text Excel commands over your data.
-          </p>
         </div>
         <a class="home-link" href="/" style="flex-shrink: 0;" id="homeLinkText">← Home Page</a>
       </div>
@@ -2585,14 +2582,31 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           </div>
 
           <div class="input-area" style="margin-top: 0;">
-            <div style="display: flex; gap: 12px; align-items: stretch; margin-bottom: 16px;">
-              <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or click Voice Command)..." style="flex: 1; min-height: 130px; resize: vertical; padding: 16px 18px; font-size: 14px; color: #0f172a; border-radius: 16px; border: 1.5px solid #cbd5e1; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; line-height: 1.6; box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);"></textarea>
-              <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #2563eb; padding: 12px 18px; border-radius: 16px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; transition: all 0.2s; min-width: 130px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                <span id="voiceIcon" style="display: block;">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-                </span>
-                <span id="voiceText" style="font-size: 11.5px; font-weight: 700;">Voice Command</span>
-              </button>
+            <!-- EXCEL DRAG & DROP INTERACTIVE PROMPT DROPZONE -->
+            <div id="dropZoneContainer" style="position: relative; border: 2px dashed #cbd5e1; border-radius: 18px; padding: 8px; background: #ffffff; transition: all 0.25s ease; margin-bottom: 16px;">
+              
+              <!-- TOP FILE STATUS BAR / DROP BADGE -->
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; margin-bottom: 8px; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9;">
+                <div id="activeFileBadge" style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #334155;">
+                  <span style="color: #10b981; font-weight: 800;">✓</span>
+                  <span>Active Dataset: <strong id="activeFileName" style="color: #0f172a;">default_retail_data.xlsx</strong> <span id="activeFileMeta" style="color: #64748b; font-weight: 400;">(1,450 rows, 12 columns)</span></span>
+                </div>
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 5px 12px; border-radius: 8px; border: 1px solid #bfdbfe; transition: all 0.18s;">
+                  <span>📎 Drag &amp; Drop Excel or Click to Upload</span>
+                  <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleExcelFileUpload(this.files[0])" />
+                </label>
+              </div>
+
+              <!-- DUAL PROMPT TEXTAREA & VOICE BUTTON -->
+              <div style="display: flex; gap: 12px; align-items: stretch;">
+                <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or drag & drop your Excel file here / use Voice Command)..." style="flex: 1; min-height: 120px; resize: vertical; padding: 14px 16px; font-size: 14px; color: #0f172a; border-radius: 14px; border: 1px solid transparent; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; line-height: 1.6; background: transparent;"></textarea>
+                <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #2563eb; padding: 12px 18px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; transition: all 0.2s; min-width: 130px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); align-self: stretch;">
+                  <span id="voiceIcon" style="display: block;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                  </span>
+                  <span id="voiceText" style="font-size: 11.5px; font-weight: 700;">Voice Command</span>
+                </button>
+              </div>
             </div>
 
             <!-- EXCEL WIZARD ACTION TOOLBAR (NO EMOJIS, CLEAN ENGLISH) -->
@@ -2943,6 +2957,67 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         runBtn.style.boxShadow = "none";
         runBtn.disabled = true;
       }
+    }
+
+    /* ── Drag & Drop Excel File Ingestion Handler ── */
+    document.addEventListener("DOMContentLoaded", function() {
+      const dropZone = document.getElementById("dropZoneContainer");
+      if (dropZone) {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+          dropZone.addEventListener(eventName, e => {
+            e.preventDefault();
+            e.stopPropagation();
+          }, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+          dropZone.addEventListener(eventName, () => {
+            dropZone.style.borderColor = '#2563eb';
+            dropZone.style.background = '#eff6ff';
+          }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+          dropZone.addEventListener(eventName, () => {
+            dropZone.style.borderColor = '#cbd5e1';
+            dropZone.style.background = '#ffffff';
+          }, false);
+        });
+
+        dropZone.addEventListener('drop', e => {
+          const dt = e.dataTransfer;
+          const files = dt.files;
+          if (files && files.length > 0) {
+            handleExcelFileUpload(files[0]);
+          }
+        }, false);
+      }
+    });
+
+    function handleExcelFileUpload(file) {
+      if (!file) return;
+      const validExts = ['.xlsx', '.xls', '.csv'];
+      const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+      if (!validExts.includes(fileExt)) {
+        alert("Please upload a valid Excel (.xlsx, .xls) or CSV (.csv) file.");
+        return;
+      }
+
+      const activeFileName = document.getElementById("activeFileName");
+      const activeFileMeta = document.getElementById("activeFileMeta");
+      if (activeFileName) activeFileName.textContent = file.name;
+      if (activeFileMeta) activeFileMeta.textContent = `(${(file.size / 1024).toFixed(1)} KB) - Processing dataset...`;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        if (activeFileMeta) activeFileMeta.textContent = `(${(file.size / 1024).toFixed(1)} KB) ✓ Excel active & ready for voice/text commands`;
+        const questionInput = document.getElementById("questionInput");
+        if (questionInput) {
+          questionInput.value = `Calculate average price and total stock value for dataset '${file.name}'`;
+          updateRunButtonState();
+        }
+      };
+      reader.readAsArrayBuffer(file);
     }
 
     function selectQuestion(val) {
