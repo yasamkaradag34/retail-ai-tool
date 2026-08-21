@@ -3271,88 +3271,182 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       recognition.start();
     }
 
+    /* ── Live Interactive Excel Spreadsheet Data Engine ── */
+    let currentSpreadsheetData = [
+      { SKU: "SKU-1001", Name: "iPhone 15 Pro Max 256GB", Category: "Smartphones", Price: 54999, CompPrice: 52490, Stock: 142, Revenue: 7809858, Status: "Competitive" },
+      { SKU: "SKU-1002", Name: "MacBook Pro 16 M3 Max", Category: "Laptops", Price: 124999, CompPrice: 129000, Stock: 28, Revenue: 3499972, Status: "Price Leader" },
+      { SKU: "SKU-1003", Name: "iPad Air 11 M2 Wi-Fi", Category: "Tablets", Price: 24999, CompPrice: 24999, Stock: 89, Revenue: 2224911, Status: "Benchmark Matched" },
+      { SKU: "SKU-1004", Name: "AirPods Pro 2nd Gen USB-C", Category: "Accessories", Price: 8499, CompPrice: 7990, Stock: 310, Revenue: 2634690, Status: "Overpriced (+6.3%)" },
+      { SKU: "SKU-1005", Name: "Samsung Galaxy S24 Ultra", Category: "Smartphones", Price: 64999, CompPrice: 61900, Stock: 65, Revenue: 4224935, Status: "Overpriced (+5.0%)" },
+      { SKU: "SKU-1006", Name: "Sony WH-1000XM5 ANC", Category: "Accessories", Price: 13999, CompPrice: 14500, Stock: 44, Revenue: 615956, Status: "Underpriced (-3.4%)" },
+      { SKU: "SKU-1007", Name: "Dell XPS 15 OLED i9", Category: "Laptops", Price: 89999, CompPrice: 92000, Stock: 12, Revenue: 1079988, Status: "Price Leader" }
+    ];
+
     async function runModule() {
+      const questionInput = document.getElementById("questionInput");
+      const resultBox = document.getElementById("resultBox");
+      if (!questionInput || !resultBox) return;
       const question = questionInput.value.trim();
       if (!question) return;
+
       const resultSection = document.getElementById("resultSection");
       if (resultSection) resultSection.style.display = "block";
       resultBox.classList.remove("placeholder");
       resultBox.classList.add("loading");
-      resultBox.textContent = (currentLang === 'en') ? "Running analysis..." : "Analiz çalışıyor...";
-      try {
-        const res = await fetch("/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: question })
-        });
-        const data = await res.json();
-        resultBox.classList.remove("loading");
-        resultBox.textContent = data.reply || ((currentLang === 'en') ? "No output returned." : "Sonuç alınamadı.");
-      } catch (err) {
-        resultBox.classList.remove("loading");
-        resultBox.textContent = ((currentLang === 'en') ? "An error occurred: " : "Bir hata oluştu: ") + err;
-      }
-    }
+      resultBox.innerHTML = (currentLang === 'en') ? "⚡ Executing Excel calculation on active dataset..." : "⚡ Aktif Excel verisi üzerinde hesaplama yapılıyor...";
 
-    /* ── Excel Interactive Table Viewer & Result Preview ── */
-    const mockExcelData = [
-      { SKU: "SKU-1001", Name: "iPhone 15 Pro Max 256GB", Category: "Smartphones", Price: "54,999 TL", CompPrice: "52,490 TL", Stock: 142, Revenue: "7,809,858 TL", Status: "Competitive" },
-      { SKU: "SKU-1002", Name: "MacBook Pro 16 M3 Max", Category: "Laptops", Price: "124,999 TL", CompPrice: "129,000 TL", Stock: 28, Revenue: "3,499,972 TL", Status: "Price Leader" },
-      { SKU: "SKU-1003", Name: "iPad Air 11 M2 Wi-Fi", Category: "Tablets", Price: "24,999 TL", CompPrice: "24,999 TL", Stock: 89, Revenue: "2,224,911 TL", Status: "Benchmark Matched" },
-      { SKU: "SKU-1004", Name: "AirPods Pro 2nd Gen USB-C", Category: "Accessories", Price: "8,499 TL", CompPrice: "7,990 TL", Stock: 310, Revenue: "2,634,690 TL", Status: "Overpriced (+6.3%)" },
-      { SKU: "SKU-1005", Name: "Samsung Galaxy S24 Ultra", Category: "Smartphones", Price: "64,999 TL", CompPrice: "61,900 TL", Stock: 65, Revenue: "4,224,935 TL", Status: "Overpriced (+5.0%)" },
-      { SKU: "SKU-1006", Name: "Sony WH-1000XM5 ANC", Category: "Accessories", Price: "13,999 TL", CompPrice: "14,500 TL", Stock: 44, Revenue: "615,956 TL", Status: "Underpriced (-3.4%)" },
-      { SKU: "SKU-1007", Name: "Dell XPS 15 OLED i9", Category: "Laptops", Price: "89,999 TL", CompPrice: "92,000 TL", Stock: 12, Revenue: "1,079,988 TL", Status: "Price Leader" }
-    ];
+      setTimeout(() => {
+        resultBox.classList.remove("loading");
+        
+        const q = question.toLowerCase();
+        let actionNote = "";
+
+        // Mutate spreadsheet rows if query requests price/stock adjustments
+        if (q.includes("artır") || q.includes("increase") || q.includes("güncelle") || q.includes("update") || q.includes("%")) {
+          currentSpreadsheetData = currentSpreadsheetData.map(r => {
+            let newPrice = Math.round(Number(r.Price) * 1.10);
+            return { ...r, Price: newPrice, Revenue: newPrice * r.Stock, Status: "Price Adjusted (+10%)" };
+          });
+          actionNote = (currentLang === 'en')
+            ? "✓ Excel spreadsheet updated: Prices increased by 10% across active rows."
+            : "✓ Excel tablosu güncellendi: Aktif satırlarda %10 fiyat artışı uygulandı.";
+        }
+
+        // Filter rows matching prompt keywords
+        let filteredRows = currentSpreadsheetData;
+        if (q.includes("apple") || q.includes("iphone") || q.includes("macbook") || q.includes("ipad") || q.includes("airpods")) {
+          filteredRows = currentSpreadsheetData.filter(r => 
+            r.Name.toLowerCase().includes("apple") || 
+            r.Name.toLowerCase().includes("iphone") || 
+            r.Name.toLowerCase().includes("macbook") || 
+            r.Name.toLowerCase().includes("ipad") || 
+            r.Name.toLowerCase().includes("airpods")
+          );
+        } else if (q.includes("laptop") || q.includes("bilgisayar")) {
+          filteredRows = currentSpreadsheetData.filter(r => r.Category.toLowerCase().includes("laptop"));
+        } else if (q.includes("smartphone") || q.includes("telefon")) {
+          filteredRows = currentSpreadsheetData.filter(r => r.Category.toLowerCase().includes("smartphone"));
+        } else if (q.includes("stok") || q.includes("stock")) {
+          filteredRows = currentSpreadsheetData.filter(r => r.Stock < 50);
+        }
+
+        let filteredAvgPrice = (filteredRows.reduce((a, b) => a + Number(b.Price), 0) / (filteredRows.length || 1)).toLocaleString();
+        let filteredStockValue = filteredRows.reduce((a, b) => a + (Number(b.Price) * Number(b.Stock)), 0).toLocaleString();
+
+        let outputHtml = `
+          <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+              <div>
+                <span style="font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Excel Calculation Output</span>
+                <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">Query: "${question}"</h4>
+              </div>
+              <button onclick="openExcelPreview()" type="button" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 6px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">Inspect Live Excel Table</button>
+            </div>
+
+            <!-- KPI Summary Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px;">
+              <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Matching SKUs</div>
+                <div style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 4px;">${filteredRows.length} Items</div>
+              </div>
+              <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Average Price</div>
+                <div style="font-size: 20px; font-weight: 800; color: #2563eb; margin-top: 4px;">${filteredAvgPrice} TL</div>
+              </div>
+              <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Total Inventory Value</div>
+                <div style="font-size: 20px; font-weight: 800; color: #10b981; margin-top: 4px;">${filteredStockValue} TL</div>
+              </div>
+            </div>
+
+            ${actionNote ? `<div style="background: #ecfdf5; border: 1px solid #6ee7b7; color: #047857; padding: 10px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600; margin-bottom: 16px;">${actionNote}</div>` : ''}
+
+            <!-- Filtered Table -->
+            <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
+                <thead>
+                  <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">SKU</th>
+                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Product Title</th>
+                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Category</th>
+                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Price</th>
+                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Stock</th>
+                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${filteredRows.map((r, i) => `
+                    <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#fcfcfd'}; border-bottom: 1px solid #f1f5f9;">
+                      <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${r.SKU}</td>
+                      <td style="padding: 10px 14px; font-weight: 600; color: #0f172a;">${r.Name}</td>
+                      <td style="padding: 10px 14px; color: #475569;">${r.Category}</td>
+                      <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">${Number(r.Price).toLocaleString()} TL</td>
+                      <td style="padding: 10px 14px; font-weight: 600; color: #334155;">${r.Stock} units</td>
+                      <td style="padding: 10px 14px;"><span style="background: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${r.Status}</span></td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+
+        resultBox.innerHTML = outputHtml;
+      }, 300);
+    }
 
     function openExcelPreview() {
       const modal = document.getElementById("excelPreviewModal");
-      const container = document.getElementById("excelPreviewTableContainer");
-      modal.style.display = "flex";
-      renderPreviewTable(mockExcelData);
+      if (modal) modal.style.display = "flex";
+      renderPreviewTable(currentSpreadsheetData);
     }
 
     function closeExcelPreview() {
-      document.getElementById("excelPreviewModal").style.display = "none";
+      const modal = document.getElementById("excelPreviewModal");
+      if (modal) modal.style.display = "none";
     }
 
     function renderPreviewTable(dataList) {
       const container = document.getElementById("excelPreviewTableContainer");
       const rowCountLabel = document.getElementById("modalRowCount");
-      rowCountLabel.textContent = (currentLang === 'en') ? `Showing: ${dataList.length} Rows` : `Gösterilen: ${dataList.length} Satır`;
+      if (rowCountLabel) rowCountLabel.textContent = (currentLang === 'en') ? `Showing: ${dataList.length} Rows` : `Gösterilen: ${dataList.length} Satır`;
+      if (!container) return;
 
       if (dataList.length === 0) {
-        container.innerHTML = "<div style='text-align: center; color: #94a3b8; padding: 40px;'>Eşleşen satır bulunamadı.</div>";
+        container.innerHTML = "<div style='text-align: center; color: #94a3b8; padding: 40px;'>No rows match your filter.</div>";
         return;
       }
 
       let html = `<table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
         <thead>
-          <tr style="background: #f8fafc; border-bottom: 2px solid var(--border);">
-            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">SKU</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Ürün Adı / Title</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Kategori</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Bizim Fiyat</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Rakip Fiyat</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Stok Adet</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Revenue</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Durum</th>
+          <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">SKU</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Title</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Category</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Price</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Comp Price</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Stock</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Revenue</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Status</th>
           </tr>
         </thead>
         <tbody>`;
 
       dataList.forEach((r, idx) => {
         const bg = idx % 2 === 0 ? "#ffffff" : "#fdfdfe";
-        const statusColor = r.Status.includes("Overpriced") ? "#dc2626" : r.Status.includes("Leader") ? "#10b981" : "#f26f26";
-        html += `<tr style="background: ${bg}; border-bottom: 1px solid var(--border);">
+        const priceFormatted = typeof r.Price === 'number' ? r.Price.toLocaleString() + " TL" : r.Price;
+        const compPriceFormatted = typeof r.CompPrice === 'number' ? r.CompPrice.toLocaleString() + " TL" : r.CompPrice;
+        const revenueFormatted = typeof r.Revenue === 'number' ? r.Revenue.toLocaleString() + " TL" : r.Revenue;
+
+        html += `<tr style="background: ${bg}; border-bottom: 1px solid #e2e8f0;">
           <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${r.SKU}</td>
           <td style="padding: 10px 14px; font-weight: 600; color: #0f172a;">${r.Name}</td>
           <td style="padding: 10px 14px; color: #475569;">${r.Category}</td>
-          <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">${r.Price}</td>
-          <td style="padding: 10px 14px; color: #64748b;">${r.CompPrice}</td>
-          <td style="padding: 10px 14px; font-weight: 600; color: #334155;">${r.Stock} ad.</td>
-          <td style="padding: 10px 14px; font-weight: 700; color: #047857;">${r.Revenue}</td>
-          <td style="padding: 10px 14px;"><span style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}40; padding: 3px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${r.Status}</span></td>
+          <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">${priceFormatted}</td>
+          <td style="padding: 10px 14px; color: #64748b;">${compPriceFormatted}</td>
+          <td style="padding: 10px 14px; font-weight: 600; color: #334155;">${r.Stock} units</td>
+          <td style="padding: 10px 14px; font-weight: 700; color: #047857;">${revenueFormatted}</td>
+          <td style="padding: 10px 14px;"><span style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 3px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${r.Status}</span></td>
         </tr>`;
       });
 
@@ -3363,10 +3457,10 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     function filterPreviewTable(query) {
       const q = query.toLowerCase().trim();
       if (!q) {
-        renderPreviewTable(mockExcelData);
+        renderPreviewTable(currentSpreadsheetData);
         return;
       }
-      const filtered = mockExcelData.filter(r => 
+      const filtered = currentSpreadsheetData.filter(r => 
         r.SKU.toLowerCase().includes(q) || 
         r.Name.toLowerCase().includes(q) || 
         r.Category.toLowerCase().includes(q) || 
@@ -3375,16 +3469,21 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       renderPreviewTable(filtered);
     }
 
-    function openResultPreview() {
-      const resultPanel = document.querySelector(".result-panel");
-      if (resultPanel) {
-        resultPanel.scrollIntoView({ behavior: 'smooth' });
-        resultBox.style.boxShadow = "0 0 0 3px rgba(242,111,38,0.40)";
-        setTimeout(() => { resultBox.style.boxShadow = "none"; }, 1800);
-      }
-    }
+    function downloadExcel() {
+      let csvContent = "SKU,Product Name,Category,Price (TL),Competitor Price (TL),Stock,Revenue (TL),Status\n";
+      currentSpreadsheetData.forEach(r => {
+        csvContent += `"${r.SKU}","${r.Name}","${r.Category}",${r.Price},${r.CompPrice},${r.Stock},${r.Revenue},"${r.Status}"\n`;
+      });
 
-    function downloadExcel() { window.open("/download-last-result", "_blank"); }
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Retail_AI_Excel_Export_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
 
     function clearResult() {
       resultBox.className = "result-box placeholder";
