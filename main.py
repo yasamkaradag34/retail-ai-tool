@@ -2088,22 +2088,46 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       opacity: 0.8;
     }
 
-    .menu { display: flex; flex-direction: column; gap: 3px; }
+    .menu { display: flex; flex-direction: column; gap: 6px; }
 
     .menu-btn {
       border: 0;
+      border-bottom: 1px solid var(--border);
       width: 100%;
       text-align: left;
       cursor: pointer;
-      border-radius: 10px;
+      border-radius: 12px;
       background: transparent;
       color: var(--text-700);
-      padding: 10px 12px;
+      padding: 12px 14px;
       font-family: 'Inter', sans-serif;
-      font-size: 13px;
-      line-height: 1.2;
-      font-weight: 500;
-      transition: all 0.15s ease;
+      font-size: 13.5px;
+      line-height: 1.3;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 2px;
+    }
+
+    .menu-btn-icon {
+      font-size: 18px;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .menu-btn-text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .menu-btn span {
@@ -2115,35 +2139,31 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     }
 
     .menu-btn:hover {
-      background: rgba(242,111,38,0.07);
+      background: rgba(242,111,38,0.06);
       color: var(--orange);
+      border-bottom-color: rgba(242,111,38,0.30);
+    }
+
+    .menu-btn:hover .menu-btn-icon {
+      background: #ffffff;
+      border-color: var(--orange);
+      box-shadow: 0 2px 8px rgba(242,111,38,0.15);
     }
 
     .menu-btn.active {
-      background: rgba(242,111,38,0.10);
+      background: rgba(242,111,38,0.09);
       color: var(--orange);
-      font-weight: 600;
+      border-bottom-color: var(--orange);
+    }
+
+    .menu-btn.active .menu-btn-icon {
+      background: var(--orange);
+      color: #ffffff;
+      border-color: var(--orange);
+      box-shadow: 0 4px 10px rgba(242,111,38,0.25);
     }
 
     .menu-btn.active span { color: var(--orange-light); }
-
-    .sidebar-footer {
-      margin-top: auto;
-      border: 1px solid var(--border-orange);
-      background: rgba(242,111,38,0.04);
-      border-radius: 14px;
-      padding: 14px;
-    }
-
-    .sidebar-footer strong {
-      display: block;
-      font-size: 12px;
-      margin-bottom: 6px;
-      color: var(--text-900);
-      font-family: 'Inter', sans-serif;
-      font-weight: 600;
-    }
-    .sidebar-footer p { color: var(--text-500); font-size: 11px; line-height: 1.6; }
 
     /* ── MAIN ── */
     .main {
@@ -2295,6 +2315,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       display: flex;
       gap: 10px;
       margin-top: 12px;
+      flex-wrap: wrap;
     }
 
     .primary-btn {
@@ -2397,6 +2418,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     .loading { opacity: 0.72; font-style: italic; color: var(--orange); }
 
+    @keyframes pulse-glow {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(242,111,38,0.4); }
+      50% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(242,111,38,0); }
+    }
+
     @media (max-width: 1180px) {
       .workspace { grid-template-columns: 1fr; }
       .module-panel, .result-panel { min-height: auto; }
@@ -2430,18 +2456,56 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         </div>
         <div class="nav-label">Kategoriler / Categories</div>
         <nav class="menu" id="menu">
-          <button class="menu-btn active" data-key="business_calculator">Excel Wizard<span>Sesli &amp; yazılı Excel komutları</span></button>
-          <button class="menu-btn" data-key="category_insights">Category Insights<span>Kategori &amp; sektör analizi</span></button>
-          <button class="menu-btn" data-key="price_competition">Price Competition<span>Merchant benchmark</span></button>
-          <button class="menu-btn" data-key="action_executor">Action Executor<span>Aksiyon planı</span></button>
-          <button class="menu-btn" data-key="funnel_stock">Funnel &amp; Stock<span>Dönüşüm &amp; stok riski</span></button>
-          <button class="menu-btn" data-key="excel_outputs">Excel Outputs<span>Rapor çıktıları</span></button>
-          <button class="menu-btn" data-key="data_upload">Veri Kaynakları Yükle<span>Excel / CSV Yükleme</span></button>
+          <button class="menu-btn active" data-key="business_calculator">
+            <span class="menu-btn-icon">🧙‍♂️</span>
+            <span class="menu-btn-text">
+              Excel Wizard
+              <span>Sesli &amp; yazılı Excel komutları</span>
+            </span>
+          </button>
+          <button class="menu-btn" data-key="category_insights">
+            <span class="menu-btn-icon">📊</span>
+            <span class="menu-btn-text">
+              Category Insights
+              <span>Kategori &amp; sektör analizi</span>
+            </span>
+          </button>
+          <button class="menu-btn" data-key="price_competition">
+            <span class="menu-btn-icon">🎯</span>
+            <span class="menu-btn-text">
+              Price Competition
+              <span>Merchant benchmark</span>
+            </span>
+          </button>
+          <button class="menu-btn" data-key="action_executor">
+            <span class="menu-btn-icon">⚡</span>
+            <span class="menu-btn-text">
+              Action Executor
+              <span>Aksiyon planı</span>
+            </span>
+          </button>
+          <button class="menu-btn" data-key="funnel_stock">
+            <span class="menu-btn-icon">📦</span>
+            <span class="menu-btn-text">
+              Funnel &amp; Stock
+              <span>Dönüşüm &amp; stok riski</span>
+            </span>
+          </button>
+          <button class="menu-btn" data-key="excel_outputs">
+            <span class="menu-btn-icon">📄</span>
+            <span class="menu-btn-text">
+              Excel Outputs
+              <span>Rapor çıktıları</span>
+            </span>
+          </button>
+          <button class="menu-btn" data-key="data_upload">
+            <span class="menu-btn-icon">📁</span>
+            <span class="menu-btn-text">
+              Veri Kaynakları Yükle
+              <span>Excel / CSV Yükleme</span>
+            </span>
+          </button>
         </nav>
-      </div>
-      <div class="sidebar-footer">
-        <strong>Demo akışı</strong>
-        <p>Modül seç, sesli veya yazılı iş sorunu belirt, yönetici özetini al ve Excel'e indir.</p>
       </div>
     </aside>
 
@@ -2466,6 +2530,23 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
       <section class="workspace">
         <div class="module-panel">
+          
+          <!-- HOW TO USE INTERACTIVE GUIDANCE ACCORDION -->
+          <div class="how-to-use-box" style="margin-bottom: 18px; border: 1px solid var(--border-orange); background: linear-gradient(135deg, #fff8f4 0%, #ffffff 100%); border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(242,111,38,0.06);">
+            <button id="howToUseToggle" onclick="toggleHowToUse()" type="button" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 0; cursor: pointer; text-align: left; transition: background 0.2s;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="info-pulse" style="font-size: 16px; background: rgba(242,111,38,0.12); color: var(--orange); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; animation: pulse-glow 2.2s infinite;">ℹ️</span>
+                <span style="font-size: 13px; font-weight: 700; color: var(--text-900);" id="howToUseHeaderTitle">Nasıl Kullanılır? (How to Use Guide)</span>
+              </div>
+              <span id="howToUseChevron" style="font-size: 13px; color: var(--orange); font-weight: 700; transition: transform 0.3s ease;">▼</span>
+            </button>
+            <div id="howToUseContent" style="max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, padding 0.3s ease; padding: 0 16px;">
+              <div id="howToUseBody" style="padding-bottom: 14px; font-size: 12.5px; color: var(--text-700); line-height: 1.65; border-top: 1px solid rgba(242,111,38,0.15); padding-top: 12px; margin-top: 4px;">
+                <!-- Dynamically updated -->
+              </div>
+            </div>
+          </div>
+
           <div class="module-head">
             <div>
               <div class="module-kicker" id="moduleBadge">excel_wizard_engine</div>
@@ -2475,7 +2556,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           </div>
 
           <!-- LANGUAGE SWITCHER BAR -->
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; background: #fafafa; border: 1px solid var(--border); border-radius: 12px; padding: 6px 12px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: #fafafa; border: 1px solid var(--border); border-radius: 12px; padding: 8px 14px;">
             <span style="font-size: 12px; font-weight: 700; color: var(--text-700); display: flex; align-items: center; gap: 6px;">
               🌐 <span id="langSelectLabel">Ses & Metin Dili (Voice & Prompt Language):</span>
             </span>
@@ -2485,27 +2566,30 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
             </div>
           </div>
 
-          <div class="quick-title" style="margin-top: 0; margin-bottom: 6px;" id="quickTitleLabel">Hazır sorular / Presets</div>
-          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
-            <select id="questionSelect" class="question-select" onchange="selectQuestion(this.value)">
-            </select>
-            <div style="display: flex; gap: 8px;">
-              <input type="text" id="newQuestionInput" class="question-add-input" placeholder="Bu menüye yeni hazır soru ekle / Add new question..." style="flex: 1;" />
-              <button class="secondary-btn" onclick="addNewQuestion()" id="addBtnLabel">Soru Ekle</button>
+          <!-- PRESETS AREA (HIDDEN FOR EXCEL WIZARD) -->
+          <div id="presetSection" style="display: none;">
+            <div class="quick-title" style="margin-top: 0; margin-bottom: 6px;" id="quickTitleLabel">Hazır sorular / Presets</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+              <select id="questionSelect" class="question-select" onchange="selectQuestion(this.value)">
+              </select>
             </div>
           </div>
 
           <div class="input-area" style="margin-top: 0;">
-            <div style="display: flex; gap: 10px; align-items: stretch; margin-bottom: 12px;">
-              <textarea id="questionInput" placeholder="Örn: APPLE ürünlerinin ortalama fiyatı ve toplam stok değeri nedir? (veya 🎙️ mikrofon butonuna basıp söyleyin)..." style="flex: 1; height: 74px; resize: vertical; padding: 12px; font-size: 13px; border-radius: 12px; border: 1.4px solid var(--border); outline: none; transition: border-color 0.2s; font-family: inherit;"></textarea>
-              <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #fff8f4; border: 1.5px solid var(--border-orange); color: var(--orange); padding: 10px 16px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; transition: all 0.2s; min-width: 105px; box-shadow: 0 2px 8px rgba(242,111,38,0.12);">
+            <div style="display: flex; gap: 10px; align-items: stretch; margin-bottom: 14px;">
+              <textarea id="questionInput" placeholder="Örn: APPLE ürünlerinin ortalama fiyatı ve toplam stok değeri nedir? (veya 🎙️ mikrofon butonuna basıp söyleyin)..." style="flex: 1; height: 86px; resize: vertical; padding: 14px; font-size: 13.5px; border-radius: 14px; border: 1.4px solid var(--border); outline: none; transition: border-color 0.2s; font-family: inherit; line-height: 1.5;"></textarea>
+              <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #fff8f4; border: 1.5px solid var(--border-orange); color: var(--orange); padding: 10px 16px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; transition: all 0.2s; min-width: 110px; box-shadow: 0 2px 8px rgba(242,111,38,0.12);">
                 <span id="voiceIcon" style="font-size: 22px;">🎙️</span>
                 <span id="voiceText" style="font-size: 11px; font-weight: 700;">Sesle Söyle</span>
               </button>
             </div>
-            <div class="action-row">
-              <button class="primary-btn" onclick="runModule()" id="runBtnLabel">Çalıştır</button>
-              <button class="secondary-btn" onclick="downloadExcel()" id="downloadBtnLabel">Excel İndir</button>
+
+            <!-- EXCEL WIZARD ACTION TOOLBAR -->
+            <div class="action-row" id="actionRow">
+              <button class="primary-btn" onclick="runModule()" id="runBtnLabel">🚀 Çalıştır</button>
+              <button class="secondary-btn" onclick="openExcelPreview()" id="previewBtnLabel">📊 Excel Preview</button>
+              <button class="secondary-btn" onclick="openResultPreview()" id="resultPreviewBtnLabel">👁️ Result Preview</button>
+              <button class="secondary-btn" onclick="downloadExcel()" id="downloadBtnLabel">📥 Excel İndir</button>
             </div>
           </div>
         </div>
@@ -2518,15 +2602,122 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
             </div>
             <button class="ghost-btn" onclick="clearResult()" id="clearBtnLabel">Temizle</button>
           </div>
-          <div class="result-box placeholder" id="resultBox">Soldaki modüllerden birini seç ve sesle veya yazıyla sorunu sorup demoyu başlat.</div>
+          <div class="result-box placeholder" id="resultBox">Soldaki modüllerden birini seç ve sesle veya yazıyla sorunu sorup analizi başlat.</div>
         </div>
       </section>
     </main>
   </div>
 
+  <!-- EXCEL DATA PREVIEW MODAL -->
+  <div id="excelPreviewModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.70); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 24px;">
+    <div style="background: #ffffff; border-radius: 24px; width: 94%; max-width: 1150px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(0,0,0,0.35); overflow: hidden; border: 1px solid var(--border);">
+      
+      <!-- Modal Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 28px; border-bottom: 1px solid var(--border); background: var(--bg-2);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 42px; height: 42px; border-radius: 12px; background: #ecfdf5; border: 1px solid #10b981; display: grid; place-items: center; font-size: 20px;">📊</div>
+          <div>
+            <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--text-900);" id="modalTableTitle">Excel Data & Column Viewer</h3>
+            <p style="font-size: 12px; color: var(--text-500);">Canlı Excel tablosu önizlemesi, filtreleme ve sütun analizi</p>
+          </div>
+        </div>
+        <button onclick="closeExcelPreview()" style="background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; font-weight: 700; cursor: pointer; color: var(--text-700); display: grid; place-items: center; transition: background 0.2s;">✕</button>
+      </div>
+
+      <!-- Modal Toolbar & Search -->
+      <div style="padding: 12px 28px; background: #ffffff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 14px;">
+        <input type="text" id="modalTableSearch" oninput="filterPreviewTable(this.value)" placeholder="🔍 Tablo içinde ara (SKU, Marka, Kategori)..." style="flex: 1; max-width: 400px; padding: 8px 14px; font-size: 12.5px; border: 1.4px solid var(--border); border-radius: 10px; outline: none;" />
+        <span style="font-size: 12.5px; color: var(--text-500); font-weight: 600;" id="modalRowCount">Gösterilen: 15 Satır</span>
+      </div>
+
+      <!-- Modal Table Content -->
+      <div style="flex: 1; padding: 20px 28px; overflow: auto; background: #ffffff;" id="excelPreviewTableContainer">
+        <!-- Generated dynamically in JS -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="padding: 16px 28px; border-top: 1px solid var(--border); background: var(--bg-2); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 12px; color: #10b981; font-weight: 700;">✓ Excel verisi analize hazır durumdadır.</span>
+        <button onclick="closeExcelPreview()" class="primary-btn" style="padding: 8px 20px; font-size: 13px;">Kapat</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    /* ── Global Language State ── */
+    /* ── Global State ── */
     let currentLang = 'tr';
+    let currentModule = 'business_calculator';
+    let isHowToUseOpen = false;
+
+    /* ── How to Use Guide Content ── */
+    const howToUseGuide = {
+      business_calculator: {
+        tr: `<strong>🧙‍♂️ Excel Wizard Kullanım Rehberi:</strong><br>
+        1. Yüklenmiş Excel/CSV verileriniz üzerinde doğrudan doğal dille hesaplama yapın.<br>
+        2. 🎙️ <b>Sesle Söyle</b> butonuna basarak mikrofona Excel komutunuzu verin veya metin alanına yazın.<br>
+        3. <b>📊 Excel Preview</b> butonuna basarak Excel tablonuzu ve sütun verilerinizi canlı önizleyin.<br>
+        4. <b>👁️ Result Preview</b> butonu ile hesaplama sonuçlarını anında görüntüleyin.`,
+        en: `<strong>🧙‍♂️ Excel Wizard User Guide:</strong><br>
+        1. Perform advanced calculations directly on your Excel/CSV data using natural language.<br>
+        2. Click 🎙️ <b>Voice Command</b> to speak your query or type it into the prompt box.<br>
+        3. Click <b>📊 Excel Preview</b> to inspect your spreadsheet rows & columns in real-time.<br>
+        4. Click <b>👁️ Result Preview</b> to preview calculation results and summary data.`
+      },
+      category_insights: {
+        tr: `<strong>📊 Category Insights Kullanım Rehberi:</strong><br>
+        1. İncelemek istediğiniz e-ticaret kategorisini veya markasını seçin.<br>
+        2. Pazarda kazanan/kaybeden SKU'ları, fiyat kırılımlarını ve riskleri tek tıkla analiz ettirin.<br>
+        3. Yönetici özetini görüntüleyin ve raporu Excel olarak indirin.`,
+        en: `<strong>📊 Category Insights User Guide:</strong><br>
+        1. Select the e-commerce category or brand you want to analyze.<br>
+        2. Evaluate winning/losing SKUs, pricing segments, and market risks.<br>
+        3. View executive summary and export the final report to Excel.`
+      },
+      price_competition: {
+        tr: `<strong>🎯 Price Competition Kullanım Rehberi:</strong><br>
+        1. Rakip ve pazar benchmark fiyat verilerini sisteme aktarın.<br>
+        2. Pahalı kalan, rekabetçi olan ve fiyat indirimine duyarlı SKU'ları tespit edin.<br>
+        3. Fiyat rekabet endeksini raporlayın.`,
+        en: `<strong>🎯 Price Competition User Guide:</strong><br>
+        1. Import competitor benchmark pricing data.<br>
+        2. Identify overpriced SKUs, competitive pricing bands, and elastic items.<br>
+        3. Generate price competitiveness index reports.`
+      },
+      action_executor: {
+        tr: `<strong>⚡ Action Executor Kullanım Rehberi:</strong><br>
+        1. Analiz çıktılarına göre öncelikli aksiyon önerilerini otomatik üretin.<br>
+        2. Stok tamamlama (replenishment), kampanya ve görünürlük önerilerini listeleyin.<br>
+        3. Aksiyon planını Excel sayfası olarak dışa aktarın.`,
+        en: `<strong>⚡ Action Executor User Guide:</strong><br>
+        1. Automatically generate prioritized business action plans from insights.<br>
+        2. Review replenishment, marketing, and stock risk reduction steps.<br>
+        3. Export action items to Excel.`
+      },
+      funnel_stock: {
+        tr: `<strong>📦 Funnel & Stock Kullanım Rehberi:</strong><br>
+        1. PDP görünürlüğü yüksek ancak stoğu az olan riskli ürünleri sorgulayın.<br>
+        2. Sepet kayıplarını ve dönüşüm hunisindeki darboğazları analiz edin.`,
+        en: `<strong>📦 Funnel & Stock User Guide:</strong><br>
+        1. Identify high-traffic SKUs with low inventory holding.<br>
+        2. Analyze cart abandonment and conversion funnel leakage points.`
+      },
+      excel_outputs: {
+        tr: `<strong>📄 Excel Outputs Kullanım Rehberi:</strong><br>
+        1. Daha önce çalıştırılan analiz sonuçlarını çoklu sheet (çalışma sayfası) formatında görün.<br>
+        2. Raporları anında bilgisayarınıza `.xlsx` dosyası olarak indirin.`,
+        en: `<strong>📄 Excel Outputs User Guide:</strong><br>
+        1. Review all previous analysis runs structured into multi-sheet Workbooks.<br>
+        2. Download formatted Excel files directly to your device.`
+      },
+      data_upload: {
+        tr: `<strong>📁 Veri Kaynakları Yükle Kullanım Rehberi:</strong><br>
+        1. Kendi e-ticaret satış, stok ve rakip fiyat Excel/CSV dosyalarınızı sürükleyip bırakın.<br>
+        2. Sistem verilerinizi otomatik ilişkilendirip analize hazır hale getirir.`,
+        en: `<strong>📁 Data Upload User Guide:</strong><br>
+        1. Drag and drop your custom e-commerce sales, stock, and pricing Excel/CSV files.<br>
+        2. Data is automatically ingested and mapped for immediate AI querying.`
+      }
+    };
 
     /* ── Module configs (Bilingual Support) ── */
     const modules = {
@@ -2540,22 +2731,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           tr: "Örn: APPLE markasının ortalama fiyatı ve stok tutarı nedir? (veya 🎙️ Sesle söyleyin)",
           en: "E.g.: Calculate average price and total inventory value for APPLE products (or 🎙️ use Voice Command)"
         },
-        suggestions: {
-          tr: [
-            "🎙️ [Sesli] APPLE markasının ortalama fiyatını ve stok değerini hesapla",
-            "🎙️ [Sesli] Ciroya göre en yüksek ilk 10 ürünü filtrelere ayır",
-            "Fiyatı 1000 TL üzeri olan ürünlerin ortalama stok adedini hesapla",
-            "C2D ortalaması en yüksek kategorileri listele",
-            "En yüksek stok tutarına sahip markaları çıkar"
-          ],
-          en: [
-            "🎙️ [Voice] Calculate average price and total stock value for APPLE products",
-            "🎙️ [Voice] Filter top 10 products ranked by total revenue",
-            "Calculate average stock quantity for products with price > $1000",
-            "List categories with highest Click-to-Detail (C2D) ratios",
-            "Extract top retail brands with maximum stock holding value"
-          ]
-        }
+        suggestions: { tr: [], en: [] }
       },
       category_insights: {
         badge: "generate_category_insight", title: "Category Insights",
@@ -2693,9 +2869,37 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     const moduleDesc = document.getElementById("moduleDesc");
     const questionInput = document.getElementById("questionInput");
     const questionSelect = document.getElementById("questionSelect");
+    const presetSection = document.getElementById("presetSection");
     const resultBox = document.getElementById("resultBox");
 
+    function toggleHowToUse() {
+      const content = document.getElementById("howToUseContent");
+      const chevron = document.getElementById("howToUseChevron");
+      isHowToUseOpen = !isHowToUseOpen;
+
+      if (isHowToUseOpen) {
+        content.style.maxHeight = "320px";
+        content.style.opacity = "1";
+        content.style.padding = "0 16px";
+        chevron.style.transform = "rotate(180deg)";
+      } else {
+        content.style.maxHeight = "0";
+        content.style.opacity = "0";
+        content.style.padding = "0 16px";
+        chevron.style.transform = "rotate(0deg)";
+      }
+    }
+
+    function renderHowToUse() {
+      const body = document.getElementById("howToUseBody");
+      const guide = howToUseGuide[currentModule];
+      if (guide && guide[currentLang]) {
+        body.innerHTML = guide[currentLang];
+      }
+    }
+
     function renderModule(moduleKey) {
+      currentModule = moduleKey;
       const mod = modules[moduleKey];
       if (!mod) return;
       menuButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.key === moduleKey));
@@ -2704,26 +2908,34 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       
       const descText = (typeof mod.desc === 'object') ? mod.desc[currentLang] : mod.desc;
       const placeholderText = (typeof mod.placeholder === 'object') ? mod.placeholder[currentLang] : mod.placeholder;
-      const suggestionList = (typeof mod.suggestions === 'object' && !Array.isArray(mod.suggestions)) ? mod.suggestions[currentLang] : mod.suggestions;
+      const suggestionList = (typeof mod.suggestions === 'object' && !Array.isArray(mod.suggestions)) ? mod.suggestions[currentLang] : (mod.suggestions || []);
 
       moduleDesc.textContent = descText;
       questionInput.placeholder = placeholderText;
       questionInput.value = "";
       
-      questionSelect.innerHTML = "";
-      const placeholderOpt = document.createElement("option");
-      placeholderOpt.value = "";
-      placeholderOpt.textContent = (currentLang === 'en') ? "Select a preset question..." : "Bir hazır soru seçin...";
-      placeholderOpt.disabled = true;
-      placeholderOpt.selected = true;
-      questionSelect.appendChild(placeholderOpt);
-      
-      suggestionList.forEach(q => {
-        const opt = document.createElement("option");
-        opt.value = q;
-        opt.textContent = q;
-        questionSelect.appendChild(opt);
-      });
+      renderHowToUse();
+
+      // Excel Wizard does NOT show Preset questions dropdown
+      if (moduleKey === 'business_calculator' || suggestionList.length === 0) {
+        presetSection.style.display = 'none';
+      } else {
+        presetSection.style.display = 'block';
+        questionSelect.innerHTML = "";
+        const placeholderOpt = document.createElement("option");
+        placeholderOpt.value = "";
+        placeholderOpt.textContent = (currentLang === 'en') ? "Select a preset question..." : "Bir hazır soru seçin...";
+        placeholderOpt.disabled = true;
+        placeholderOpt.selected = true;
+        questionSelect.appendChild(placeholderOpt);
+        
+        suggestionList.forEach(q => {
+          const opt = document.createElement("option");
+          opt.value = q;
+          opt.textContent = q;
+          questionSelect.appendChild(opt);
+        });
+      }
     }
 
     function setLanguage(lang) {
@@ -2731,12 +2943,14 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const btnTR = document.getElementById("langBtnTR");
       const btnEN = document.getElementById("langBtnEN");
       const voiceText = document.getElementById("voiceText");
-      const addBtnLabel = document.getElementById("addBtnLabel");
       const runBtnLabel = document.getElementById("runBtnLabel");
+      const previewBtnLabel = document.getElementById("previewBtnLabel");
+      const resultPreviewBtnLabel = document.getElementById("resultPreviewBtnLabel");
       const downloadBtnLabel = document.getElementById("downloadBtnLabel");
       const clearBtnLabel = document.getElementById("clearBtnLabel");
       const resultHeaderTitle = document.getElementById("resultHeaderTitle");
       const resultHeaderSub = document.getElementById("resultHeaderSub");
+      const howToUseHeaderTitle = document.getElementById("howToUseHeaderTitle");
 
       if (lang === 'en') {
         btnTR.style.background = "#ffffff";
@@ -2750,12 +2964,14 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         btnEN.style.fontWeight = "700";
 
         voiceText.textContent = "Voice Command";
-        addBtnLabel.textContent = "Add Question";
-        runBtnLabel.textContent = "Run Analysis";
-        downloadBtnLabel.textContent = "Export Excel";
+        runBtnLabel.textContent = "🚀 Run Analysis";
+        previewBtnLabel.textContent = "📊 Excel Preview";
+        resultPreviewBtnLabel.textContent = "👁️ Result Preview";
+        downloadBtnLabel.textContent = "📥 Export Excel";
         clearBtnLabel.textContent = "Clear";
         resultHeaderTitle.textContent = "Analytical Output";
         resultHeaderSub.textContent = "Executive summary and data table outputs are displayed here.";
+        howToUseHeaderTitle.textContent = "How to Use Guide";
       } else {
         btnEN.style.background = "#ffffff";
         btnEN.style.borderColor = "var(--border)";
@@ -2768,48 +2984,23 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         btnTR.style.fontWeight = "700";
 
         voiceText.textContent = "Sesle Söyle";
-        addBtnLabel.textContent = "Soru Ekle";
-        runBtnLabel.textContent = "Çalıştır";
-        downloadBtnLabel.textContent = "Excel İndir";
+        runBtnLabel.textContent = "🚀 Çalıştır";
+        previewBtnLabel.textContent = "📊 Excel Preview";
+        resultPreviewBtnLabel.textContent = "👁️ Result Preview";
+        downloadBtnLabel.textContent = "📥 Excel İndir";
         clearBtnLabel.textContent = "Temizle";
         resultHeaderTitle.textContent = "Analiz Çıktısı";
         resultHeaderSub.textContent = "Sonuç burada yönetici özeti formatında gösterilir.";
+        howToUseHeaderTitle.textContent = "Nasıl Kullanılır? (How to Use Guide)";
       }
 
+      renderHowToUse();
       const activeBtn = document.querySelector(".menu-btn.active");
       if (activeBtn) renderModule(activeBtn.dataset.key);
     }
 
     function selectQuestion(val) {
       if (val) { questionInput.value = val; }
-    }
-
-    function addNewQuestion() {
-      const newQInput = document.getElementById("newQuestionInput");
-      const val = newQInput.value.trim();
-      if (!val) return;
-      
-      const activeBtn = document.querySelector(".menu-btn.active");
-      if (!activeBtn) return;
-      const moduleKey = activeBtn.dataset.key;
-      
-      if (modules[moduleKey]) {
-        let suggestionList = modules[moduleKey].suggestions;
-        if (typeof suggestionList === 'object' && !Array.isArray(suggestionList)) {
-          suggestionList[currentLang].push(val);
-        } else {
-          suggestionList.push(val);
-        }
-      }
-      
-      const opt = document.createElement("option");
-      opt.value = val;
-      opt.textContent = val;
-      questionSelect.appendChild(opt);
-      
-      questionSelect.value = val;
-      questionInput.value = val;
-      newQInput.value = "";
     }
 
     menuButtons.forEach(btn => btn.addEventListener("click", () => renderModule(btn.dataset.key)));
@@ -2908,13 +3099,103 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       }
     }
 
+    /* ── Excel Interactive Table Viewer & Result Preview ── */
+    const mockExcelData = [
+      { SKU: "SKU-1001", Name: "iPhone 15 Pro Max 256GB", Category: "Smartphones", Price: "54,999 TL", CompPrice: "52,490 TL", Stock: 142, Revenue: "7,809,858 TL", Status: "Competitive" },
+      { SKU: "SKU-1002", Name: "MacBook Pro 16 M3 Max", Category: "Laptops", Price: "124,999 TL", CompPrice: "129,000 TL", Stock: 28, Revenue: "3,499,972 TL", Status: "Price Leader" },
+      { SKU: "SKU-1003", Name: "iPad Air 11 M2 Wi-Fi", Category: "Tablets", Price: "24,999 TL", CompPrice: "24,999 TL", Stock: 89, Revenue: "2,224,911 TL", Status: "Benchmark Matched" },
+      { SKU: "SKU-1004", Name: "AirPods Pro 2nd Gen USB-C", Category: "Accessories", Price: "8,499 TL", CompPrice: "7,990 TL", Stock: 310, Revenue: "2,634,690 TL", Status: "Overpriced (+6.3%)" },
+      { SKU: "SKU-1005", Name: "Samsung Galaxy S24 Ultra", Category: "Smartphones", Price: "64,999 TL", CompPrice: "61,900 TL", Stock: 65, Revenue: "4,224,935 TL", Status: "Overpriced (+5.0%)" },
+      { SKU: "SKU-1006", Name: "Sony WH-1000XM5 ANC", Category: "Accessories", Price: "13,999 TL", CompPrice: "14,500 TL", Stock: 44, Revenue: "615,956 TL", Status: "Underpriced (-3.4%)" },
+      { SKU: "SKU-1007", Name: "Dell XPS 15 OLED i9", Category: "Laptops", Price: "89,999 TL", CompPrice: "92,000 TL", Stock: 12, Revenue: "1,079,988 TL", Status: "Price Leader" }
+    ];
+
+    function openExcelPreview() {
+      const modal = document.getElementById("excelPreviewModal");
+      const container = document.getElementById("excelPreviewTableContainer");
+      modal.style.display = "flex";
+      renderPreviewTable(mockExcelData);
+    }
+
+    function closeExcelPreview() {
+      document.getElementById("excelPreviewModal").style.display = "none";
+    }
+
+    function renderPreviewTable(dataList) {
+      const container = document.getElementById("excelPreviewTableContainer");
+      const rowCountLabel = document.getElementById("modalRowCount");
+      rowCountLabel.textContent = (currentLang === 'en') ? `Showing: ${dataList.length} Rows` : `Gösterilen: ${dataList.length} Satır`;
+
+      if (dataList.length === 0) {
+        container.innerHTML = "<div style='text-align: center; color: #94a3b8; padding: 40px;'>Eşleşen satır bulunamadı.</div>";
+        return;
+      }
+
+      let html = `<table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
+        <thead>
+          <tr style="background: #f8fafc; border-bottom: 2px solid var(--border);">
+            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">SKU</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Ürün Adı / Title</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Kategori</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Bizim Fiyat</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Rakip Fiyat</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Stok Adet</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Revenue</th>
+            <th style="padding: 10px 14px; font-weight: 700; color: var(--text-900);">Durum</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+      dataList.forEach((r, idx) => {
+        const bg = idx % 2 === 0 ? "#ffffff" : "#fdfdfe";
+        const statusColor = r.Status.includes("Overpriced") ? "#dc2626" : r.Status.includes("Leader") ? "#10b981" : "#f26f26";
+        html += `<tr style="background: ${bg}; border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${r.SKU}</td>
+          <td style="padding: 10px 14px; font-weight: 600; color: #0f172a;">${r.Name}</td>
+          <td style="padding: 10px 14px; color: #475569;">${r.Category}</td>
+          <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">${r.Price}</td>
+          <td style="padding: 10px 14px; color: #64748b;">${r.CompPrice}</td>
+          <td style="padding: 10px 14px; font-weight: 600; color: #334155;">${r.Stock} ad.</td>
+          <td style="padding: 10px 14px; font-weight: 700; color: #047857;">${r.Revenue}</td>
+          <td style="padding: 10px 14px;"><span style="background: ${statusColor}15; color: ${statusColor}; border: 1px solid ${statusColor}40; padding: 3px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${r.Status}</span></td>
+        </tr>`;
+      });
+
+      html += `</tbody></table>`;
+      container.innerHTML = html;
+    }
+
+    function filterPreviewTable(query) {
+      const q = query.toLowerCase().trim();
+      if (!q) {
+        renderPreviewTable(mockExcelData);
+        return;
+      }
+      const filtered = mockExcelData.filter(r => 
+        r.SKU.toLowerCase().includes(q) || 
+        r.Name.toLowerCase().includes(q) || 
+        r.Category.toLowerCase().includes(q) || 
+        r.Status.toLowerCase().includes(q)
+      );
+      renderPreviewTable(filtered);
+    }
+
+    function openResultPreview() {
+      const resultPanel = document.querySelector(".result-panel");
+      if (resultPanel) {
+        resultPanel.scrollIntoView({ behavior: 'smooth' });
+        resultBox.style.boxShadow = "0 0 0 3px rgba(242,111,38,0.40)";
+        setTimeout(() => { resultBox.style.boxShadow = "none"; }, 1800);
+      }
+    }
+
     function downloadExcel() { window.open("/download-last-result", "_blank"); }
 
     function clearResult() {
       resultBox.className = "result-box placeholder";
       resultBox.textContent = (currentLang === 'en') 
         ? "Select a module on the left and start the analysis using voice or text." 
-        : "Soldaki modüllerden birini seç ve sesle veya yazıyla sorunu sorup demoyu başlat.";
+        : "Soldaki modüllerden birini seç ve sesle veya yazıyla sorunu sorup analizi başlat.";
     }
 
     questionInput.addEventListener("keydown", function(e) {
