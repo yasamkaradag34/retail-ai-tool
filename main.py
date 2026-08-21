@@ -3127,6 +3127,25 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       recognition.onerror = function(event) {
         console.error("Speech error:", event.error);
         stopListeningUI();
+        let errMsg = "";
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          errMsg = (currentLang === 'en')
+            ? "⚠️ Microphone permission denied.\n\nPlease click the 🔒 lock / 🎙️ mic icon near your browser address bar (dataprovido.com) and click 'Allow' for Microphone."
+            : "⚠️ Mikrofon izni engellendi.\n\nLütfen tarayıcı adres çubuğundaki (dataprovido.com) 🔒 kilit / 🎙️ simgesine tıklayıp Mikrofon İznini 'İzin Ver' olarak değiştirin.";
+        } else if (event.error === 'no-speech') {
+          errMsg = (currentLang === 'en')
+            ? "⚠️ No speech detected. Please speak into your microphone and try again."
+            : "⚠️ Ses algılanamadı. Lütfen mikrofona konuşarak tekrar deneyin.";
+        } else if (event.error === 'audio-capture') {
+          errMsg = (currentLang === 'en')
+            ? "⚠️ No microphone input device found on your computer."
+            : "⚠️ Bilgisayarınızda bağlı mikrofon bulunamadı.";
+        } else {
+          errMsg = (currentLang === 'en')
+            ? "⚠️ Voice recognition notice: " + event.error
+            : "⚠️ Ses tanıma uyarısı: " + event.error;
+        }
+        alert(errMsg);
       };
 
       recognition.onend = function() {
