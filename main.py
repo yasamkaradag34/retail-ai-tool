@@ -2987,10 +2987,25 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         dropZone.addEventListener('drop', e => {
           const dt = e.dataTransfer;
           const files = dt.files;
+          if (files && files.length > 1) {
+            alert(currentLang === 'en' 
+              ? "⚠️ You can only upload 1 Excel file at a time. Processing the first file." 
+              : "⚠️ Sadece 1 adet Excel dosyası yükleyebilirsiniz. İlk seçilen dosya işleme alındı.");
+          }
           if (files && files.length > 0) {
             handleExcelFileUpload(files[0]);
           }
         }, false);
+      }
+
+      // Recover cached active file from browser sessionStorage on page load
+      const savedFileName = sessionStorage.getItem("activeExcelFileName");
+      const savedFileMeta = sessionStorage.getItem("activeExcelFileMeta");
+      if (savedFileName) {
+        const activeFileName = document.getElementById("activeFileName");
+        const activeFileMeta = document.getElementById("activeFileMeta");
+        if (activeFileName) activeFileName.textContent = savedFileName;
+        if (activeFileMeta && savedFileMeta) activeFileMeta.textContent = savedFileMeta;
       }
     });
 
@@ -2999,21 +3014,31 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const validExts = ['.xlsx', '.xls', '.csv'];
       const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
       if (!validExts.includes(fileExt)) {
-        alert("Please upload a valid Excel (.xlsx, .xls) or CSV (.csv) file.");
+        alert(currentLang === 'en' ? "Please upload a valid Excel (.xlsx, .xls) or CSV (.csv) file." : "Lütfen geçerli bir Excel (.xlsx, .xls) veya CSV (.csv) dosyası yükleyin.");
         return;
       }
 
       const activeFileName = document.getElementById("activeFileName");
       const activeFileMeta = document.getElementById("activeFileMeta");
       if (activeFileName) activeFileName.textContent = file.name;
-      if (activeFileMeta) activeFileMeta.textContent = `(${(file.size / 1024).toFixed(1)} KB) - Processing dataset...`;
+      
+      const metaText = `(${(file.size / 1024).toFixed(1)} KB) ✓ Excel active & ready for commands`;
+      if (activeFileMeta) activeFileMeta.textContent = metaText;
+
+      try {
+        sessionStorage.setItem("activeExcelFileName", file.name);
+        sessionStorage.setItem("activeExcelFileMeta", metaText);
+      } catch (err) {
+        console.warn("sessionStorage notice:", err);
+      }
 
       const reader = new FileReader();
       reader.onload = function(e) {
-        if (activeFileMeta) activeFileMeta.textContent = `(${(file.size / 1024).toFixed(1)} KB) ✓ Excel active & ready for voice/text commands`;
         const questionInput = document.getElementById("questionInput");
-        if (questionInput) {
-          questionInput.value = `Calculate average price and total stock value for dataset '${file.name}'`;
+        if (questionInput && !questionInput.value.trim()) {
+          questionInput.value = (currentLang === 'en')
+            ? `Calculate average price and total inventory value for dataset '${file.name}'`
+            : `'${file.name}' veri seti için ortalama fiyatı ve toplam stok tutarını hesapla`;
           updateRunButtonState();
         }
       };
