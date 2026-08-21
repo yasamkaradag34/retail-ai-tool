@@ -2522,11 +2522,16 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         <button onclick="document.getElementById('activationBanner').style.display='none'" style="background: transparent; border: none; color: #065f46; font-weight: 700; cursor: pointer; font-size: 16px;">✕</button>
       </div>
 
-      <div class="topbar">
-        <div class="page-title">
-          <p>Excel Wizard, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir çalışma alanında çalıştırın; verileriniz üzerinde sesli veya yazılı Excel komutları verin.</p>
+      <div class="topbar" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
+        <div class="page-title" style="flex: 1; text-align: center; padding: 0 40px;">
+          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--text-900); margin-bottom: 8px; letter-spacing: -0.01em; line-height: 1.3;">
+            Excel Wizard, elinizle yaptığınız Excel işlemlerini sesiniz ve yazılı komutunuz ile yapmanızı sağlar.
+          </h2>
+          <p style="font-size: 13.5px; color: var(--text-500); line-height: 1.65; font-weight: 400; max-width: 820px; margin: 0 auto;">
+            Excel Wizard, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir çalışma alanında çalıştırın; verileriniz üzerinde sesli veya yazılı Excel komutları verin.
+          </p>
         </div>
-        <a class="home-link" href="/">← Ana Sayfa</a>
+        <a class="home-link" href="/" style="flex-shrink: 0;">← Ana Sayfa</a>
       </div>
 
       <section class="workspace">
