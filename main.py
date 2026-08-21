@@ -2599,7 +2599,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           </div>
 
           <!-- INTEGRATED FULL-WIDTH OUTPUT BOX -->
-          <div class="result-section" style="margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--border);">
+          <div class="result-section" id="resultSection" style="display: none; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--border);">
             <div class="result-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 20px;">📈</span>
@@ -2925,25 +2925,32 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       
       renderHowToUse();
 
-      // Excel Wizard does NOT show Preset questions dropdown
-      if (moduleKey === 'business_calculator' || suggestionList.length === 0) {
+      // Excel Wizard does NOT show Preset questions dropdown or Analiz Ciktisi box
+      const resultSection = document.getElementById("resultSection");
+      if (moduleKey === 'business_calculator') {
         presetSection.style.display = 'none';
+        if (resultSection) resultSection.style.display = 'none';
       } else {
-        presetSection.style.display = 'block';
-        questionSelect.innerHTML = "";
-        const placeholderOpt = document.createElement("option");
-        placeholderOpt.value = "";
-        placeholderOpt.textContent = (currentLang === 'en') ? "Select a preset question..." : "Bir hazır soru seçin...";
-        placeholderOpt.disabled = true;
-        placeholderOpt.selected = true;
-        questionSelect.appendChild(placeholderOpt);
-        
-        suggestionList.forEach(q => {
-          const opt = document.createElement("option");
-          opt.value = q;
-          opt.textContent = q;
-          questionSelect.appendChild(opt);
-        });
+        if (resultSection) resultSection.style.display = 'block';
+        if (suggestionList.length === 0) {
+          presetSection.style.display = 'none';
+        } else {
+          presetSection.style.display = 'block';
+          questionSelect.innerHTML = "";
+          const placeholderOpt = document.createElement("option");
+          placeholderOpt.value = "";
+          placeholderOpt.textContent = (currentLang === 'en') ? "Select a preset question..." : "Bir hazır soru seçin...";
+          placeholderOpt.disabled = true;
+          placeholderOpt.selected = true;
+          questionSelect.appendChild(placeholderOpt);
+          
+          suggestionList.forEach(q => {
+            const opt = document.createElement("option");
+            opt.value = q;
+            opt.textContent = q;
+            questionSelect.appendChild(opt);
+          });
+        }
       }
     }
 
@@ -3147,6 +3154,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     async function runModule() {
       const question = questionInput.value.trim();
       if (!question) return;
+      const resultSection = document.getElementById("resultSection");
+      if (resultSection) resultSection.style.display = "block";
       resultBox.classList.remove("placeholder");
       resultBox.classList.add("loading");
       resultBox.textContent = (currentLang === 'en') ? "Running analysis..." : "Analiz çalışıyor...";
