@@ -2237,15 +2237,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       margin-bottom: 20px;
     }
 
-    .module-kicker {
-      font-size: 10.5px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--orange);
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
     .module-title {
       font-family: 'Playfair Display', serif;
       font-size: 26px;
@@ -2592,7 +2583,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
           <div class="module-head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px;">
             <div style="flex: 1;">
-              <div class="module-kicker" id="moduleBadge">excel_wizard_engine</div>
               <h3 class="module-title" id="moduleTitle">Excel Wizard</h3>
               <p class="module-desc" id="moduleDesc">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
             </div>
@@ -2762,7 +2752,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     /* ── Module configs (Bilingual Support) ── */
     const modules = {
       business_calculator: {
-        badge: "excel_wizard_engine", title: "Excel Wizard",
+        title: "Excel Wizard",
         desc: {
           tr: "Satış, stok, fiyat ve e-ticaret Excel verileriniz üzerinde; sesli komutlar veya yazılı sorular ile ortalama, toplam, filtreleme, marka ve kategori bazlı kırılımlar gibi gelişmiş Excel hesaplamalarını anında yapmanızı sağlar.",
           en: "Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail & e-commerce Excel data using English or Turkish voice commands."
@@ -2774,7 +2764,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         suggestions: { tr: [], en: [] }
       },
       category_insights: {
-        badge: "generate_category_insight", title: "Category Insights",
+        title: "Category Insights",
         desc: {
           tr: "Seçilen kategori için performans, kazanan segmentler, riskler ve yönetici özeti çıkarır.",
           en: "Generates category performance metrics, winning segments, risk analysis, and executive summaries."
@@ -2802,7 +2792,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         }
       },
       price_competition: {
-        badge: "generate_price_competition_from_uploaded_inputs", title: "Price Competition",
+        title: "Price Competition",
         desc: {
           tr: "Merchant benchmark datasına göre pahalı, ucuz, rekabetçi ve riskli ürünleri analiz eder.",
           en: "Analyzes benchmark price positioning (expensive, cheap, competitive, at-risk SKUs)."
