@@ -2081,47 +2081,32 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     .nav-label {
       font-size: 10px;
       letter-spacing: 0.14em;
-      color: var(--text-dim);
+      color: #64748b;
       text-transform: uppercase;
       font-weight: 700;
-      margin: 16px 8px 10px;
-      opacity: 0.8;
+      margin: 18px 10px 10px;
     }
 
     .menu { display: flex; flex-direction: column; gap: 6px; }
 
     .menu-btn {
-      border: 0;
-      border-bottom: 1px solid var(--border);
+      border: 1px solid #e2e8f0;
       width: 100%;
       text-align: left;
       cursor: pointer;
       border-radius: 12px;
-      background: transparent;
-      color: var(--text-700);
-      padding: 12px 14px;
+      background: #ffffff;
+      color: #334155;
+      padding: 12px 16px;
       font-family: 'Inter', sans-serif;
       font-size: 13.5px;
-      line-height: 1.3;
+      line-height: 1.35;
       font-weight: 600;
-      transition: all 0.2s ease;
+      transition: all 0.18s ease;
       display: flex;
       align-items: center;
-      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
       margin-bottom: 2px;
-    }
-
-    .menu-btn-icon {
-      font-size: 18px;
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: var(--bg-2);
-      border: 1px solid var(--border);
-      display: grid;
-      place-items: center;
-      flex-shrink: 0;
-      transition: all 0.2s ease;
     }
 
     .menu-btn-text {
@@ -2130,37 +2115,41 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       flex-direction: column;
     }
 
-    .menu-btn span {
+    .menu-btn-text strong {
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 13.5px;
+    }
+
+    .menu-btn span span {
       display: block;
       margin-top: 3px;
-      font-size: 10.5px;
-      color: var(--text-dim);
+      font-size: 11px;
+      color: #64748b;
       font-weight: 400;
     }
 
     .menu-btn:hover {
-      background: rgba(242,111,38,0.06);
-      color: var(--orange);
-      border-bottom-color: rgba(242,111,38,0.30);
-    }
-
-    .menu-btn:hover .menu-btn-icon {
-      background: #ffffff;
-      border-color: var(--orange);
-      box-shadow: 0 2px 8px rgba(242,111,38,0.15);
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #0f172a;
+      transform: translateX(2px);
     }
 
     .menu-btn.active {
-      background: rgba(242,111,38,0.09);
-      color: var(--orange);
-      border-bottom-color: var(--orange);
+      background: #eff6ff;
+      border-color: #2563eb;
+      border-left: 4px solid #2563eb;
+      color: #1e40af;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.08);
     }
 
-    .menu-btn.active .menu-btn-icon {
-      background: var(--orange);
-      color: #ffffff;
-      border-color: var(--orange);
-      box-shadow: 0 4px 10px rgba(242,111,38,0.25);
+    .menu-btn.active .menu-btn-text strong {
+      color: #1e40af;
+    }
+
+    .menu-btn.active span span {
+      color: #3b82f6;
     }
 
     .menu-btn.active span { color: var(--orange-light); }
@@ -2486,51 +2475,44 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         <div class="nav-label" id="navLabelCategories">CATEGORIES</div>
         <nav class="menu" id="menu">
           <button class="menu-btn active" data-key="business_calculator">
-            <span class="menu-btn-icon">🧙‍♂️</span>
             <span class="menu-btn-text">
-              Excel Wizard
+              <strong>Excel Wizard</strong>
               <span id="sub_business_calculator">Voice &amp; text Excel commands</span>
             </span>
           </button>
           <button class="menu-btn" data-key="category_insights">
-            <span class="menu-btn-icon">📊</span>
             <span class="menu-btn-text">
-              Category Insights
+              <strong>Category Insights</strong>
               <span id="sub_category_insights">Category &amp; sector analysis</span>
             </span>
           </button>
           <button class="menu-btn" data-key="price_competition">
-            <span class="menu-btn-icon">🎯</span>
             <span class="menu-btn-text">
-              Price Competition
+              <strong>Price Competition</strong>
               <span id="sub_price_competition">Merchant benchmark</span>
             </span>
           </button>
           <button class="menu-btn" data-key="action_executor">
-            <span class="menu-btn-icon">⚡</span>
             <span class="menu-btn-text">
-              Action Executor
+              <strong>Action Executor</strong>
               <span id="sub_action_executor">Action plan generator</span>
             </span>
           </button>
           <button class="menu-btn" data-key="funnel_stock">
-            <span class="menu-btn-icon">📦</span>
             <span class="menu-btn-text">
-              Funnel &amp; Stock
+              <strong>Funnel &amp; Stock</strong>
               <span id="sub_funnel_stock">Conversion &amp; stock risk</span>
             </span>
           </button>
           <button class="menu-btn" data-key="excel_outputs">
-            <span class="menu-btn-icon">📄</span>
             <span class="menu-btn-text">
-              Excel Outputs
+              <strong>Excel Outputs</strong>
               <span id="sub_excel_outputs">Analytical reports</span>
             </span>
           </button>
           <button class="menu-btn" data-key="data_upload">
-            <span class="menu-btn-icon">📁</span>
             <span class="menu-btn-text">
-              <span id="label_data_upload">Upload Data Sources</span>
+              <strong id="label_data_upload">Upload Data Sources</strong>
               <span id="sub_data_upload">Excel / CSV Upload</span>
             </span>
           </button>
@@ -2581,26 +2563,21 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
             </div>
           </div>
 
-          <div class="module-head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px;">
+          <div class="module-head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid #e2e8f0;">
             <div style="flex: 1;">
-              <h3 class="module-title" id="moduleTitle">Excel Wizard</h3>
-              <p class="module-desc" id="moduleDesc">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
-            </div>
-          <div class="module-head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px;">
-            <div style="flex: 1;">
-              <h3 class="module-title" id="moduleTitle">Excel Wizard</h3>
-              <p class="module-desc" id="moduleDesc">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
+              <h3 class="module-title" id="moduleTitle" style="font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.02em;">Excel Wizard</h3>
+              <p class="module-desc" id="moduleDesc" style="font-size: 13.5px; color: #475569; line-height: 1.6; font-weight: 400; max-width: 760px;">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
             </div>
             <!-- TOP RIGHT LANGUAGE SWITCHER PILLS -->
-            <div style="display: flex; gap: 4px; background: #f8fafc; padding: 4px; border-radius: 12px; border: 1px solid var(--border); flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
-              <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid var(--orange); background: var(--orange); color: #ffffff; padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 2px 6px rgba(242,111,38,0.20);">🇬🇧 English Voice</button>
-              <button id="langBtnTR" onclick="setLanguage('tr')" type="button" style="border: 1px solid transparent; background: transparent; color: var(--text-700); padding: 6px 14px; border-radius: 9px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.18s;">🇹🇷 Turkish Voice</button>
+            <div style="display: flex; gap: 4px; background: #f8fafc; padding: 4px; border-radius: 12px; border: 1px solid #e2e8f0; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+              <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid #2563eb; background: #2563eb; color: #ffffff; padding: 7px 16px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 2px 6px rgba(37,99,235,0.20);">English Voice</button>
+              <button id="langBtnTR" onclick="setLanguage('tr')" type="button" style="border: 1px solid transparent; background: transparent; color: #475569; padding: 7px 16px; border-radius: 9px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.18s;">Turkish Voice</button>
             </div>
           </div>
 
           <!-- PRESETS AREA (HIDDEN FOR EXCEL WIZARD) -->
           <div id="presetSection" style="display: none;">
-            <div class="quick-title" style="margin-top: 0; margin-bottom: 6px;" id="quickTitleLabel">Hazır sorular / Presets</div>
+            <div class="quick-title" style="margin-top: 0; margin-bottom: 6px;" id="quickTitleLabel">Presets</div>
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
               <select id="questionSelect" class="question-select" onchange="selectQuestion(this.value)">
               </select>
@@ -2609,18 +2586,20 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
           <div class="input-area" style="margin-top: 0;">
             <div style="display: flex; gap: 12px; align-items: stretch; margin-bottom: 16px;">
-              <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or click 🎙️ Voice Command)..." style="flex: 1; min-height: 130px; resize: vertical; padding: 16px 18px; font-size: 14px; border-radius: 16px; border: 1.5px solid var(--border); outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; line-height: 1.6; box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);"></textarea>
-              <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #fff8f4; border: 1.5px solid var(--border-orange); color: var(--orange); padding: 12px 18px; border-radius: 16px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; transition: all 0.2s; min-width: 120px; box-shadow: 0 2px 8px rgba(242,111,38,0.12);">
-                <span id="voiceIcon" style="font-size: 24px;">🎙️</span>
+              <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or click Voice Command)..." style="flex: 1; min-height: 130px; resize: vertical; padding: 16px 18px; font-size: 14px; color: #0f172a; border-radius: 16px; border: 1.5px solid #cbd5e1; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; line-height: 1.6; box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);"></textarea>
+              <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #2563eb; padding: 12px 18px; border-radius: 16px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; transition: all 0.2s; min-width: 130px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <span id="voiceIcon" style="display: block;">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                </span>
                 <span id="voiceText" style="font-size: 11.5px; font-weight: 700;">Voice Command</span>
               </button>
             </div>
 
-            <!-- EXCEL WIZARD ACTION TOOLBAR -->
-            <div class="action-row" id="actionRow">
-              <button class="primary-btn" onclick="runModule()" id="runBtnLabel" style="background: #cbd5e1; color: #64748b; border: none; opacity: 0.65; cursor: not-allowed; transition: all 0.25s ease; box-shadow: none; padding: 12px 26px; border-radius: 14px; font-weight: 700;" disabled>🚀 Run Analysis</button>
-              <button class="secondary-btn" onclick="openExcelPreview()" id="previewBtnLabel" style="padding: 12px 22px; border-radius: 14px; font-weight: 600;">📊 Excel Preview</button>
-              <button class="secondary-btn" onclick="downloadExcel()" id="downloadBtnLabel" style="padding: 12px 22px; border-radius: 14px; font-weight: 600;">📥 Export Excel</button>
+            <!-- EXCEL WIZARD ACTION TOOLBAR (NO EMOJIS, CLEAN ENGLISH) -->
+            <div class="action-row" id="actionRow" style="display: flex; gap: 10px;">
+              <button class="primary-btn" onclick="runModule()" id="runBtnLabel" style="background: #cbd5e1; color: #64748b; border: none; opacity: 0.65; cursor: not-allowed; transition: all 0.25s ease; box-shadow: none; padding: 12px 26px; border-radius: 14px; font-weight: 700;" disabled>Run Analysis</button>
+              <button class="secondary-btn" onclick="openExcelPreview()" id="previewBtnLabel" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; padding: 12px 22px; border-radius: 14px; font-weight: 600;">Excel Preview</button>
+              <button class="secondary-btn" onclick="downloadExcel()" id="downloadBtnLabel" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; padding: 12px 22px; border-radius: 14px; font-weight: 600;">Export Excel</button>
             </div>
           </div>
 
@@ -2687,68 +2666,68 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     /* ── How to Use Guide Content ── */
     const howToUseGuide = {
       business_calculator: {
-        tr: `<strong>🧙‍♂️ Excel Wizard Kullanım Rehberi:</strong><br>
+        tr: `<strong>Excel Wizard Kullanım Rehberi:</strong><br>
         1. Yüklenmiş Excel/CSV verileriniz üzerinde doğrudan doğal dille hesaplama yapın.<br>
-        2. 🎙️ <b>Sesle Söyle</b> butonuna basarak mikrofona Excel komutunuzu verin veya metin alanına yazın.<br>
-        3. <b>📊 Excel Preview</b> butonuna basarak Excel tablonuzu ve sütun verilerinizi canlı önizleyin.<br>
-        4. <b>👁️ Result Preview</b> butonu ile hesaplama sonuçlarını anında görüntüleyin.`,
-        en: `<strong>🧙‍♂️ Excel Wizard User Guide:</strong><br>
+        2. <b>Voice Command</b> butonuna basarak mikrofona Excel komutunuzu verin veya metin alanına yazın.<br>
+        3. <b>Excel Preview</b> butonuna basarak Excel tablonuzu ve sütun verilerinizi canlı önizleyin.<br>
+        4. <b>Result Preview</b> butonu ile hesaplama sonuçlarını anında görüntüleyin.`,
+        en: `<strong>Excel Wizard User Guide:</strong><br>
         1. Perform advanced calculations directly on your Excel/CSV data using natural language.<br>
-        2. Click 🎙️ <b>Voice Command</b> to speak your query or type it into the prompt box.<br>
-        3. Click <b>📊 Excel Preview</b> to inspect your spreadsheet rows & columns in real-time.<br>
-        4. Click <b>👁️ Result Preview</b> to preview calculation results and summary data.`
+        2. Click <b>Voice Command</b> to speak your query or type it into the prompt box.<br>
+        3. Click <b>Excel Preview</b> to inspect your spreadsheet rows & columns in real-time.<br>
+        4. Click <b>Result Preview</b> to preview calculation results and summary data.`
       },
       category_insights: {
-        tr: `<strong>📊 Category Insights Kullanım Rehberi:</strong><br>
+        tr: `<strong>Category Insights Kullanım Rehberi:</strong><br>
         1. İncelemek istediğiniz e-ticaret kategorisini veya markasını seçin.<br>
         2. Pazarda kazanan/kaybeden SKU'ları, fiyat kırılımlarını ve riskleri tek tıkla analiz ettirin.<br>
         3. Yönetici özetini görüntüleyin ve raporu Excel olarak indirin.`,
-        en: `<strong>📊 Category Insights User Guide:</strong><br>
+        en: `<strong>Category Insights User Guide:</strong><br>
         1. Select the e-commerce category or brand you want to analyze.<br>
         2. Evaluate winning/losing SKUs, pricing segments, and market risks.<br>
         3. View executive summary and export the final report to Excel.`
       },
       price_competition: {
-        tr: `<strong>🎯 Price Competition Kullanım Rehberi:</strong><br>
+        tr: `<strong>Price Competition Kullanım Rehberi:</strong><br>
         1. Rakip ve pazar benchmark fiyat verilerini sisteme aktarın.<br>
         2. Pahalı kalan, rekabetçi olan ve fiyat indirimine duyarlı SKU'ları tespit edin.<br>
         3. Fiyat rekabet endeksini raporlayın.`,
-        en: `<strong>🎯 Price Competition User Guide:</strong><br>
+        en: `<strong>Price Competition User Guide:</strong><br>
         1. Import competitor benchmark pricing data.<br>
         2. Identify overpriced SKUs, competitive pricing bands, and elastic items.<br>
         3. Generate price competitiveness index reports.`
       },
       action_executor: {
-        tr: `<strong>⚡ Action Executor Kullanım Rehberi:</strong><br>
+        tr: `<strong>Action Executor Kullanım Rehberi:</strong><br>
         1. Analiz çıktılarına göre öncelikli aksiyon önerilerini otomatik üretin.<br>
         2. Stok tamamlama (replenishment), kampanya ve görünürlük önerilerini listeleyin.<br>
         3. Aksiyon planını Excel sayfası olarak dışa aktarın.`,
-        en: `<strong>⚡ Action Executor User Guide:</strong><br>
+        en: `<strong>Action Executor User Guide:</strong><br>
         1. Automatically generate prioritized business action plans from insights.<br>
         2. Review replenishment, marketing, and stock risk reduction steps.<br>
         3. Export action items to Excel.`
       },
       funnel_stock: {
-        tr: `<strong>📦 Funnel & Stock Kullanım Rehberi:</strong><br>
+        tr: `<strong>Funnel & Stock Kullanım Rehberi:</strong><br>
         1. PDP görünürlüğü yüksek ancak stoğu az olan riskli ürünleri sorgulayın.<br>
         2. Sepet kayıplarını ve dönüşüm hunisindeki darboğazları analiz edin.`,
-        en: `<strong>📦 Funnel & Stock User Guide:</strong><br>
+        en: `<strong>Funnel & Stock User Guide:</strong><br>
         1. Identify high-traffic SKUs with low inventory holding.<br>
         2. Analyze cart abandonment and conversion funnel leakage points.`
       },
       excel_outputs: {
-        tr: `<strong>📄 Excel Outputs Kullanım Rehberi:</strong><br>
+        tr: `<strong>Excel Outputs Kullanım Rehberi:</strong><br>
         1. Daha önce çalıştırılan analiz sonuçlarını çoklu sheet (çalışma sayfası) formatında görün.<br>
         2. Raporları anında bilgisayarınıza `.xlsx` dosyası olarak indirin.`,
-        en: `<strong>📄 Excel Outputs User Guide:</strong><br>
+        en: `<strong>Excel Outputs User Guide:</strong><br>
         1. Review all previous analysis runs structured into multi-sheet Workbooks.<br>
         2. Download formatted Excel files directly to your device.`
       },
       data_upload: {
-        tr: `<strong>📁 Veri Kaynakları Yükle Kullanım Rehberi:</strong><br>
+        tr: `<strong>Veri Kaynakları Yükle Kullanım Rehberi:</strong><br>
         1. Kendi e-ticaret satış, stok ve rakip fiyat Excel/CSV dosyalarınızı sürükleyip bırakın.<br>
         2. Sistem verilerinizi otomatik ilişkilendirip analize hazır hale getirir.`,
-        en: `<strong>📁 Data Upload User Guide:</strong><br>
+        en: `<strong>Data Upload User Guide:</strong><br>
         1. Drag and drop your custom e-commerce sales, stock, and pricing Excel/CSV files.<br>
         2. Data is automatically ingested and mapped for immediate AI querying.`
       }
@@ -2763,8 +2742,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           en: "Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail & e-commerce Excel data using English or Turkish voice commands."
         },
         placeholder: {
-          tr: "Örn: APPLE markasının ortalama fiyatı ve stok tutarı nedir? (veya 🎙️ Sesle söyleyin)",
-          en: "E.g.: Calculate average price and total inventory value for APPLE products (or 🎙️ use Voice Command)"
+          tr: "Örn: APPLE markasının ortalama fiyatı ve stok tutarı nedir? (veya Voice Command kullanın)",
+          en: "E.g.: Calculate average price and total inventory value for APPLE products (or use Voice Command)"
         },
         suggestions: { tr: [], en: [] }
       },
@@ -2870,9 +2849,9 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         btnEN.style.boxShadow = "0 2px 6px rgba(242,111,38,0.20)";
 
         if (!isListening) voiceText.textContent = "Voice Command";
-        runBtnLabel.textContent = "🚀 Run Analysis";
-        previewBtnLabel.textContent = "📊 Excel Preview";
-        downloadBtnLabel.textContent = "📥 Export Excel";
+        runBtnLabel.textContent = "Run Analysis";
+        previewBtnLabel.textContent = "Excel Preview";
+        downloadBtnLabel.textContent = "Export Excel";
         clearBtnLabel.textContent = "Clear";
         resultHeaderTitle.textContent = "Analytical Output";
         resultHeaderSub.textContent = "Executive summary and data table outputs are displayed here.";
@@ -2910,9 +2889,9 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         btnTR.style.boxShadow = "0 2px 6px rgba(242,111,38,0.20)";
 
         if (!isListening) voiceText.textContent = "Voice Command";
-        runBtnLabel.textContent = "🚀 Run Analysis";
-        previewBtnLabel.textContent = "📊 Excel Preview";
-        downloadBtnLabel.textContent = "📥 Export Excel";
+        runBtnLabel.textContent = "Run Analysis";
+        previewBtnLabel.textContent = "Excel Preview";
+        downloadBtnLabel.textContent = "Export Excel";
         clearBtnLabel.textContent = "Temizle";
         resultHeaderTitle.textContent = "Analiz Çıktısı";
         resultHeaderSub.textContent = "Sonuç burada yönetici özeti formatında gösterilir.";
@@ -3057,11 +3036,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       function stopListeningUI() {
         isListening = false;
         voiceBtn.classList.remove("voice-listening-active");
-        voiceBtn.style.background = "#fff8f4";
-        voiceBtn.style.borderColor = "var(--border-orange)";
-        voiceBtn.style.color = "var(--orange)";
-        voiceIcon.innerHTML = "🎙️";
-        voiceText.textContent = (currentLang === 'en') ? "Voice Command" : "Sesle Söyle";
+        voiceBtn.style.background = "#ffffff";
+        voiceBtn.style.borderColor = "#cbd5e1";
+        voiceBtn.style.color = "#2563eb";
+        voiceIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`;
+        voiceText.textContent = "Voice Command";
       }
 
       recognition.start();
