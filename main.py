@@ -3301,15 +3301,53 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         const q = question.toLowerCase();
         let actionNote = "";
 
-        // Mutate spreadsheet rows if query requests price/stock adjustments
-        if (q.includes("artır") || q.includes("increase") || q.includes("güncelle") || q.includes("update") || q.includes("%")) {
+        const q = question.toLowerCase();
+        let actionNote = "";
+        let mutatedCount = 0;
+
+        // DIRECT EXCEL MANIPULATION OPERATIONS ON SPREADSHEET ROWS:
+        if (q.includes("artır") || q.includes("increase") || q.includes("%")) {
+          // Increase prices by 10%
           currentSpreadsheetData = currentSpreadsheetData.map(r => {
-            let newPrice = Math.round(Number(r.Price) * 1.10);
-            return { ...r, Price: newPrice, Revenue: newPrice * r.Stock, Status: "Price Adjusted (+10%)" };
+            let oldPrice = Number(r.Price);
+            let newPrice = Math.round(oldPrice * 1.10);
+            mutatedCount++;
+            return { ...r, Price: newPrice, Revenue: newPrice * r.Stock, Status: "Price Increased (+10%)" };
           });
           actionNote = (currentLang === 'en')
-            ? "✓ Excel spreadsheet updated: Prices increased by 10% across active rows."
-            : "✓ Excel tablosu güncellendi: Aktif satırlarda %10 fiyat artışı uygulandı.";
+            ? `⚡ EXCEL OPERATION EXECUTED: Mutated ${mutatedCount} price cells in Excel dataset (+10% applied). Total revenue updated.`
+            : `⚡ EXCEL OPERASYONU TAMAMLANTI: Tablodaki ${mutatedCount} satırın fiyatı %10 artırıldı. Ciro ve stok değerleri yeniden hesaplandı.`;
+        } else if (q.includes("düşür") || q.includes("discount") || q.includes("indirim")) {
+          // Apply 10% discount on overpriced items
+          currentSpreadsheetData = currentSpreadsheetData.map(r => {
+            if (r.Status.includes("Overpriced") || r.Price > 30000) {
+              let newPrice = Math.round(Number(r.Price) * 0.90);
+              mutatedCount++;
+              return { ...r, Price: newPrice, Revenue: newPrice * r.Stock, Status: "Discounted (-10%)" };
+            }
+            return r;
+          });
+          actionNote = (currentLang === 'en')
+            ? `⚡ EXCEL OPERATION EXECUTED: Applied 10% discount on ${mutatedCount} overpriced SKUs.`
+            : `⚡ EXCEL OPERASYONU TAMAMLANTI: Pahalı kalan ${mutatedCount} üründe %10 fiyat indirimi uygulandı.`;
+        } else if (q.includes("stok") || q.includes("stock") || q.includes("ekle") || q.includes("replenish")) {
+          // Replenish low stock items
+          currentSpreadsheetData = currentSpreadsheetData.map(r => {
+            if (r.Stock < 50) {
+              let newStock = r.Stock + 100;
+              mutatedCount++;
+              return { ...r, Stock: newStock, Revenue: r.Price * newStock, Status: "Stock Replenished (+100)" };
+            }
+            return r;
+          });
+          actionNote = (currentLang === 'en')
+            ? `⚡ EXCEL OPERATION EXECUTED: Replenished 100 stock units for ${mutatedCount} low-inventory SKUs.`
+            : `⚡ EXCEL OPERASYONU TAMAMLANTI: Stok miktarı düşük ${mutatedCount} ürüne +100 adet stok eklendi.`;
+        } else {
+          // Default spreadsheet cell calculation & audit log
+          actionNote = (currentLang === 'en')
+            ? "⚡ EXCEL OPERATION COMPLETED: Calculated dataset metrics across active spreadsheet rows."
+            : "⚡ EXCEL OPERASYONU TAMAMLANTI: Aktif Excel tablosu üzerinde hesaplama ve veri analizi yapıldı.";
         }
 
         // Filter rows matching prompt keywords
@@ -3326,8 +3364,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           filteredRows = currentSpreadsheetData.filter(r => r.Category.toLowerCase().includes("laptop"));
         } else if (q.includes("smartphone") || q.includes("telefon")) {
           filteredRows = currentSpreadsheetData.filter(r => r.Category.toLowerCase().includes("smartphone"));
-        } else if (q.includes("stok") || q.includes("stock")) {
-          filteredRows = currentSpreadsheetData.filter(r => r.Stock < 50);
         }
 
         let filteredAvgPrice = (filteredRows.reduce((a, b) => a + Number(b.Price), 0) / (filteredRows.length || 1)).toLocaleString();
@@ -3337,29 +3373,36 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
               <div>
-                <span style="font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Excel Calculation Output</span>
-                <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">Query: "${question}"</h4>
+                <span style="font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Direct Excel Operation Output</span>
+                <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">Executed Command: "${question}"</h4>
               </div>
-              <button onclick="openExcelPreview()" type="button" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 6px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">Inspect Live Excel Table</button>
+              <div style="display: flex; gap: 8px;">
+                <button onclick="openExcelPreview()" type="button" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 7px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">Inspect Modified Table</button>
+                <button onclick="downloadExcel()" type="button" style="background: #2563eb; color: #ffffff; border: none; padding: 7px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">Download Updated Excel</button>
+              </div>
+            </div>
+
+            <!-- AUDIT LOG BANNER -->
+            <div style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;">
+              <span>${actionNote}</span>
+              <span style="background: #10b981; color: #ffffff; font-size: 10.5px; padding: 2px 8px; border-radius: 999px;">EXCEL UPDATED</span>
             </div>
 
             <!-- KPI Summary Cards -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px;">
               <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Matching SKUs</div>
+                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Processed SKUs</div>
                 <div style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 4px;">${filteredRows.length} Items</div>
               </div>
               <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Average Price</div>
+                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Updated Avg Price</div>
                 <div style="font-size: 20px; font-weight: 800; color: #2563eb; margin-top: 4px;">${filteredAvgPrice} TL</div>
               </div>
               <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Total Inventory Value</div>
+                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Recalculated Stock Value</div>
                 <div style="font-size: 20px; font-weight: 800; color: #10b981; margin-top: 4px;">${filteredStockValue} TL</div>
               </div>
             </div>
-
-            ${actionNote ? `<div style="background: #ecfdf5; border: 1px solid #6ee7b7; color: #047857; padding: 10px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600; margin-bottom: 16px;">${actionNote}</div>` : ''}
 
             <!-- Filtered Table -->
             <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px;">
