@@ -2455,55 +2455,55 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
             <p>Analytics Console</p>
           </div>
         </div>
-        <div class="nav-label">Kategoriler / Categories</div>
+        <div class="nav-label" id="navLabelCategories">CATEGORIES</div>
         <nav class="menu" id="menu">
           <button class="menu-btn active" data-key="business_calculator">
             <span class="menu-btn-icon">🧙‍♂️</span>
             <span class="menu-btn-text">
               Excel Wizard
-              <span>Sesli &amp; yazılı Excel komutları</span>
+              <span id="sub_business_calculator">Voice &amp; text Excel commands</span>
             </span>
           </button>
           <button class="menu-btn" data-key="category_insights">
             <span class="menu-btn-icon">📊</span>
             <span class="menu-btn-text">
               Category Insights
-              <span>Kategori &amp; sektör analizi</span>
+              <span id="sub_category_insights">Category &amp; sector analysis</span>
             </span>
           </button>
           <button class="menu-btn" data-key="price_competition">
             <span class="menu-btn-icon">🎯</span>
             <span class="menu-btn-text">
               Price Competition
-              <span>Merchant benchmark</span>
+              <span id="sub_price_competition">Merchant benchmark</span>
             </span>
           </button>
           <button class="menu-btn" data-key="action_executor">
             <span class="menu-btn-icon">⚡</span>
             <span class="menu-btn-text">
               Action Executor
-              <span>Aksiyon planı</span>
+              <span id="sub_action_executor">Action plan generator</span>
             </span>
           </button>
           <button class="menu-btn" data-key="funnel_stock">
             <span class="menu-btn-icon">📦</span>
             <span class="menu-btn-text">
               Funnel &amp; Stock
-              <span>Dönüşüm &amp; stok riski</span>
+              <span id="sub_funnel_stock">Conversion &amp; stock risk</span>
             </span>
           </button>
           <button class="menu-btn" data-key="excel_outputs">
             <span class="menu-btn-icon">📄</span>
             <span class="menu-btn-text">
               Excel Outputs
-              <span>Rapor çıktıları</span>
+              <span id="sub_excel_outputs">Analytical reports</span>
             </span>
           </button>
           <button class="menu-btn" data-key="data_upload">
             <span class="menu-btn-icon">📁</span>
             <span class="menu-btn-text">
-              Veri Kaynakları Yükle
-              <span>Excel / CSV Yükleme</span>
+              <span id="label_data_upload">Upload Data Sources</span>
+              <span id="sub_data_upload">Excel / CSV Upload</span>
             </span>
           </button>
         </nav>
@@ -2524,14 +2524,14 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
       <div class="topbar" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
         <div class="page-title" style="flex: 1; text-align: center; padding: 0 40px;">
-          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--text-900); margin-bottom: 8px; letter-spacing: -0.01em; line-height: 1.3;">
-            Excel Wizard, elinizle yaptığınız Excel işlemlerini sesiniz ve yazılı komutunuz ile yapmanızı sağlar.
+          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--text-900); margin-bottom: 8px; letter-spacing: -0.01em; line-height: 1.3;" id="heroMainHeading">
+            Excel Wizard allows you to perform your manual Excel tasks using your voice and text commands.
           </h2>
-          <p style="font-size: 13.5px; color: var(--text-500); line-height: 1.65; font-weight: 400; max-width: 820px; margin: 0 auto;">
-            Excel Wizard, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir çalışma alanında çalıştırın; verileriniz üzerinde sesli veya yazılı Excel komutları verin.
+          <p style="font-size: 13.5px; color: var(--text-500); line-height: 1.65; font-weight: 400; max-width: 820px; margin: 0 auto;" id="heroSubHeading">
+            Execute Excel Wizard, category insights, price competition, and action plans in a single workspace; give voice or text Excel commands over your data.
           </p>
         </div>
-        <a class="home-link" href="/" style="flex-shrink: 0;">← Ana Sayfa</a>
+        <a class="home-link" href="/" style="flex-shrink: 0;" id="homeLinkText">← Home Page</a>
       </div>
 
       <section class="workspace">
@@ -2542,7 +2542,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
             <button id="howToUseToggle" onclick="toggleHowToUse()" type="button" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 0; cursor: pointer; text-align: left; transition: background 0.2s;">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <span class="info-pulse" style="font-size: 16px; background: rgba(242,111,38,0.12); color: var(--orange); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; animation: pulse-glow 2.2s infinite;">ℹ️</span>
-                <span style="font-size: 13px; font-weight: 700; color: var(--text-900);" id="howToUseHeaderTitle">Nasıl Kullanılır? (How to Use Guide)</span>
+                <span style="font-size: 13px; font-weight: 700; color: var(--text-900);" id="howToUseHeaderTitle">How to Use Guide</span>
               </div>
               <span id="howToUseChevron" style="font-size: 13px; color: var(--orange); font-weight: 700; transition: transform 0.3s ease;">▼</span>
             </button>
@@ -2557,18 +2557,18 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
             <div>
               <div class="module-kicker" id="moduleBadge">excel_wizard_engine</div>
               <h3 class="module-title" id="moduleTitle">Excel Wizard</h3>
-              <p class="module-desc" id="moduleDesc">Satış, stok, fiyat ve e-ticaret Excel verileriniz üzerinde; sesli komutlar veya yazılı sorular ile ortalama, toplam, filtreleme, marka ve kategori bazlı kırılımlar gibi gelişmiş Excel hesaplamalarını anında yapmanızı sağlar.</p>
+              <p class="module-desc" id="moduleDesc">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
             </div>
           </div>
 
           <!-- LANGUAGE SWITCHER BAR -->
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; background: #fafafa; border: 1px solid var(--border); border-radius: 12px; padding: 8px 14px;">
             <span style="font-size: 12px; font-weight: 700; color: var(--text-700); display: flex; align-items: center; gap: 6px;">
-              🌐 <span id="langSelectLabel">Ses & Metin Dili (Voice & Prompt Language):</span>
+              🌐 <span id="langSelectLabel">Voice &amp; Prompt Language:</span>
             </span>
             <div style="display: flex; gap: 4px;">
-              <button id="langBtnTR" onclick="setLanguage('tr')" type="button" style="border: 1px solid var(--orange); background: var(--orange); color: #ffffff; padding: 4px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.15s;">🇹🇷 TR (Türkçe)</button>
-              <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid var(--border); background: #ffffff; color: var(--text-700); padding: 4px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: all 0.15s;">🇬🇧 EN (English)</button>
+              <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid var(--orange); background: var(--orange); color: #ffffff; padding: 4px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.15s;">🇬🇧 EN (English)</button>
+              <button id="langBtnTR" onclick="setLanguage('tr')" type="button" style="border: 1px solid var(--border); background: #ffffff; color: var(--text-700); padding: 4px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: all 0.15s;">🇹🇷 TR (Türkçe)</button>
             </div>
           </div>
 
@@ -2654,7 +2654,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
   <script>
     /* ── Global State ── */
-    let currentLang = 'tr';
+    let currentLang = 'en';
     let currentModule = 'business_calculator';
     let isHowToUseOpen = false;
 
@@ -2960,6 +2960,21 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const resultHeaderSub = document.getElementById("resultHeaderSub");
       const howToUseHeaderTitle = document.getElementById("howToUseHeaderTitle");
 
+      const heroMainHeading = document.getElementById("heroMainHeading");
+      const heroSubHeading = document.getElementById("heroSubHeading");
+      const homeLinkText = document.getElementById("homeLinkText");
+      const navLabelCategories = document.getElementById("navLabelCategories");
+      const langSelectLabel = document.getElementById("langSelectLabel");
+
+      const subBusiness = document.getElementById("sub_business_calculator");
+      const subCategory = document.getElementById("sub_category_insights");
+      const subPrice = document.getElementById("sub_price_competition");
+      const subAction = document.getElementById("sub_action_executor");
+      const subFunnel = document.getElementById("sub_funnel_stock");
+      const subExcel = document.getElementById("sub_excel_outputs");
+      const labelUpload = document.getElementById("label_data_upload");
+      const subUpload = document.getElementById("sub_data_upload");
+
       if (lang === 'en') {
         btnTR.style.background = "#ffffff";
         btnTR.style.borderColor = "var(--border)";
@@ -2979,6 +2994,21 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         resultHeaderTitle.textContent = "Analytical Output";
         resultHeaderSub.textContent = "Executive summary and data table outputs are displayed here.";
         howToUseHeaderTitle.textContent = "How to Use Guide";
+
+        if (heroMainHeading) heroMainHeading.textContent = "Excel Wizard allows you to perform your manual Excel tasks using your voice and text commands.";
+        if (heroSubHeading) heroSubHeading.textContent = "Execute Excel Wizard, category insights, price competition, and action plans in a single workspace; give voice or text Excel commands over your data.";
+        if (homeLinkText) homeLinkText.textContent = "← Home Page";
+        if (navLabelCategories) navLabelCategories.textContent = "CATEGORIES";
+        if (langSelectLabel) langSelectLabel.textContent = "Voice & Prompt Language:";
+
+        if (subBusiness) subBusiness.textContent = "Voice & text Excel commands";
+        if (subCategory) subCategory.textContent = "Category & sector analysis";
+        if (subPrice) subPrice.textContent = "Merchant benchmark";
+        if (subAction) subAction.textContent = "Action plan generator";
+        if (subFunnel) subFunnel.textContent = "Conversion & stock risk";
+        if (subExcel) subExcel.textContent = "Analytical reports";
+        if (labelUpload) labelUpload.textContent = "Upload Data Sources";
+        if (subUpload) subUpload.textContent = "Excel / CSV Upload";
       } else {
         btnEN.style.background = "#ffffff";
         btnEN.style.borderColor = "var(--border)";
@@ -2998,6 +3028,21 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         resultHeaderTitle.textContent = "Analiz Çıktısı";
         resultHeaderSub.textContent = "Sonuç burada yönetici özeti formatında gösterilir.";
         howToUseHeaderTitle.textContent = "Nasıl Kullanılır? (How to Use Guide)";
+
+        if (heroMainHeading) heroMainHeading.textContent = "Excel Wizard, elinizle yaptığınız Excel işlemlerini sesiniz ve yazılı komutunuz ile yapmanızı sağlar.";
+        if (heroSubHeading) heroSubHeading.textContent = "Excel Wizard, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir çalışma alanında çalıştırın; verileriniz üzerinde sesli veya yazılı Excel komutları verin.";
+        if (homeLinkText) homeLinkText.textContent = "← Ana Sayfa";
+        if (navLabelCategories) navLabelCategories.textContent = "KATEGORİLER";
+        if (langSelectLabel) langSelectLabel.textContent = "Ses & Metin Dili (Voice & Prompt Language):";
+
+        if (subBusiness) subBusiness.textContent = "Sesli & yazılı Excel komutları";
+        if (subCategory) subCategory.textContent = "Kategori & sektör analizi";
+        if (subPrice) subPrice.textContent = "Merchant benchmark";
+        if (subAction) subAction.textContent = "Aksiyon planı";
+        if (subFunnel) subFunnel.textContent = "Dönüşüm & stok riski";
+        if (subExcel) subExcel.textContent = "Rapor çıktıları";
+        if (labelUpload) labelUpload.textContent = "Veri Kaynakları Yükle";
+        if (subUpload) subUpload.textContent = "Excel / CSV Yükleme";
       }
 
       renderHowToUse();
