@@ -2604,13 +2604,13 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 20px;">📈</span>
                 <div>
-                  <h3 id="resultHeaderTitle" style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--text-900);">Analiz Çıktısı</h3>
-                  <p id="resultHeaderSub" style="font-size: 12px; color: var(--text-500);">Sonuç burada yönetici özeti formatında gösterilir.</p>
+                  <h3 id="resultHeaderTitle" style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--text-900);">Analytical Output</h3>
+                  <p id="resultHeaderSub" style="font-size: 12px; color: var(--text-500);">Executive summary and data table outputs are displayed here.</p>
                 </div>
               </div>
-              <button class="ghost-btn" onclick="clearResult()" id="clearBtnLabel" style="font-size: 12.5px;">Temizle</button>
+              <button class="ghost-btn" onclick="clearResult()" id="clearBtnLabel" style="font-size: 12.5px;">Clear</button>
             </div>
-            <div class="result-box placeholder" id="resultBox" style="min-height: 280px; width: 100%;">Modüllerden birini seç ve sesle veya yazıyla sorunu sorup analizi başlat.</div>
+            <div class="result-box placeholder" id="resultBox" style="min-height: 280px; width: 100%;">Select a module on the left and start the analysis using voice or text.</div>
           </div>
         </div>
       </section>
@@ -2627,7 +2627,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           <div style="width: 42px; height: 42px; border-radius: 12px; background: #ecfdf5; border: 1px solid #10b981; display: grid; place-items: center; font-size: 20px;">📊</div>
           <div>
             <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--text-900);" id="modalTableTitle">Excel Data & Column Viewer</h3>
-            <p style="font-size: 12px; color: var(--text-500);">Canlı Excel tablosu önizlemesi, filtreleme ve sütun analizi</p>
+            <p style="font-size: 12px; color: var(--text-500);" id="modalTableSub">Live spreadsheet preview, row search & column analysis</p>
           </div>
         </div>
         <button onclick="closeExcelPreview()" style="background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; font-weight: 700; cursor: pointer; color: var(--text-700); display: grid; place-items: center; transition: background 0.2s;">✕</button>
@@ -2635,8 +2635,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
       <!-- Modal Toolbar & Search -->
       <div style="padding: 12px 28px; background: #ffffff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 14px;">
-        <input type="text" id="modalTableSearch" oninput="filterPreviewTable(this.value)" placeholder="🔍 Tablo içinde ara (SKU, Marka, Kategori)..." style="flex: 1; max-width: 400px; padding: 8px 14px; font-size: 12.5px; border: 1.4px solid var(--border); border-radius: 10px; outline: none;" />
-        <span style="font-size: 12.5px; color: var(--text-500); font-weight: 600;" id="modalRowCount">Gösterilen: 15 Satır</span>
+        <input type="text" id="modalTableSearch" oninput="filterPreviewTable(this.value)" placeholder="🔍 Search in table (SKU, Brand, Category)..." style="flex: 1; max-width: 400px; padding: 8px 14px; font-size: 12.5px; border: 1.4px solid var(--border); border-radius: 10px; outline: none;" />
+        <span style="font-size: 12.5px; color: var(--text-500); font-weight: 600;" id="modalRowCount">Showing: 15 Rows</span>
       </div>
 
       <!-- Modal Table Content -->
@@ -2646,8 +2646,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
       <!-- Modal Footer -->
       <div style="padding: 16px 28px; border-top: 1px solid var(--border); background: var(--bg-2); display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 12px; color: #10b981; font-weight: 700;">✓ Excel verisi analize hazır durumdadır.</span>
-        <button onclick="closeExcelPreview()" class="primary-btn" style="padding: 8px 20px; font-size: 13px;">Kapat</button>
+        <span style="font-size: 12px; color: #10b981; font-weight: 700;" id="modalStatusText">✓ Excel data is loaded and ready for AI analysis.</span>
+        <button onclick="closeExcelPreview()" class="primary-btn" style="padding: 8px 20px; font-size: 13px;" id="modalCloseBtn">Close</button>
       </div>
     </div>
   </div>
@@ -2975,6 +2975,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const labelUpload = document.getElementById("label_data_upload");
       const subUpload = document.getElementById("sub_data_upload");
 
+      const modalTableSub = document.getElementById("modalTableSub");
+      const modalTableSearch = document.getElementById("modalTableSearch");
+      const modalStatusText = document.getElementById("modalStatusText");
+      const modalCloseBtn = document.getElementById("modalCloseBtn");
+
       if (lang === 'en') {
         btnTR.style.background = "#ffffff";
         btnTR.style.borderColor = "var(--border)";
@@ -3009,6 +3014,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         if (subExcel) subExcel.textContent = "Analytical reports";
         if (labelUpload) labelUpload.textContent = "Upload Data Sources";
         if (subUpload) subUpload.textContent = "Excel / CSV Upload";
+
+        if (modalTableSub) modalTableSub.textContent = "Live spreadsheet preview, row search & column analysis";
+        if (modalTableSearch) modalTableSearch.placeholder = "🔍 Search in table (SKU, Brand, Category)...";
+        if (modalStatusText) modalStatusText.textContent = "✓ Excel data is loaded and ready for AI analysis.";
+        if (modalCloseBtn) modalCloseBtn.textContent = "Close";
       } else {
         btnEN.style.background = "#ffffff";
         btnEN.style.borderColor = "var(--border)";
@@ -3043,6 +3053,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         if (subExcel) subExcel.textContent = "Rapor çıktıları";
         if (labelUpload) labelUpload.textContent = "Veri Kaynakları Yükle";
         if (subUpload) subUpload.textContent = "Excel / CSV Yükleme";
+
+        if (modalTableSub) modalTableSub.textContent = "Canlı Excel tablosu önizlemesi, filtreleme ve sütun analizi";
+        if (modalTableSearch) modalTableSearch.placeholder = "🔍 Tablo içinde ara (SKU, Marka, Kategori)...";
+        if (modalStatusText) modalStatusText.textContent = "✓ Excel verisi analize hazır durumdadır.";
+        if (modalCloseBtn) modalCloseBtn.textContent = "Kapat";
       }
 
       renderHowToUse();
