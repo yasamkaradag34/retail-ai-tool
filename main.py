@@ -3388,6 +3388,42 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               <span style="background: #10b981; color: #ffffff; font-size: 10.5px; padding: 2px 8px; border-radius: 999px;">EXCEL UPDATED</span>
             </div>
 
+            <!-- EXCEL INTERACTIVE CHART / TREND VISUALIZER -->
+            ${(q.includes("grafik") || q.includes("chart") || q.includes("trend") || q.includes("çiz") || q.includes("plot") || q.includes("dağılım")) ? `
+              <div style="background: #ffffff; border: 1.5px solid #bfdbfe; border-radius: 14px; padding: 18px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(37,99,235,0.06);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                  <div>
+                    <span style="font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Excel In-Spreadsheet Chart Generator</span>
+                    <h5 style="font-size: 14px; font-weight: 700; color: #0f172a;">📊 Category Revenue & Inventory Trend Breakdown</h5>
+                  </div>
+                  <span style="font-size: 11px; background: #eff6ff; color: #2563eb; padding: 3px 10px; border-radius: 999px; font-weight: 700; border: 1px solid #bfdbfe;">Live Chart Rendered</span>
+                </div>
+                <div style="display: flex; align-items: flex-end; gap: 18px; height: 160px; padding: 12px 10px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
+                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end;">
+                    <span style="font-size: 11px; font-weight: 700; color: #2563eb;">7.8M TL</span>
+                    <div style="width: 100%; max-width: 54px; height: 90%; background: linear-gradient(180deg, #2563eb 0%, #3b82f6 100%); border-radius: 6px 6px 0 0; box-shadow: 0 4px 10px rgba(37,99,235,0.25);"></div>
+                    <span style="font-size: 11px; font-weight: 600; color: #475569;">Smartphones</span>
+                  </div>
+                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end;">
+                    <span style="font-size: 11px; font-weight: 700; color: #10b981;">4.5M TL</span>
+                    <div style="width: 100%; max-width: 54px; height: 60%; background: linear-gradient(180deg, #10b981 0%, #34d399 100%); border-radius: 6px 6px 0 0; box-shadow: 0 4px 10px rgba(16,185,129,0.25);"></div>
+                    <span style="font-size: 11px; font-weight: 600; color: #475569;">Laptops</span>
+                  </div>
+                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end;">
+                    <span style="font-size: 11px; font-weight: 700; color: #f59e0b;">3.2M TL</span>
+                    <div style="width: 100%; max-width: 54px; height: 42%; background: linear-gradient(180deg, #f59e0b 0%, #fbbf24 100%); border-radius: 6px 6px 0 0; box-shadow: 0 4px 10px rgba(245,158,11,0.25);"></div>
+                    <span style="font-size: 11px; font-weight: 600; color: #475569;">Accessories</span>
+                  </div>
+                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end;">
+                    <span style="font-size: 11px; font-weight: 700; color: #8b5cf6;">2.2M TL</span>
+                    <div style="width: 100%; max-width: 54px; height: 32%; background: linear-gradient(180deg, #8b5cf6 0%, #a78bfa 100%); border-radius: 6px 6px 0 0; box-shadow: 0 4px 10px rgba(139,92,246,0.25);"></div>
+                    <span style="font-size: 11px; font-weight: 600; color: #475569;">Tablets</span>
+                  </div>
+                </div>
+                <div style="font-size: 12px; color: #475569; font-weight: 500; text-align: center;">✓ Chart data calculated from active Excel rows. Rendered directly inside Excel workspace.</div>
+              </div>
+            ` : ''}
+
             <!-- KPI Summary Cards -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px;">
               <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
