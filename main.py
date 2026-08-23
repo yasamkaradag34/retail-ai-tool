@@ -3278,97 +3278,16 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     menuButtons.forEach(btn => btn.addEventListener("click", () => renderModule(btn.dataset.key)));
 
-    /* ── Voice-to-Excel SpeechRecognition Engine (Bilingual TR / EN) ── */
-    let recognition = null;
-    let isListening = false;
-
-    function toggleVoiceRecognition() {
-      const voiceBtn = document.getElementById("voiceBtn");
-      const voiceIcon = document.getElementById("voiceIcon");
-      const voiceText = document.getElementById("voiceText");
-      const questionInput = document.getElementById("questionInput");
-
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert(currentLang === 'en' ? "Your browser does not support live speech recognition. Please use Google Chrome, Edge, or Safari." : "Tarayıcınız canlı ses tanımayı desteklemiyor. Lütfen Chrome, Edge veya Safari kullanın.");
-        return;
-      }
-
-      if (isListening) {
-        if (recognition) recognition.stop();
-        return;
-      }
-
-      recognition = new SpeechRecognition();
-      recognition.lang = (currentLang === 'en') ? 'en-US' : 'tr-TR';
-      recognition.interimResults = true;
-      recognition.continuous = false;
-
-      recognition.onstart = function() {
-        isListening = true;
-        voiceBtn.style.background = "#fee2e2";
-        voiceBtn.style.borderColor = "#ef4444";
-        voiceBtn.style.color = "#dc2626";
-        voiceIcon.textContent = "🔴";
-        voiceText.textContent = (currentLang === 'en') ? "Listening..." : "Dinleniyor...";
-        questionInput.placeholder = (currentLang === 'en') 
-          ? "Listening in English... Speak your Excel command (e.g. Calculate average price for APPLE)" 
-          : "Dinleniyor... Lütfen Excel komutunuzu söyleyin (Örn: APPLE stok tutarını hesapla)";
-      };
-
-      recognition.onresult = function(event) {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        questionInput.value = transcript;
-      };
-
-      recognition.onerror = function(event) {
-        console.error("Speech error:", event.error);
-        stopListeningUI();
-        let errMsg = "";
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-          errMsg = (currentLang === 'en')
-            ? "⚠️ Microphone permission denied. Please click the 🔒 lock / 🎙️ mic icon near your browser address bar (dataprovido.com) and click 'Allow' for Microphone."
-            : "⚠️ Mikrofon izni engellendi. Lütfen tarayıcı adres çubuğundaki (dataprovido.com) 🔒 kilit / 🎙️ simgesine tıklayıp Mikrofon İznini 'İzin Ver' olarak değiştirin.";
-        } else if (event.error === 'no-speech') {
-          errMsg = (currentLang === 'en')
-            ? "⚠️ No speech detected. Please speak into your microphone and try again."
-            : "⚠️ Ses algılanamadı. Lütfen mikrofona konuşarak tekrar deneyin.";
-        } else if (event.error === 'audio-capture') {
-          errMsg = (currentLang === 'en')
-            ? "⚠️ No microphone input device found on your computer."
-            : "⚠️ Bilgisayarınızda bağlı mikrofon bulunamadı.";
-        } else {
-          errMsg = (currentLang === 'en')
-            ? "⚠️ Voice recognition notice: " + event.error
-            : "⚠️ Ses tanıma uyarısı: " + event.error;
-        }
-        alert(errMsg);
-      };
-
-      recognition.onend = function() {
-        stopListeningUI();
-        if (questionInput.value.trim().length > 0) {
-          resultBox.className = "result-box placeholder";
-          const titleMsg = (currentLang === 'en') ? "✨ Voice Command Recognized (EN):" : "✨ Sesli Excel Komutu Algılandı:";
-          const subMsg = (currentLang === 'en') ? "Click <b>'Run Analysis'</b> or press Command+Enter to execute." : "Çalıştırmak için <b>'Çalıştır'</b> butonuna basın veya Command+Enter'a dokunun.";
-          resultBox.innerHTML = "<div style='color: #10b981; font-weight: 600; text-align: center;'>" + titleMsg + "<br><span style='font-size: 15px; color: #0f172a; display: block; margin: 6px 0;'>&quot;" + questionInput.value + "&quot;</span><span style='font-size: 12px; color: #64748b; font-weight: normal;'>" + subMsg + "</span></div>";
-        }
-      };
-
-      function stopListeningUI() {
-        isListening = false;
-        voiceBtn.style.background = "#fff8f4";
-        voiceBtn.style.borderColor = "var(--border-orange)";
-        voiceBtn.style.color = "var(--orange)";
-        voiceIcon.textContent = "🎙️";
-        voiceText.textContent = (currentLang === 'en') ? "Voice Command" : "Sesle Söyle";
-      }
-
-      recognition.start();
-    }
+    // Explicitly attach all interactive handlers to window object for global HTML onclick availability
+    window.toggleVoiceRecognition = toggleVoiceRecognition;
+    window.setLanguage = setLanguage;
+    window.openExcelPreview = openExcelPreview;
+    window.closeExcelPreview = closeExcelPreview;
+    window.downloadExcel = downloadExcel;
+    window.clearResult = clearResult;
+    window.runModule = runModule;
+    window.selectQuestion = selectQuestion;
+    window.toggleHowToUse = toggleHowToUse;
 
     /* ── Live Interactive Excel Spreadsheet Data Engine ── */
     let currentSpreadsheetData = [
