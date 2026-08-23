@@ -1990,7 +1990,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Excel Wizard & Retail AI Console – DataProvido</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1998,17 +1998,21 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       --orange:       #f26f26;
       --orange-dark:  #d85c18;
       --orange-light: #f58c50;
+      --blue:         #2563eb;
+      --blue-dark:    #1d4ed8;
+      --blue-light:   #3b82f6;
       --bg:           #ffffff;
-      --bg-2:         #f9fafb;
-      --bg-3:         #f1f3f5;
-      --text-900:     #292c2f;
-      --text-700:     #4e5359;
-      --text-500:     #6b7178;
-      --text-dim:     #a3acb6;
-      --border:       #dadee2;
+      --bg-2:         #f8fafc;
+      --bg-3:         #f1f5f9;
+      --text-900:     #0f172a;
+      --text-700:     #334155;
+      --text-500:     #64748b;
+      --text-dim:     #94a3b8;
+      --border:       #e2e8f0;
+      --border-blue:  rgba(37,99,235,0.22);
       --border-orange: rgba(242,111,38,0.22);
       --panel-bg:     #ffffff;
-      --card-shadow:  0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+      --card-shadow:  0 4px 20px rgba(15,23,42,0.05), 0 1px 3px rgba(15,23,42,0.03);
     }
 
     html, body { height: 100%; }
@@ -2017,96 +2021,98 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       min-height: 100vh;
       background: var(--bg);
       color: var(--text-900);
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
     .app-shell {
       display: grid;
-      grid-template-columns: 260px 1fr;
+      grid-template-columns: 270px 1fr;
       height: 100vh;
       position: relative;
     }
 
-    /* ── SIDEBAR ── */
+    /* ── SIDEBAR (IMPECCABLE DESIGN LANGUAGE) ── */
     .sidebar {
-      background: var(--bg);
-      padding: 24px 20px;
+      background: #ffffff;
+      padding: 26px 20px;
       color: var(--text-900);
       display: flex;
       flex-direction: column;
       border-right: 1px solid var(--border);
-      box-shadow: 2px 0 8px rgba(0,0,0,0.04);
+      box-shadow: 4px 0 16px rgba(15,23,42,0.02);
+      z-index: 10;
     }
 
     .brand {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding-bottom: 20px;
+      padding-bottom: 22px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 18px;
+      margin-bottom: 20px;
     }
 
     .brand-icon {
-      width: 40px; height: 40px;
+      width: 42px; height: 42px;
       border-radius: 12px;
-      background: var(--orange);
+      background: linear-gradient(135deg, #f26f26 0%, #2563eb 100%);
       display: grid;
       place-items: center;
       color: #fff;
-      font-family: 'Playfair Display', serif;
-      font-size: 20px;
-      font-weight: 700;
-      box-shadow: 0 4px 14px rgba(242,111,38,0.30);
+      font-family: 'Outfit', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      box-shadow: 0 4px 14px rgba(37,99,235,0.25);
       flex-shrink: 0;
     }
 
     .brand h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 18px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 19px;
       line-height: 1.1;
-      letter-spacing: -0.01em;
-      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-weight: 800;
       color: var(--text-900);
     }
     .brand p {
       margin-top: 3px;
-      font-size: 11px;
+      font-size: 11.5px;
       color: var(--text-500);
-      font-weight: 500;
+      font-weight: 600;
       letter-spacing: 0.2px;
     }
 
     .nav-label {
-      font-size: 10px;
-      letter-spacing: 0.14em;
-      color: #64748b;
+      font-size: 10.5px;
+      letter-spacing: 0.12em;
+      color: #94a3b8;
       text-transform: uppercase;
-      font-weight: 700;
+      font-weight: 800;
       margin: 18px 10px 10px;
     }
 
-    .menu { display: flex; flex-direction: column; gap: 6px; }
+    .menu { display: flex; flex-direction: column; gap: 8px; }
 
     .menu-btn {
-      border: 1px solid #e2e8f0;
+      border: 1px solid #f1f5f9;
       width: 100%;
       text-align: left;
       cursor: pointer;
-      border-radius: 12px;
+      border-radius: 14px;
       background: #ffffff;
       color: #334155;
-      padding: 12px 16px;
-      font-family: 'Inter', sans-serif;
+      padding: 13px 16px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 13.5px;
       line-height: 1.35;
       font-weight: 600;
-      transition: all 0.18s ease;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       display: flex;
       align-items: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-      margin-bottom: 2px;
+      box-shadow: 0 1px 3px rgba(15,23,42,0.02);
+      position: relative;
     }
 
     .menu-btn-text {
@@ -2119,12 +2125,13 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       color: #0f172a;
       font-weight: 700;
       font-size: 13.5px;
+      letter-spacing: -0.01em;
     }
 
     .menu-btn span span {
       display: block;
       margin-top: 3px;
-      font-size: 11px;
+      font-size: 11.5px;
       color: #64748b;
       font-weight: 400;
     }
@@ -2133,23 +2140,25 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       background: #f8fafc;
       border-color: #cbd5e1;
       color: #0f172a;
-      transform: translateX(2px);
+      transform: translateX(3px);
     }
 
     .menu-btn.active {
-      background: #eff6ff;
-      border-color: #2563eb;
+      background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+      border-color: #bfdbfe;
       border-left: 4px solid #2563eb;
-      color: #1e40af;
-      box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+      color: #1d4ed8;
+      box-shadow: 0 4px 14px rgba(37,99,235,0.08);
     }
 
     .menu-btn.active .menu-btn-text strong {
-      color: #1e40af;
+      color: #1d4ed8;
+      font-weight: 800;
     }
 
     .menu-btn.active span span {
-      color: #3b82f6;
+      color: #2563eb;
+      font-weight: 500;
     }
 
     .menu-btn.active span { color: var(--orange-light); }
