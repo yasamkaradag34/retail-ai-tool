@@ -2676,9 +2676,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
   <script>
     /* ── Global State ── */
-    let currentLang = 'en';
-    let currentModule = 'business_calculator';
-    let isHowToUseOpen = false;
+    var currentLang = 'en';
+    var currentModule = 'business_calculator';
+    var isHowToUseOpen = false;
+    var recognition = null;
+    var isListening = false;
 
     /* ── How to Use Guide Content ── */
     const howToUseGuide = {
@@ -3128,8 +3130,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     menuButtons.forEach(btn => btn.addEventListener("click", () => renderModule(btn.dataset.key)));
 
     /* ── Voice-to-Excel SpeechRecognition Engine (Bilingual TR / EN) ── */
-    let recognition = null;
-    let isListening = false;
 
     function toggleVoiceRecognition() {
       const voiceBtn = document.getElementById("voiceBtn");
@@ -3169,14 +3169,16 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         recognition.onstart = function() {
           isListening = true;
           voiceBtn.classList.add("voice-listening-active");
-          voiceBtn.style.background = "#fee2e2";
-          voiceBtn.style.borderColor = "#ef4444";
-          voiceBtn.style.color = "#dc2626";
-          voiceIcon.innerHTML = `<div class="sound-wave-bars"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>`;
-          voiceText.textContent = (currentLang === 'en') ? "Listening..." : "Dinleniyor...";
+          voiceBtn.style.background = "#fff1f2";
+          voiceBtn.style.borderColor = "#f43f5e";
+          voiceBtn.style.color = "#e11d48";
+          voiceIcon.innerHTML = `<div style="display: flex; align-items: center; gap: 4px;"><div class="sound-wave-bars"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></div>`;
+          voiceText.innerHTML = (currentLang === 'en') 
+            ? `<span style="font-size: 11px; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 1px;"><span>🔴 Recording...</span><span style="font-size: 9.5px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.04em; color: #be123c;">(Click to Stop)</span></span>` 
+            : `<span style="font-size: 11px; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 1px;"><span>🔴 Dinleniyor...</span><span style="font-size: 9.5px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.04em; color: #be123c;">(Durdurmak İçin Tıkla)</span></span>`;
           questionInput.placeholder = (currentLang === 'en') 
-            ? "🔴 Google AI Listening... Speak your Excel command now" 
-            : "🔴 Dinleniyor... Lütfen Excel komutunuzu söyleyin";
+            ? "🔴 Listening... Speak your Excel command now. Click '(Click to Stop)' button when finished..." 
+            : "🔴 Dinleniyor... Lütfen Excel komutunuzu söyleyin. Bitirdiğinizde '(Durdurmak İçin Tıkla)' butonuna basın...";
         };
 
         recognition.onresult = function(event) {
@@ -3316,9 +3318,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       setTimeout(() => {
         resultBox.classList.remove("loading");
         
-        const q = question.toLowerCase();
-        let actionNote = "";
-
         const q = question.toLowerCase();
         let actionNote = "";
         let mutatedCount = 0;
@@ -3567,9 +3566,9 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     }
 
     function downloadExcel() {
-      let csvContent = "SKU,Product Name,Category,Price (TL),Competitor Price (TL),Stock,Revenue (TL),Status\n";
+      let csvContent = "SKU,Product Name,Category,Price (TL),Competitor Price (TL),Stock,Revenue (TL),Status\\n";
       currentSpreadsheetData.forEach(r => {
-        csvContent += `"${r.SKU}","${r.Name}","${r.Category}",${r.Price},${r.CompPrice},${r.Stock},${r.Revenue},"${r.Status}"\n`;
+        csvContent += `"${r.SKU}","${r.Name}","${r.Category}",${r.Price},${r.CompPrice},${r.Stock},${r.Revenue},"${r.Status}"\\n`;
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
