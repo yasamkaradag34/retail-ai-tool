@@ -2565,10 +2565,13 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               <h3 class="module-title" id="moduleTitle" style="font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.02em;">Excel Wizard</h3>
               <p class="module-desc" id="moduleDesc" style="font-size: 13.5px; color: #475569; line-height: 1.6; font-weight: 400; max-width: 760px;">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
             </div>
-            <!-- TOP RIGHT LANGUAGE SWITCHER PILLS -->
-            <div style="display: flex; gap: 4px; background: #f8fafc; padding: 4px; border-radius: 12px; border: 1px solid #e2e8f0; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
-              <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid #2563eb; background: #2563eb; color: #ffffff; padding: 7px 16px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 2px 6px rgba(37,99,235,0.20);">English Voice</button>
-              <button id="langBtnTR" onclick="setLanguage('tr')" type="button" style="border: 1px solid transparent; background: transparent; color: #475569; padding: 7px 16px; border-radius: 9px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.18s;">Turkish Voice</button>
+            <!-- TOP RIGHT LANGUAGE SWITCHER PILLS & UX TOAST BADGE -->
+            <div style="position: relative; flex-shrink: 0;">
+              <div id="langToastBadge" style="display: none; position: absolute; top: -38px; right: 0; background: #0f172a; color: #ffffff; font-size: 11.5px; font-weight: 700; padding: 6px 14px; border-radius: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.18); transition: all 0.25s ease; z-index: 99; white-space: nowrap; pointer-events: none;">🌐 Voice Mode Switched</div>
+              <div style="display: flex; gap: 4px; background: #f8fafc; padding: 4px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
+                <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid #2563eb; background: #2563eb; color: #ffffff; padding: 7px 16px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 2px 6px rgba(37,99,235,0.20);">English Voice</button>
+                <button id="langBtnTR" onclick="setLanguage('tr')" type="button" style="border: 1px solid transparent; background: transparent; color: #475569; padding: 7px 16px; border-radius: 9px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.18s;">Turkish Voice</button>
+              </div>
             </div>
           </div>
 
@@ -2864,6 +2867,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       }
     };
 
+    let langToastTimer = null;
+
     function setLanguage(lang) {
       currentLang = lang;
       const btnTR = document.getElementById("langBtnTR");
@@ -2876,6 +2881,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const resultHeaderTitle = document.getElementById("resultHeaderTitle");
       const resultHeaderSub = document.getElementById("resultHeaderSub");
       const howToUseHeaderTitle = document.getElementById("howToUseHeaderTitle");
+      const toast = document.getElementById("langToastBadge");
 
       const heroMainHeading = document.getElementById("heroMainHeading");
       const heroSubHeading = document.getElementById("heroSubHeading");
@@ -2899,15 +2905,21 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       if (lang === 'en') {
         btnTR.style.background = "transparent";
         btnTR.style.borderColor = "transparent";
-        btnTR.style.color = "var(--text-700)";
+        btnTR.style.color = "#475569";
         btnTR.style.fontWeight = "600";
         btnTR.style.boxShadow = "none";
         
-        btnEN.style.background = "var(--orange)";
-        btnEN.style.borderColor = "var(--orange)";
+        btnEN.style.background = "#2563eb";
+        btnEN.style.borderColor = "#2563eb";
         btnEN.style.color = "#ffffff";
         btnEN.style.fontWeight = "700";
-        btnEN.style.boxShadow = "0 2px 6px rgba(242,111,38,0.20)";
+        btnEN.style.boxShadow = "0 2px 8px rgba(37,99,235,0.30)";
+
+        if (toast) {
+          toast.textContent = "🌐 Voice Mode: English (en-US)";
+          toast.style.display = "block";
+          toast.style.opacity = "1";
+        }
 
         if (!isListening) voiceText.textContent = "Voice Command";
         runBtnLabel.textContent = "Run Analysis";
@@ -2939,15 +2951,21 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       } else {
         btnEN.style.background = "transparent";
         btnEN.style.borderColor = "transparent";
-        btnEN.style.color = "var(--text-700)";
+        btnEN.style.color = "#475569";
         btnEN.style.fontWeight = "600";
         btnEN.style.boxShadow = "none";
 
-        btnTR.style.background = "var(--orange)";
-        btnTR.style.borderColor = "var(--orange)";
+        btnTR.style.background = "#2563eb";
+        btnTR.style.borderColor = "#2563eb";
         btnTR.style.color = "#ffffff";
         btnTR.style.fontWeight = "700";
-        btnTR.style.boxShadow = "0 2px 6px rgba(242,111,38,0.20)";
+        btnTR.style.boxShadow = "0 2px 8px rgba(37,99,235,0.30)";
+
+        if (toast) {
+          toast.textContent = "🌐 Ses Modu: Türkçe (tr-TR)";
+          toast.style.display = "block";
+          toast.style.opacity = "1";
+        }
 
         if (!isListening) voiceText.textContent = "Voice Command";
         runBtnLabel.textContent = "Run Analysis";
@@ -2977,6 +2995,14 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         if (modalStatusText) modalStatusText.textContent = "✓ Excel verisi analize hazır durumdadır.";
         if (modalCloseBtn) modalCloseBtn.textContent = "Kapat";
       }
+
+      if (langToastTimer) clearTimeout(langToastTimer);
+      langToastTimer = setTimeout(() => {
+        if (toast) {
+          toast.style.opacity = "0";
+          setTimeout(() => { toast.style.display = "none"; }, 250);
+        }
+      }, 1200);
 
       renderHowToUse();
       const activeBtn = document.querySelector(".menu-btn.active");
@@ -3118,79 +3144,90 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       }
 
       if (isListening) {
-        if (recognition) recognition.stop();
+        if (recognition) { try { recognition.stop(); } catch(e){} }
         return;
       }
 
-      recognition = new SpeechRecognition();
-      recognition.lang = (currentLang === 'en') ? 'en-US' : 'tr-TR';
-      recognition.interimResults = true;
-      recognition.continuous = false;
-
-      recognition.onstart = function() {
-        isListening = true;
-        voiceBtn.classList.add("voice-listening-active");
-        voiceIcon.innerHTML = `<div class="sound-wave-bars"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>`;
-        voiceText.textContent = (currentLang === 'en') ? "Listening..." : "Dinleniyor...";
-        questionInput.placeholder = (currentLang === 'en') 
-          ? "🔴 Google AI Listening... Speak your Excel command (e.g. Calculate average price for APPLE)" 
-          : "🔴 Dinleniyor... Lütfen Excel komutunuzu söyleyin (Örn: APPLE stok tutarını hesapla)";
-      };
-
-      recognition.onresult = function(event) {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        questionInput.value = transcript;
-        updateRunButtonState();
-      };
-
-      recognition.onerror = function(event) {
-        console.error("Speech error:", event.error);
-        stopListeningUI();
-        let errMsg = "";
-        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-          errMsg = (currentLang === 'en')
-            ? "⚠️ Microphone permission denied. Please click the 🔒 lock / 🎙️ mic icon near your browser address bar (dataprovido.com) and click 'Allow' for Microphone."
-            : "⚠️ Mikrofon izni engellendi. Lütfen tarayıcı adres çubuğundaki (dataprovido.com) 🔒 kilit / 🎙️ simgesine tıklayıp Mikrofon İznini 'İzin Ver' olarak değiştirin.";
-        } else if (event.error === 'no-speech') {
-          errMsg = (currentLang === 'en')
-            ? "⚠️ No speech detected. Please speak into your microphone and try again."
-            : "⚠️ Ses algılanamadı. Lütfen mikrofona konuşarak tekrar deneyin.";
-        } else if (event.error === 'audio-capture') {
-          errMsg = (currentLang === 'en')
-            ? "⚠️ No microphone input device found on your computer."
-            : "⚠️ Bilgisayarınızda bağlı mikrofon bulunamadı.";
-        } else {
-          errMsg = (currentLang === 'en')
-            ? "⚠️ Voice recognition notice: " + event.error
-            : "⚠️ Ses tanıma uyarısı: " + event.error;
-        }
-        alert(errMsg);
-      };
-
-      recognition.onend = function() {
-        stopListeningUI();
-        if (questionInput.value.trim().length > 0) {
-          resultBox.className = "result-box placeholder";
-          const titleMsg = (currentLang === 'en') ? "✨ Voice Command Recognized (EN):" : "✨ Sesli Excel Komutu Algılandı:";
-          const subMsg = (currentLang === 'en') ? "Click <b>'Run Analysis'</b> or press Command+Enter to execute." : "Çalıştırmak için <b>'Çalıştır'</b> butonuna basın veya Command+Enter'a dokunun.";
-          resultBox.innerHTML = "<div style='color: #10b981; font-weight: 600; text-align: center;'>" + titleMsg + "<br><span style='font-size: 15px; color: #0f172a; display: block; margin: 6px 0;'>&quot;" + questionInput.value + "&quot;</span><span style='font-size: 12px; color: #64748b; font-weight: normal;'>" + subMsg + "</span></div>";
-        }
-      };
-
-      function stopListeningUI() {
-        isListening = false;
-        voiceBtn.classList.remove("voice-listening-active");
-        voiceBtn.style.background = "#ffffff";
-        voiceBtn.style.borderColor = "#cbd5e1";
-        voiceBtn.style.color = "#2563eb";
-        voiceIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`;
-        voiceText.textContent = "Voice Command";
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(() => {
+          startSpeechEngine();
+        }).catch(err => {
+          alert(currentLang === 'en'
+            ? "⚠️ Microphone access permission was denied or not granted. Please allow microphone access in your browser."
+            : "⚠️ Mikrofon erişim izni engellendi veya verilmedi. Lütfen tarayıcı ayarlarından mikrofona izin verin.");
+        });
+      } else {
+        startSpeechEngine();
       }
 
-      recognition.start();
+      function startSpeechEngine() {
+        recognition = new SpeechRecognition();
+        recognition.lang = (currentLang === 'en') ? 'en-US' : 'tr-TR';
+        recognition.interimResults = true;
+        recognition.continuous = true;
+
+        recognition.onstart = function() {
+          isListening = true;
+          voiceBtn.classList.add("voice-listening-active");
+          voiceBtn.style.background = "#fee2e2";
+          voiceBtn.style.borderColor = "#ef4444";
+          voiceBtn.style.color = "#dc2626";
+          voiceIcon.innerHTML = `<div class="sound-wave-bars"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>`;
+          voiceText.textContent = (currentLang === 'en') ? "Listening..." : "Dinleniyor...";
+          questionInput.placeholder = (currentLang === 'en') 
+            ? "🔴 Google AI Listening... Speak your Excel command now" 
+            : "🔴 Dinleniyor... Lütfen Excel komutunuzu söyleyin";
+        };
+
+        recognition.onresult = function(event) {
+          let transcript = "";
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+          }
+          if (transcript.trim()) {
+            questionInput.value = transcript;
+            updateRunButtonState();
+          }
+        };
+
+        recognition.onerror = function(event) {
+          console.error("Speech error:", event.error);
+          stopListeningUI();
+          if (event.error === 'no-speech') return;
+          let errMsg = (currentLang === 'en')
+            ? "⚠️ Voice recognition notice: " + event.error
+            : "⚠️ Ses tanıma uyarısı: " + event.error;
+          if (event.error === 'not-allowed') {
+            errMsg = (currentLang === 'en')
+              ? "⚠️ Microphone permission denied in browser settings."
+              : "⚠️ Tarayıcı ayarlarında mikrofon izni verilmedi.";
+          }
+          alert(errMsg);
+        };
+
+        recognition.onend = function() {
+          stopListeningUI();
+          if (questionInput.value.trim().length > 0) {
+            updateRunButtonState();
+          }
+        };
+
+        function stopListeningUI() {
+          isListening = false;
+          voiceBtn.classList.remove("voice-listening-active");
+          voiceBtn.style.background = "#ffffff";
+          voiceBtn.style.borderColor = "#cbd5e1";
+          voiceBtn.style.color = "#2563eb";
+          voiceIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`;
+          voiceText.textContent = "Voice Command";
+        }
+
+        try {
+          recognition.start();
+        } catch(e) {
+          console.error("Start error:", e);
+        }
+      }
     }
 
     function toggleHowToUse() {
