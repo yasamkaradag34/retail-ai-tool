@@ -2038,7 +2038,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     body {
       min-height: 100vh;
-      background: var(--bg);
+      background: linear-gradient(180deg, #f26f26 0%, #d85c18 100%);
       color: var(--text-900);
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       overflow: hidden;
@@ -2050,6 +2050,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       grid-template-columns: 270px 1fr;
       height: 100vh;
       position: relative;
+      background: linear-gradient(180deg, #f26f26 0%, #d85c18 100%);
     }
 
     /* ── SIDEBAR (HOMEPAGE ORANGE DESIGN) ── */
