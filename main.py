@@ -2192,16 +2192,19 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     .menu-btn.active span { color: var(--orange-light); }
 
     /* ── MAIN ── */
+    /* ── MAIN (HOMEPAGE ORANGE THEME) ── */
     .main {
       height: 100vh;
       overflow: auto;
-      padding: 24px 30px 28px;
-      background: linear-gradient(160deg, #fff8f4 0%, #ffffff 60%, #f4f8ff 100%);
+      padding: 24px 32px 28px;
+      background: linear-gradient(180deg, #f26f26 0%, #d85c18 100%);
+      display: flex;
+      flex-direction: column;
       scrollbar-width: thin;
-      scrollbar-color: rgba(242,111,38,0.20) transparent;
+      scrollbar-color: rgba(255,255,255,0.4) transparent;
     }
     .main::-webkit-scrollbar { width: 4px; }
-    .main::-webkit-scrollbar-thumb { background: rgba(242,111,38,0.25); border-radius: 4px; }
+    .main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.35); border-radius: 4px; }
 
     .topbar {
       display: flex;
@@ -2212,7 +2215,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     .page-title p {
       font-size: 13.5px;
-      color: var(--text-700);
+      color: rgba(255,255,255,0.92);
       max-width: 820px;
       line-height: 1.65;
       font-weight: 400;
@@ -2220,39 +2223,44 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     .home-link {
       text-decoration: none;
-      background: #fff;
-      color: var(--text-700);
-      border: 1.5px solid var(--border);
+      background: rgba(255,255,255,0.20);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.35);
       border-radius: 999px;
       padding: 9px 18px;
       font-family: 'Inter', sans-serif;
       font-size: 12.5px;
       font-weight: 600;
-      transition: all 0.15s ease;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      transition: all 0.18s ease;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.10);
+      backdrop-filter: blur(8px);
       white-space: nowrap;
     }
     .home-link:hover {
-      border-color: var(--orange);
-      color: var(--orange);
+      background: #ffffff;
+      color: #d85c18;
+      border-color: #ffffff;
     }
 
-    /* ── WORKSPACE ── */
+    /* ── WORKSPACE (EXTENDS TO SIDEBAR BOTTOM) ── */
     .workspace {
       display: flex;
       flex-direction: column;
       gap: 20px;
       width: 100%;
+      flex: 1;
     }
 
     .module-panel {
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 28px 32px;
-      box-shadow: var(--card-shadow);
+      background: #ffffff;
+      border: 1px solid rgba(255,255,255,0.30);
+      border-radius: 24px;
+      padding: 32px 36px;
+      box-shadow: 0 10px 36px rgba(0,0,0,0.15);
       width: 100%;
-      min-height: 520px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .module-head {
@@ -2615,7 +2623,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
       <div class="topbar" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 20px;">
         <div class="page-title" style="flex: 1; text-align: center; padding: 0 20px;">
-          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--text-900); letter-spacing: -0.01em; line-height: 1.3;" id="heroMainHeading">
+          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.01em; line-height: 1.3;" id="heroMainHeading">
             Excel Wizard allows you to perform your manual Excel tasks using your voice and text commands.
           </h2>
         </div>
@@ -2650,11 +2658,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           </div>
 
           <div class="input-area" style="margin-top: 0;">
-            <!-- EXCEL DRAG & DROP INTERACTIVE PROMPT DROPZONE (NO DASHED BORDER) -->
-            <div id="dropZoneContainer" style="position: relative; border: 1px solid #e2e8f0; border-radius: 20px; padding: 12px; background: #ffffff; transition: all 0.25s ease; margin-bottom: 20px; box-shadow: 0 4px 24px rgba(15,23,42,0.04);">
+            <!-- CLEAN EXCEL DRAG & DROP INTERACTIVE PROMPT AREA (NO OUTER WRAPPER BOX) -->
+            <div id="dropZoneContainer" style="position: relative; border: none; background: transparent; padding: 0; transition: all 0.25s ease; margin-bottom: 20px;">
               
               <!-- TOP FILE STATUS BAR / DROP BADGE -->
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; margin-bottom: 12px; background: #f8fafc; border-radius: 14px; border: 1px solid #f1f5f9;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; margin-bottom: 16px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(15,23,42,0.02);">
                 <div id="activeFileBadge" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155;">
                   <span id="activeFileIcon" style="color: #94a3b8; font-weight: 800;">📁</span>
                   <span>Active Dataset: <strong id="activeFileName" style="color: #0f172a;">There is no uploaded file</strong> <span id="activeFileMeta" style="color: #64748b; font-weight: 400;"></span></span>
@@ -2665,10 +2673,10 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
                 </label>
               </div>
 
-              <!-- DUAL PROMPT TEXTAREA & VOICE BUTTON (EXPANDED DOWNWARDS) -->
+              <!-- DUAL PROMPT TEXTAREA & VOICE BUTTON -->
               <div style="display: flex; gap: 14px; align-items: stretch;">
-                <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or drag & drop your Excel file here / use Voice Command)..." style="flex: 1; min-height: 165px; resize: vertical; padding: 16px 18px; font-size: 14.5px; color: #0f172a; border-radius: 14px; border: 1.5px solid #f1f5f9; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; line-height: 1.6; background: #fdfdfd;"></textarea>
-                <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #2563eb; padding: 14px 20px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; transition: all 0.2s; min-width: 140px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); align-self: stretch;">
+                <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or drag & drop your Excel file here / use Voice Command)..." style="flex: 1; min-height: 165px; resize: vertical; padding: 18px 20px; font-size: 14.5px; color: #0f172a; border-radius: 16px; border: 1.5px solid #cbd5e1; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; line-height: 1.6; background: #ffffff; box-shadow: 0 2px 10px rgba(15,23,42,0.03);"></textarea>
+                <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #2563eb; padding: 14px 20px; border-radius: 16px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; transition: all 0.2s; min-width: 140px; box-shadow: 0 2px 10px rgba(15,23,42,0.03); align-self: stretch;">
                   <span id="voiceIcon" style="display: block;">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
                   </span>
