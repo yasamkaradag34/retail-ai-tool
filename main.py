@@ -161,6 +161,16 @@ def get_logo():
     from fastapi.responses import FileResponse
     return FileResponse("logo.png", media_type="image/png")
 
+@app.get("/favicon.ico")
+def get_favicon_ico():
+    from fastapi.responses import FileResponse
+    return FileResponse("logo.png", media_type="image/png")
+
+@app.get("/favicon.png")
+def get_favicon_png():
+    from fastapi.responses import FileResponse
+    return FileResponse("logo.png", media_type="image/png")
+
 # ─────────────────────────────────────────────────────────────
 #  LLM BACKEND  (env var: LLM_BACKEND=groq | ollama)
 #  Local  → Ollama running on localhost:11434
@@ -1994,7 +2004,10 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Excel Wizard & Retail AI Console – DataProvido</title>
+  <title>Excel Wizard &amp; Retail AI Console – DataProvido</title>
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="shortcut icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/logo.png" />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -3788,6 +3801,9 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title} – DataProvido</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="shortcut icon" type="image/png" href="/logo.png">
+  <link rel="apple-touch-icon" href="/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 
@@ -5157,6 +5173,9 @@ def index():
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DataProvido – Turn Data Into Actionable Insights</title>
   <meta name="description" content="DataProvido transforms your CRM, funnel, and stock data into clear, actionable business insights. Local AI. Zero compromise.">
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="shortcut icon" type="image/png" href="/logo.png">
+  <link rel="apple-touch-icon" href="/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <style>
