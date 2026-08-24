@@ -2038,7 +2038,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     body {
       min-height: 100vh;
-      background: linear-gradient(180deg, #f26f26 0%, #d85c18 100%);
+      background: #f8fafc;
+      background-image: radial-gradient(circle at 50% 0%, rgba(242,111,38,0.08) 0%, transparent 65%);
       color: var(--text-900);
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       overflow: hidden;
@@ -2050,7 +2051,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       grid-template-columns: 270px 1fr;
       height: 100vh;
       position: relative;
-      background: linear-gradient(180deg, #f26f26 0%, #d85c18 100%);
+      background: #f8fafc;
     }
 
     /* ── SIDEBAR (HOMEPAGE ORANGE DESIGN) ── */
@@ -2192,20 +2193,20 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     .menu-btn.active span { color: var(--orange-light); }
 
-    /* ── MAIN ── */
-    /* ── MAIN (HOMEPAGE ORANGE THEME) ── */
+    /* ── MAIN (IMPECCABLE WARM SLATE THEME) ── */
     .main {
       height: 100vh;
       overflow: auto;
       padding: 24px 32px 28px;
-      background: linear-gradient(180deg, #f26f26 0%, #d85c18 100%);
+      background: #f8fafc;
+      background-image: radial-gradient(circle at 50% 0%, rgba(242,111,38,0.08) 0%, transparent 65%);
       display: flex;
       flex-direction: column;
       scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,0.4) transparent;
+      scrollbar-color: rgba(242,111,38,0.25) transparent;
     }
     .main::-webkit-scrollbar { width: 4px; }
-    .main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.35); border-radius: 4px; }
+    .main::-webkit-scrollbar-thumb { background: rgba(242,111,38,0.25); border-radius: 4px; }
 
     .topbar {
       display: flex;
@@ -2216,7 +2217,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     .page-title p {
       font-size: 13.5px;
-      color: rgba(255,255,255,0.92);
+      color: #475569;
       max-width: 820px;
       line-height: 1.65;
       font-weight: 400;
@@ -2224,26 +2225,26 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     .home-link {
       text-decoration: none;
-      background: rgba(255,255,255,0.20);
-      color: #ffffff;
-      border: 1px solid rgba(255,255,255,0.35);
+      background: #ffffff;
+      color: #334155;
+      border: 1px solid #cbd5e1;
       border-radius: 999px;
       padding: 9px 18px;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 12.5px;
-      font-weight: 600;
+      font-weight: 700;
       transition: all 0.18s ease;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.10);
-      backdrop-filter: blur(8px);
+      box-shadow: 0 2px 8px rgba(15,23,42,0.04);
       white-space: nowrap;
     }
     .home-link:hover {
       background: #ffffff;
-      color: #d85c18;
-      border-color: #ffffff;
+      color: #f26f26;
+      border-color: #f26f26;
+      box-shadow: 0 4px 14px rgba(242,111,38,0.15);
     }
 
-    /* ── WORKSPACE (EXTENDS TO SIDEBAR BOTTOM) ── */
+    /* ── WORKSPACE ── */
     .workspace {
       display: flex;
       flex-direction: column;
@@ -2254,10 +2255,10 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     .module-panel {
       background: #ffffff;
-      border: 1px solid rgba(255,255,255,0.30);
+      border: 1px solid #e2e8f0;
       border-radius: 24px;
       padding: 32px 36px;
-      box-shadow: 0 10px 36px rgba(0,0,0,0.15);
+      box-shadow: 0 10px 32px -4px rgba(15,23,42,0.06), 0 4px 12px -2px rgba(242,111,38,0.04);
       width: 100%;
       flex: 1;
       display: flex;
@@ -2721,7 +2722,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
       <div class="topbar" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 20px;">
         <div class="page-title" style="flex: 1; text-align: center; padding: 0 20px;">
-          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.01em; line-height: 1.3;" id="heroMainHeading">
+          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.01em; line-height: 1.3;" id="heroMainHeading">
             Excel Wizard allows you to perform your manual Excel tasks using your voice and text commands.
           </h2>
         </div>
