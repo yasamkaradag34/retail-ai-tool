@@ -2518,11 +2518,48 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           </button>
           <button class="menu-btn" data-key="data_upload">
             <span class="menu-btn-text">
-              <strong id="label_data_upload">Upload Data Sources</strong>
-              <span id="sub_data_upload">Excel / CSV Upload</span>
+              <strong id="label_data_upload">Connect to Data Sources</strong>
+              <span id="sub_data_upload">Excel / CSV &amp; API Connectors</span>
             </span>
           </button>
         </nav>
+
+        <!-- BOTTOM PROFILE & PROPERTY FOOTER CARD (EXACT MATCH TO SCREENSHOT) -->
+        <div style="margin-top: auto; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.22); display: flex; flex-direction: column; gap: 10px;">
+          
+          <!-- CONNECTED PROPERTY BADGE -->
+          <div style="background: rgba(0,0,0,0.18); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.25); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s ease;" onclick="openUserProfileModal()">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.9); color: #d85c18; font-weight: 800; display: grid; place-items: center; font-size: 13px;">D</div>
+              <div>
+                <strong style="display: block; font-size: 12.5px; color: #ffffff; font-weight: 700;">dataprovido.com</strong>
+                <span style="font-size: 10.5px; color: rgba(255,255,255,0.75);">Connected property</span>
+              </div>
+            </div>
+            <span style="color: rgba(255,255,255,0.8); font-size: 11px;">▼</span>
+          </div>
+
+          <!-- SETTINGS & PRIVACY QUICK LINKS -->
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; font-size: 11.5px;">
+            <a href="javascript:void(0)" onclick="openUserProfileModal()" style="color: rgba(255,255,255,0.92); text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+              <span>⚙️</span> <span>Settings</span>
+            </a>
+            <a href="/privacy" style="color: rgba(255,255,255,0.75); text-decoration: none; font-size: 11px;">Privacy Policy</a>
+          </div>
+
+          <!-- USER PROFILE CARD -->
+          <div id="userProfileCard" onclick="openUserProfileModal()" style="background: rgba(0,0,0,0.25); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.30); border-radius: 16px; padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.22s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: #fde68a; color: #78350f; font-weight: 800; font-size: 13px; display: grid; place-items: center; border: 1.5px solid #ffffff;">YK</div>
+              <div>
+                <strong style="display: block; font-size: 13px; color: #ffffff; font-weight: 700; letter-spacing: -0.01em;">Yasam Karadag</strong>
+                <span style="font-size: 11px; color: rgba(255,255,255,0.80); font-weight: 500;">owner · Founder plan</span>
+              </div>
+            </div>
+            <span style="color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 700;">↪</span>
+          </div>
+
+        </div>
       </div>
     </aside>
 
@@ -2677,6 +2714,75 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         <span style="font-size: 12px; color: #10b981; font-weight: 700;" id="modalStatusText">✓ Excel data is loaded and ready for AI analysis.</span>
         <button onclick="closeExcelPreview()" class="primary-btn" style="padding: 8px 20px; font-size: 13px;" id="modalCloseBtn">Close</button>
       </div>
+  <!-- USER PROFILE & BILLING DETAILS MODAL -->
+  <div id="userProfileModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center; padding: 24px;">
+    <div style="background: #ffffff; border-radius: 24px; width: 100%; max-width: 580px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); border: 1px solid #e2e8f0;">
+      
+      <!-- MODAL HEADER -->
+      <div style="background: linear-gradient(135deg, #f26f26 0%, #2563eb 100%); padding: 24px 28px; color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="width: 46px; height: 46px; border-radius: 50%; background: #fde68a; color: #78350f; font-weight: 800; font-size: 16px; display: grid; place-items: center; border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">YK</div>
+          <div>
+            <h3 style="font-family: 'Outfit', sans-serif; font-size: 19px; font-weight: 800; margin: 0; color: #ffffff;">Yasam Karadag</h3>
+            <p style="margin: 2px 0 0; font-size: 12px; opacity: 0.9; font-weight: 500;">owner · yasamkaradag@dataprovido.com</p>
+          </div>
+        </div>
+        <button onclick="closeUserProfileModal()" type="button" style="background: rgba(255,255,255,0.20); border: none; color: #ffffff; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: 700; cursor: pointer; display: grid; place-items: center; transition: background 0.2s;">✕</button>
+      </div>
+
+      <!-- MODAL BODY -->
+      <div style="padding: 24px 28px; max-height: 70vh; overflow-y: auto;">
+        
+        <!-- ACCOUNT SUMMARY BOX -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 16px 20px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b;">Subscription Plan</span>
+            <span style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px;">FOUNDER EDITION</span>
+          </div>
+          <div style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">DataProvido Founder Plan</div>
+          <div style="font-size: 12.5px; color: #475569; line-height: 1.5;">Unlimited 100% Local On-Premise Execution · Zero Cloud Data Leakage</div>
+        </div>
+
+        <!-- DETAILS GRID -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+          <div style="background: #ffffff; border: 1px solid #f1f5f9; border-radius: 14px; padding: 14px;">
+            <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 4px;">Registered Email</div>
+            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">yasamkaradag@dataprovido.com</div>
+          </div>
+          <div style="background: #ffffff; border: 1px solid #f1f5f9; border-radius: 14px; padding: 14px;">
+            <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 4px;">License Key</div>
+            <div style="font-size: 13px; font-weight: 700; color: #2563eb; font-family: monospace;">DP-FOUNDER-9981-PRO</div>
+          </div>
+          <div style="background: #ffffff; border: 1px solid #f1f5f9; border-radius: 14px; padding: 14px;">
+            <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 4px;">Connected Property</div>
+            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">dataprovido.com</div>
+          </div>
+          <div style="background: #ffffff; border: 1px solid #f1f5f9; border-radius: 14px; padding: 14px;">
+            <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 4px;">Local Engine Status</div>
+            <div style="font-size: 13px; font-weight: 700; color: #10b981;">● Online (Local Mac Node)</div>
+          </div>
+        </div>
+
+        <!-- BILLING HISTORY -->
+        <div style="border-top: 1px solid #f1f5f9; padding-top: 16px;">
+          <h4 style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 12px;">Billing &amp; Invoices</h4>
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 12.5px;">
+            <div>
+              <strong style="color: #0f172a; display: block;">Invoice #INV-2026-0801</strong>
+              <span style="color: #64748b; font-size: 11px;">Aug 1, 2026 · Founder Lifetime License</span>
+            </div>
+            <span style="color: #10b981; font-weight: 800; font-size: 12px;">₺0.00 (Active)</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MODAL FOOTER -->
+      <div style="padding: 16px 28px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+        <a href="/pricing" style="font-size: 12.5px; font-weight: 700; color: #2563eb; text-decoration: none;">Manage Subscription in Stripe →</a>
+        <button onclick="closeUserProfileModal()" type="button" class="primary-btn" style="padding: 8px 20px; font-size: 13px;">Close</button>
+      </div>
+
     </div>
   </div>
 
@@ -3286,6 +3392,16 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     menuButtons.forEach(btn => btn.addEventListener("click", () => renderModule(btn.dataset.key)));
 
+    function openUserProfileModal() {
+      const modal = document.getElementById("userProfileModal");
+      if (modal) modal.style.display = "flex";
+    }
+
+    function closeUserProfileModal() {
+      const modal = document.getElementById("userProfileModal");
+      if (modal) modal.style.display = "none";
+    }
+
     // Explicitly attach all interactive handlers to window object for global HTML onclick availability
     window.toggleVoiceRecognition = toggleVoiceRecognition;
     window.setLanguage = setLanguage;
@@ -3296,6 +3412,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     window.runModule = runModule;
     window.selectQuestion = selectQuestion;
     window.toggleHowToUse = toggleHowToUse;
+    window.openUserProfileModal = openUserProfileModal;
+    window.closeUserProfileModal = closeUserProfileModal;
 
     /* ── Live Interactive Excel Spreadsheet Data Engine ── */
     let currentSpreadsheetData = [
