@@ -2005,6 +2005,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Excel Wizard &amp; Retail AI Console – DataProvido</title>
+  <meta name="description" content="Don't just analyze data—know exactly what actions to take next. DataProvido delivers real-time prescriptive commercial decisions 100% locally.">
   <link rel="icon" type="image/png" href="/logo.png" />
   <link rel="shortcut icon" type="image/png" href="/logo.png" />
   <link rel="apple-touch-icon" href="/logo.png" />
@@ -5171,8 +5172,17 @@ def index():
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DataProvido – Turn Data Into Actionable Insights</title>
-  <meta name="description" content="DataProvido transforms your CRM, funnel, and stock data into clear, actionable business insights. Local AI. Zero compromise.">
+  <title>DataProvido – Prescriptive Retail AI &amp; Action Plan Engine</title>
+  <meta name="description" content="Don't just analyze data—know exactly what actions to take next. DataProvido delivers real-time prescriptive commercial decisions 100% locally.">
+  <meta property="og:title" content="DataProvido – Prescriptive Retail AI &amp; Action Plan Engine">
+  <meta property="og:description" content="Don't just analyze data—know exactly what actions to take next. DataProvido delivers real-time prescriptive commercial decisions 100% locally.">
+  <meta property="og:image" content="https://www.dataprovido.com/logo.png">
+  <meta property="og:url" content="https://www.dataprovido.com/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="DataProvido – Prescriptive Retail AI &amp; Action Plan Engine">
+  <meta name="twitter:description" content="Don't just analyze data—know exactly what actions to take next. DataProvido delivers real-time prescriptive commercial decisions 100% locally.">
+  <meta name="twitter:image" content="https://www.dataprovido.com/logo.png">
   <link rel="icon" type="image/png" href="/logo.png">
   <link rel="shortcut icon" type="image/png" href="/logo.png">
   <link rel="apple-touch-icon" href="/logo.png">
