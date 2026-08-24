@@ -94,7 +94,7 @@ import pandas as pd
 import json
 import os
 import shutil
-from typing import List
+from typing import List, Optional, Any
 from io import BytesIO
 from datetime import datetime
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -1977,12 +1977,244 @@ def build_excel_from_tool_result(raw_text: str) -> BytesIO:
                 "top_brand_share_pct": data.get("top_brand_share_pct", ""),
             }
             write_df(writer, dict_to_key_value_df(meta), "GfK Brand Summary")
-            # Haftalık seri dahil satırlar
             rows_flat = []
             for r in data.get("rows", []):
                 row_flat = {k: v for k, v in r.items() if k != "weekly_share_series"}
                 series = r.get("weekly_share_series", {})
                 row_flat.update(series)
+                rows_flat.append(row_flat)
+            write_df(writer, list_to_df(rows_flat), "Brand Performance")
+
+    output.seek(0)
+    return output
+
+
+# ─────────────────────────────────────────────────────────────
+#  EXCEL MACHINE GLOBAL ENGINE & ENDPOINTS
+# ─────────────────────────────────────────────────────────────
+CURRENT_EXCEL_DF: Optional[pd.DataFrame] = None
+CURRENT_EXCEL_FILENAME: str = "ecommerce_ai_sample_data_200_rows.xlsx"
+
+def load_default_excel_df() -> pd.DataFrame:
+    global CURRENT_EXCEL_DF, CURRENT_EXCEL_FILENAME
+    sample_path = "data/ecommerce_ai_sample_data_200_rows.xlsx"
+    if os.path.exists(sample_path):
+        try:
+            CURRENT_EXCEL_DF = pd.read_excel(sample_path)
+            CURRENT_EXCEL_FILENAME = "ecommerce_ai_sample_data_200_rows.xlsx"
+            return CURRENT_EXCEL_DF
+        except Exception as e:
+            print("Notice loading default sample excel:", e)
+
+    # Fallback default dataset
+    CURRENT_EXCEL_DF = pd.DataFrame([
+        {"SKU": "SKU-1001", "Name": "iPhone 15 Pro Max 256GB", "Category": "Smartphones", "Price": 54999, "CompPrice": 52490, "Stock": 142, "Revenue": 7809858, "Status": "Competitive"},
+        {"SKU": "SKU-1002", "Name": "MacBook Pro 16 M3 Max", "Category": "Laptops", "Price": 124999, "CompPrice": 129000, "Stock": 28, "Revenue": 3499972, "Status": "Price Leader"},
+        {"SKU": "SKU-1003", "Name": "iPad Air 11 M2 Wi-Fi", "Category": "Tablets", "Price": 24999, "CompPrice": 24999, "Stock": 89, "Revenue": 2224911, "Status": "Benchmark Matched"},
+        {"SKU": "SKU-1004", "Name": "AirPods Pro 2nd Gen USB-C", "Category": "Accessories", "Price": 8499, "CompPrice": 7990, "Stock": 310, "Revenue": 2634690, "Status": "Overpriced (+6.3%)"},
+        {"SKU": "SKU-1005", "Name": "Samsung Galaxy S24 Ultra", "Category": "Smartphones", "Price": 64999, "CompPrice": 61900, "Stock": 65, "Revenue": 4224935, "Status": "Overpriced (+5.0%)"},
+        {"SKU": "SKU-1006", "Name": "Sony WH-1000XM5 ANC", "Category": "Accessories", "Price": 13999, "CompPrice": 14500, "Stock": 44, "Revenue": 615956, "Status": "Underpriced (-3.4%)"},
+        {"SKU": "SKU-1007", "Name": "Dell XPS 15 OLED i9", "Category": "Laptops", "Price": 89999, "CompPrice": 92000, "Stock": 12, "Revenue": 1079988, "Status": "Price Leader"}
+    ])
+    CURRENT_EXCEL_FILENAME = "default_retail_data.xlsx"
+    return CURRENT_EXCEL_DF
+
+def df_to_preview_rows(df: pd.DataFrame, max_rows: int = 200) -> List[dict]:
+    if df is None or df.empty:
+        return []
+    
+    rows = []
+    sub_df = df.head(max_rows)
+    for idx, r in sub_df.iterrows():
+        sku = str(r.get("sku") if pd.notnull(r.get("sku")) else r.get("SKU") if pd.notnull(r.get("SKU")) else r.get("item_id") if pd.notnull(r.get("item_id")) else f"SKU-{1001+idx}")
+        name = str(r.get("product") if pd.notnull(r.get("product")) else r.get("Name") if pd.notnull(r.get("Name")) else r.get("product_title") if pd.notnull(r.get("product_title")) else f"Product #{idx+1}")
+        category = str(r.get("cat1") if pd.notnull(r.get("cat1")) else r.get("Category") if pd.notnull(r.get("Category")) else r.get("cat2") if pd.notnull(r.get("cat2")) else "General")
+        
+        price_val = r.get("product_price") if "product_price" in r and pd.notnull(r.get("product_price")) else r.get("Price", 0)
+        try:
+            price = float(price_val)
+        except Exception:
+            price = 0.0
+
+        stock_val = r.get("stock_qty") if "stock_qty" in r and pd.notnull(r.get("stock_qty")) else r.get("Stock", 0)
+        try:
+            stock = int(stock_val)
+        except Exception:
+            stock = 0
+
+        rev_val = r.get("revenue") if "revenue" in r and pd.notnull(r.get("revenue")) else r.get("Revenue", price * stock)
+        try:
+            revenue = float(rev_val)
+        except Exception:
+            revenue = price * stock
+
+        comp_val = r.get("benchmark_price") if "benchmark_price" in r and pd.notnull(r.get("benchmark_price")) else r.get("CompPrice", price * 0.95)
+        try:
+            comp_price = float(comp_val)
+        except Exception:
+            comp_price = price
+
+        status = str(r.get("availability_status") if pd.notnull(r.get("availability_status")) else r.get("Status") if pd.notnull(r.get("Status")) else r.get("stock_risk_level") if pd.notnull(r.get("stock_risk_level")) else "Active")
+
+        rows.append({
+            "SKU": sku,
+            "Name": name,
+            "Category": category,
+            "Price": round(price, 2),
+            "CompPrice": round(comp_price, 2),
+            "Stock": stock,
+            "Revenue": round(revenue, 2),
+            "Status": status
+        })
+    return rows
+
+
+@app.post("/upload-excel")
+async def upload_excel(file: UploadFile = File(...)):
+    global CURRENT_EXCEL_DF, CURRENT_EXCEL_FILENAME
+    try:
+        contents = await file.read()
+        filename = file.filename
+        file_ext = os.path.splitext(filename)[1].lower()
+
+        if file_ext in [".xlsx", ".xls"]:
+            df = pd.read_excel(BytesIO(contents))
+        elif file_ext == ".csv":
+            df = pd.read_csv(BytesIO(contents))
+        else:
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=400, content={"error": "Unsupported file format. Please upload .xlsx, .xls, or .csv"})
+
+        CURRENT_EXCEL_DF = df
+        CURRENT_EXCEL_FILENAME = filename
+
+        rows = df_to_preview_rows(df, max_rows=200)
+        return {
+            "status": "success",
+            "filename": filename,
+            "total_rows": len(df),
+            "total_columns": len(df.columns),
+            "column_names": df.columns.tolist(),
+            "rows": rows
+        }
+    except Exception as e:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=500, content={"error": f"Error parsing Excel file: {str(e)}"})
+
+
+class ExcelCommandRequest(BaseModel):
+    command: str
+
+@app.post("/process-excel")
+async def process_excel(req: ExcelCommandRequest):
+    global CURRENT_EXCEL_DF, CURRENT_EXCEL_FILENAME
+    if CURRENT_EXCEL_DF is None:
+        load_default_excel_df()
+
+    df = CURRENT_EXCEL_DF.copy()
+    command = req.command.strip()
+    q = command.lower()
+
+    action_note = ""
+    mutated_count = 0
+
+    # Identify primary columns
+    price_col = next((c for c in ["product_price", "Price", "price", "unit_price"] if c in df.columns), None)
+    stock_col = next((c for c in ["stock_qty", "Stock", "stock", "inventory"] if c in df.columns), None)
+    rev_col = next((c for c in ["revenue", "Revenue", "sales_amount", "ciro"] if c in df.columns), None)
+    status_col = next((c for c in ["availability_status", "Status", "status", "stock_risk_level"] if c in df.columns), None)
+
+    if any(k in q for k in ["artır", "increase", "%10", "zam", "yükselt"]):
+        pct = 10
+        if "20" in q: pct = 20
+        elif "15" in q: pct = 15
+        elif "5" in q: pct = 5
+        
+        if price_col:
+            df[price_col] = df[price_col].apply(lambda p: round(float(p) * (1 + pct/100), 2) if pd.notnull(p) else p)
+            mutated_count = len(df)
+            if rev_col and stock_col:
+                df[rev_col] = df[price_col] * df[stock_col]
+            if status_col:
+                df[status_col] = f"Price Increased (+{pct}%)"
+        action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: Tablodaki {mutated_count} satırın fiyatı %{pct} artırıldı. Ciro ve stok değerleri yeniden hesaplandı."
+
+    elif any(k in q for k in ["düşür", "discount", "indirim", "ucuzlat", "düşüt"]):
+        pct = 10
+        if "20" in q: pct = 20
+        elif "15" in q: pct = 15
+        elif "5" in q: pct = 5
+        
+        if price_col:
+            df[price_col] = df[price_col].apply(lambda p: round(float(p) * (1 - pct/100), 2) if pd.notnull(p) else p)
+            mutated_count = len(df)
+            if rev_col and stock_col:
+                df[rev_col] = df[price_col] * df[stock_col]
+            if status_col:
+                df[status_col] = f"Discount Applied (-{pct}%)"
+        action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: {mutated_count} üründe %{pct} fiyat indirimi uygulandı. Yeni değerler Excel'e işlendi."
+
+    elif any(k in q for k in ["stok", "stock", "ekle", "replenish", "tedarik"]):
+        add_stock = 100
+        if stock_col:
+            df[stock_col] = df[stock_col].apply(lambda s: int(s) + add_stock if pd.notnull(s) else add_stock)
+            mutated_count = len(df)
+            if rev_col and price_col:
+                df[rev_col] = df[price_col] * df[stock_col]
+            if status_col:
+                df[status_col] = f"Stock Replenished (+{add_stock})"
+        action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: {mutated_count} ürüne +{add_stock} adet stok eklendi ve toplam değer güncellendi."
+
+    else:
+        action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: '{command}' komutu aktif {len(df)} satırlık Excel tablosu üzerinde hesaplandı."
+
+    CURRENT_EXCEL_DF = df
+    rows = df_to_preview_rows(df, max_rows=200)
+
+    avg_price = sum(r["Price"] for r in rows) / (len(rows) or 1)
+    tot_stock_val = sum(r["Revenue"] for r in rows)
+
+    return {
+        "status": "success",
+        "command": command,
+        "action_note": action_note,
+        "total_rows": len(df),
+        "updated_avg_price": round(avg_price, 2),
+        "updated_stock_value": round(tot_stock_val, 2),
+        "rows": rows
+    }
+
+
+@app.get("/download-result")
+def download_result():
+    global CURRENT_EXCEL_DF, CURRENT_EXCEL_FILENAME
+    if CURRENT_EXCEL_DF is None:
+        load_default_excel_df()
+
+    df = CURRENT_EXCEL_DF.copy()
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, sheet_name="Processed_Data", index=False)
+        worksheet = writer.sheets["Processed_Data"]
+        worksheet.freeze_panes = "A2"
+        header_fill = PatternFill("solid", fgColor="1F4E78")
+        header_font = Font(color="FFFFFF", bold=True)
+        for cell in worksheet[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+        for idx, col in enumerate(df.columns, start=1):
+            values = df[col].head(100).fillna("").astype(str).tolist()
+            max_len = max([len(str(col))] + [len(v) for v in values])
+            worksheet.column_dimensions[get_column_letter(idx)].width = min(max_len + 2, 45)
+
+    output.seek(0)
+    export_filename = f"DataProvido_Excel_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    headers = {
+        "Content-Disposition": f'attachment; filename="{export_filename}"'
+    }
+    return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers=headers)
+
 
 @app.get("/journey", response_class=HTMLResponse)
 def journey(activated: str = None, plan: str = None, demo: str = None):
@@ -3480,31 +3712,50 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const activeFileIcon = document.getElementById("activeFileIcon");
       if (activeFileName) activeFileName.textContent = file.name;
       if (activeFileIcon) {
-        activeFileIcon.textContent = "✓";
-        activeFileIcon.style.color = "#10b981";
-      }
-      
-      const metaText = `(${(file.size / 1024).toFixed(1)} KB) ✓ Excel active & ready for commands`;
-      if (activeFileMeta) activeFileMeta.textContent = metaText;
-
-      try {
-        sessionStorage.setItem("activeExcelFileName", file.name);
-        sessionStorage.setItem("activeExcelFileMeta", metaText);
-      } catch (err) {
-        console.warn("sessionStorage notice:", err);
+        activeFileIcon.textContent = "⏳";
+        activeFileIcon.style.color = "#3b82f6";
       }
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const questionInput = document.getElementById("questionInput");
-        if (questionInput && !questionInput.value.trim()) {
-          questionInput.value = (currentLang === 'en')
-            ? `Calculate average price and total inventory value for dataset '${file.name}'`
-            : `'${file.name}' veri seti için ortalama fiyatı ve toplam stok tutarını hesapla`;
-          updateRunButtonState();
+      const formData = new FormData();
+      formData.append("file", file);
+
+      fetch("/upload-excel", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          currentSpreadsheetData = data.rows;
+          if (activeFileIcon) {
+            activeFileIcon.textContent = "✓";
+            activeFileIcon.style.color = "#10b981";
+          }
+          const metaText = `(${data.total_rows} rows, ${data.total_columns} cols) ✓ Excel active & ready for commands`;
+          if (activeFileMeta) activeFileMeta.textContent = metaText;
+
+          try {
+            sessionStorage.setItem("activeExcelFileName", file.name);
+            sessionStorage.setItem("activeExcelFileMeta", metaText);
+          } catch (err) {
+            console.warn("sessionStorage notice:", err);
+          }
+
+          const questionInput = document.getElementById("questionInput");
+          if (questionInput && !questionInput.value.trim()) {
+            questionInput.value = (currentLang === 'en')
+              ? `Calculate average price and total inventory value for dataset '${file.name}'`
+              : `'${file.name}' veri seti için ortalama fiyatı ve toplam stok tutarını hesapla`;
+            updateRunButtonState();
+          }
+        } else {
+          alert("Excel Yükleme Hatası: " + (data.error || "Unknown error"));
         }
-      };
-      reader.readAsArrayBuffer(file);
+      })
+      .catch(err => {
+        console.error("Upload error:", err);
+        alert("Excel sunucuya yüklenirken hata oluştu: " + err.message);
+      });
     }
 
     function selectQuestion(val) {
@@ -3657,12 +3908,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       updateRunButtonState();
     }
 
-    function selectQuestion(val) {
-      if (val) { questionInput.value = val; }
-    }
-
-    menuButtons.forEach(btn => btn.addEventListener("click", () => renderModule(btn.dataset.key)));
-
     function openUserProfileModal() {
       const modal = document.getElementById("userProfileModal");
       if (modal) modal.style.display = "flex";
@@ -3687,15 +3932,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     window.closeUserProfileModal = closeUserProfileModal;
 
     /* ── Live Interactive Excel Spreadsheet Data Engine ── */
-    let currentSpreadsheetData = [
-      { SKU: "SKU-1001", Name: "iPhone 15 Pro Max 256GB", Category: "Smartphones", Price: 54999, CompPrice: 52490, Stock: 142, Revenue: 7809858, Status: "Competitive" },
-      { SKU: "SKU-1002", Name: "MacBook Pro 16 M3 Max", Category: "Laptops", Price: 124999, CompPrice: 129000, Stock: 28, Revenue: 3499972, Status: "Price Leader" },
-      { SKU: "SKU-1003", Name: "iPad Air 11 M2 Wi-Fi", Category: "Tablets", Price: 24999, CompPrice: 24999, Stock: 89, Revenue: 2224911, Status: "Benchmark Matched" },
-      { SKU: "SKU-1004", Name: "AirPods Pro 2nd Gen USB-C", Category: "Accessories", Price: 8499, CompPrice: 7990, Stock: 310, Revenue: 2634690, Status: "Overpriced (+6.3%)" },
-      { SKU: "SKU-1005", Name: "Samsung Galaxy S24 Ultra", Category: "Smartphones", Price: 64999, CompPrice: 61900, Stock: 65, Revenue: 4224935, Status: "Overpriced (+5.0%)" },
-      { SKU: "SKU-1006", Name: "Sony WH-1000XM5 ANC", Category: "Accessories", Price: 13999, CompPrice: 14500, Stock: 44, Revenue: 615956, Status: "Underpriced (-3.4%)" },
-      { SKU: "SKU-1007", Name: "Dell XPS 15 OLED i9", Category: "Laptops", Price: 89999, CompPrice: 92000, Stock: 12, Revenue: 1079988, Status: "Price Leader" }
-    ];
+    let currentSpreadsheetData = [];
 
     async function runModule() {
       const questionInput = document.getElementById("questionInput");
@@ -3710,104 +3947,16 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       resultBox.classList.add("loading");
       resultBox.innerHTML = (currentLang === 'en') ? "⚡ Executing Excel calculation on active dataset..." : "⚡ Aktif Excel verisi üzerinde hesaplama yapılıyor...";
 
-      setTimeout(() => {
+      try {
+        const response = await fetch("/process-excel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ command: question })
+        });
+        const data = await response.json();
+
         resultBox.classList.remove("loading");
         
-        const q = question.toLowerCase();
-        let actionNote = "";
-        let mutatedCount = 0;
-
-        // DIRECT EXCEL MANIPULATION OPERATIONS ON SPREADSHEET ROWS:
-        if (q.includes("artır") || q.includes("increase") || q.includes("%")) {
-          // Increase prices by 10%
-          currentSpreadsheetData = currentSpreadsheetData.map(r => {
-            let oldPrice = Number(r.Price);
-            let newPrice = Math.round(oldPrice * 1.10);
-            mutatedCount++;
-            return { ...r, Price: newPrice, Revenue: newPrice * r.Stock, Status: "Price Increased (+10%)" };
-          });
-          actionNote = (currentLang === 'en')
-            ? `⚡ EXCEL OPERATION EXECUTED: Mutated ${mutatedCount} price cells in Excel dataset (+10% applied). Total revenue updated.`
-            : `⚡ EXCEL OPERASYONU TAMAMLANTI: Tablodaki ${mutatedCount} satırın fiyatı %10 artırıldı. Ciro ve stok değerleri yeniden hesaplandı.`;
-        } else if (q.includes("düşür") || q.includes("discount") || q.includes("indirim")) {
-          // Apply 10% discount on overpriced items
-          currentSpreadsheetData = currentSpreadsheetData.map(r => {
-            if (r.Status.includes("Overpriced") || r.Price > 30000) {
-              let newPrice = Math.round(Number(r.Price) * 0.90);
-              mutatedCount++;
-              return { ...r, Price: newPrice, Revenue: newPrice * r.Stock, Status: "Discounted (-10%)" };
-            }
-            return r;
-          });
-          actionNote = (currentLang === 'en')
-            ? `⚡ EXCEL OPERATION EXECUTED: Applied 10% discount on ${mutatedCount} overpriced SKUs.`
-            : `⚡ EXCEL OPERASYONU TAMAMLANTI: Pahalı kalan ${mutatedCount} üründe %10 fiyat indirimi uygulandı.`;
-        } else if (q.includes("stok") || q.includes("stock") || q.includes("ekle") || q.includes("replenish")) {
-          // Replenish low stock items
-          currentSpreadsheetData = currentSpreadsheetData.map(r => {
-            if (r.Stock < 50) {
-              let newStock = r.Stock + 100;
-              mutatedCount++;
-              return { ...r, Stock: newStock, Revenue: r.Price * newStock, Status: "Stock Replenished (+100)" };
-            }
-            return r;
-          });
-          actionNote = (currentLang === 'en')
-            ? `⚡ EXCEL OPERATION EXECUTED: Replenished 100 stock units for ${mutatedCount} low-inventory SKUs.`
-            : `⚡ EXCEL OPERASYONU TAMAMLANTI: Stok miktarı düşük ${mutatedCount} ürüne +100 adet stok eklendi.`;
-        } else {
-          // Default spreadsheet cell calculation & audit log
-          actionNote = (currentLang === 'en')
-            ? "⚡ EXCEL OPERATION COMPLETED: Calculated dataset metrics across active spreadsheet rows."
-            : "⚡ EXCEL OPERASYONU TAMAMLANTI: Aktif Excel tablosu üzerinde hesaplama ve veri analizi yapıldı.";
-        }
-
-        // Filter rows matching prompt keywords
-        let filteredRows = currentSpreadsheetData;
-        if (q.includes("apple") || q.includes("iphone") || q.includes("macbook") || q.includes("ipad") || q.includes("airpods")) {
-          filteredRows = currentSpreadsheetData.filter(r => 
-            r.Name.toLowerCase().includes("apple") || 
-            r.Name.toLowerCase().includes("iphone") || 
-            r.Name.toLowerCase().includes("macbook") || 
-            r.Name.toLowerCase().includes("ipad") || 
-            r.Name.toLowerCase().includes("airpods")
-          );
-        } else if (q.includes("laptop") || q.includes("bilgisayar")) {
-          filteredRows = currentSpreadsheetData.filter(r => r.Category.toLowerCase().includes("laptop"));
-        } else if (q.includes("smartphone") || q.includes("telefon")) {
-          filteredRows = currentSpreadsheetData.filter(r => r.Category.toLowerCase().includes("smartphone"));
-        }
-
-        let filteredAvgPrice = (filteredRows.reduce((a, b) => a + Number(b.Price), 0) / (filteredRows.length || 1)).toLocaleString();
-        let filteredStockValue = filteredRows.reduce((a, b) => a + (Number(b.Price) * Number(b.Stock)), 0).toLocaleString();
-
-        let outputHtml = `
-          <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
-              <div>
-                <span style="font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Direct Excel Operation Output</span>
-                <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">Executed Command: "${question}"</h4>
-              </div>
-              <div style="display: flex; gap: 8px;">
-                <button onclick="openExcelPreview()" type="button" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 7px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">Inspect Modified Table</button>
-                <button onclick="downloadExcel()" type="button" style="background: #2563eb; color: #ffffff; border: none; padding: 7px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">Download Updated Excel</button>
-              </div>
-            </div>
-
-            <!-- AUDIT LOG BANNER -->
-            <div style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;">
-              <span>${actionNote}</span>
-              <span style="background: #10b981; color: #ffffff; font-size: 10.5px; padding: 2px 8px; border-radius: 999px;">EXCEL UPDATED</span>
-            </div>
-
-            <!-- EXCEL INTERACTIVE CHART / TREND VISUALIZER -->
-            ${(q.includes("grafik") || q.includes("chart") || q.includes("trend") || q.includes("çiz") || q.includes("plot") || q.includes("dağılım")) ? `
-              <div style="background: #ffffff; border: 1.5px solid #bfdbfe; border-radius: 14px; padding: 18px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(37,99,235,0.06);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                  <div>
-                    <span style="font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Excel In-Spreadsheet Chart Generator</span>
-                    <h5 style="font-size: 14px; font-weight: 700; color: #0f172a;">📊 Category Revenue & Inventory Trend Breakdown</h5>
-                  </div>
                   <span style="font-size: 11px; background: #eff6ff; color: #2563eb; padding: 3px 10px; border-radius: 999px; font-weight: 700; border: 1px solid #bfdbfe;">Live Chart Rendered</span>
                 </div>
                 <div style="display: flex; align-items: flex-end; gap: 18px; height: 160px; padding: 12px 10px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
@@ -5618,7 +5767,7 @@ def index():
 <section class="hero" id="hero">
   <div class="hero-content">
     <div class="hero-badge">✦ Local Intelligence. Zero Compromise.</div>
-    <h1>Turn CRM data into<br><span>actionable insights.</span></h1>
+    <h1>We read your data, spot the trends,<br><span>tell you what's next.</span></h1>
     <p class="hero-sub" style="max-width: 680px;">DataProvido doesn't just analyze your stock, funnel, and sales data locally — it revolutionizes your decision-making by delivering clear, prescriptive commercial actions your team can execute instantly with total data privacy.</p>
     <div class="hero-actions">
       <a href="/journey" class="btn-primary">Start Your Journey &nbsp;→</a>
