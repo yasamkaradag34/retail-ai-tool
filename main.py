@@ -5172,15 +5172,15 @@ def index():
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DataProvido – Prescriptive Retail AI &amp; Action Plan Engine</title>
+  <title>DataProvido – Analyze your e-commerce data locally—no need to share it with anyone!</title>
   <meta name="description" content="Don't just analyze data—know exactly what actions to take next. DataProvido delivers real-time prescriptive commercial decisions 100% locally.">
-  <meta property="og:title" content="DataProvido – Prescriptive Retail AI &amp; Action Plan Engine">
+  <meta property="og:title" content="DataProvido – Analyze your e-commerce data locally—no need to share it with anyone!">
   <meta property="og:description" content="Don't just analyze data—know exactly what actions to take next. DataProvido delivers real-time prescriptive commercial decisions 100% locally.">
   <meta property="og:image" content="https://www.dataprovido.com/logo.png">
   <meta property="og:url" content="https://www.dataprovido.com/">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="DataProvido – Prescriptive Retail AI &amp; Action Plan Engine">
+  <meta name="twitter:title" content="DataProvido – Analyze your e-commerce data locally—no need to share it with anyone!">
   <meta name="twitter:description" content="Don't just analyze data—know exactly what actions to take next. DataProvido delivers real-time prescriptive commercial decisions 100% locally.">
   <meta name="twitter:image" content="https://www.dataprovido.com/logo.png">
   <link rel="icon" type="image/png" href="/logo.png">
