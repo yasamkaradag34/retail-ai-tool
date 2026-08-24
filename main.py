@@ -2101,7 +2101,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       border-radius: 14px;
       background: #ffffff;
       color: #334155;
-      padding: 13px 16px;
+      padding: 12px 14px;
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 13.5px;
       line-height: 1.35;
@@ -2111,6 +2111,13 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       align-items: center;
       box-shadow: 0 1px 3px rgba(15,23,42,0.02);
       position: relative;
+    }
+
+    .menu-icon {
+      margin-right: 12px;
+      color: #64748b;
+      flex-shrink: 0;
+      transition: color 0.2s ease, transform 0.2s ease;
     }
 
     .menu-btn-text {
@@ -2141,12 +2148,21 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       transform: translateX(3px);
     }
 
+    .menu-btn:hover .menu-icon {
+      color: #2563eb;
+      transform: scale(1.1);
+    }
+
     .menu-btn.active {
       background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
       border-color: #bfdbfe;
       border-left: 4px solid #2563eb;
       color: #1d4ed8;
       box-shadow: 0 4px 14px rgba(37,99,235,0.08);
+    }
+
+    .menu-btn.active .menu-icon {
+      color: #2563eb;
     }
 
     .menu-btn.active .menu-btn-text strong {
@@ -2481,42 +2497,50 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         <div class="nav-label" id="navLabelCategories">CATEGORIES</div>
         <nav class="menu" id="menu">
           <button class="menu-btn active" data-key="business_calculator">
+            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/></svg>
             <span class="menu-btn-text">
               <strong>Excel Wizard</strong>
               <span id="sub_business_calculator">Voice &amp; text Excel commands</span>
             </span>
           </button>
           <button class="menu-btn" data-key="category_insights">
+            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             <span class="menu-btn-text">
               <strong>Category Insights</strong>
               <span id="sub_category_insights">Category &amp; sector analysis</span>
             </span>
           </button>
           <button class="menu-btn" data-key="price_competition">
+            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
             <span class="menu-btn-text">
               <strong>Price Competition</strong>
               <span id="sub_price_competition">Merchant benchmark</span>
             </span>
           </button>
           <button class="menu-btn" data-key="action_executor">
+            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             <span class="menu-btn-text">
               <strong>Action Executor</strong>
               <span id="sub_action_executor">Action plan generator</span>
             </span>
+            <span class="menu-badge" style="background: #a3e635; color: #1a2e05; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; display: grid; place-items: center; font-size: 11px; font-weight: 800; margin-left: 6px; box-shadow: 0 2px 6px rgba(163,230,53,0.4);">6</span>
           </button>
           <button class="menu-btn" data-key="funnel_stock">
+            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
             <span class="menu-btn-text">
               <strong>Funnel &amp; Stock</strong>
               <span id="sub_funnel_stock">Conversion &amp; stock risk</span>
             </span>
           </button>
           <button class="menu-btn" data-key="excel_outputs">
+            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
             <span class="menu-btn-text">
               <strong>Excel Outputs</strong>
               <span id="sub_excel_outputs">Analytical reports</span>
             </span>
           </button>
           <button class="menu-btn" data-key="data_upload">
+            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v8"/><path d="M4.93 10.93a10 10 0 1 0 14.14 0"/><path d="M12 18v4"/></svg>
             <span class="menu-btn-text">
               <strong id="label_data_upload">Connect to Data Sources</strong>
               <span id="sub_data_upload">Excel / CSV &amp; API Connectors</span>
