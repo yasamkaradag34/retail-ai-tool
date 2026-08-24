@@ -2451,91 +2451,190 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       50% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(242,111,38,0); }
     }
 
-    /* ── HIGH-END AI VOICE COMMAND BUTTON ── */
-    .voice-cmd-btn {
-      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    /* ── IMPECCABLE UNIFIED AI COMMAND BAR ── */
+    .impeccable-cmd-card {
+      background: #ffffff;
       border: 1.5px solid #cbd5e1;
-      color: #0f172a;
-      padding: 16px 20px;
       border-radius: 20px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      white-space: nowrap;
+      padding: 0;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      min-width: 155px;
-      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
-      align-self: stretch;
-      position: relative;
+      margin-bottom: 24px;
       overflow: hidden;
     }
 
-    .voice-cmd-btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(242,111,38,0.06) 100%);
-      opacity: 0;
-      transition: opacity 0.25s ease;
-    }
-
-    .voice-cmd-btn:hover {
+    .impeccable-cmd-card:focus-within {
       border-color: #3b82f6;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+      box-shadow: 0 8px 30px rgba(37, 99, 235, 0.12), 0 0 0 4px rgba(37, 99, 235, 0.08);
     }
 
-    .voice-cmd-btn:hover::before {
-      opacity: 1;
+    .cmd-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 18px;
+      background: #f8fafc;
+      border-bottom: 1px solid #f1f5f9;
     }
 
-    .voice-orb {
-      width: 44px;
-      height: 44px;
+    .cmd-dataset-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .cmd-upload-btn {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #2563eb;
+      background: #eff6ff;
+      padding: 6px 14px;
+      border-radius: 10px;
+      border: 1px solid #bfdbfe;
+      transition: all 0.18s ease;
+    }
+
+    .cmd-upload-btn:hover {
+      background: #dbeafe;
+      border-color: #93c5fd;
+    }
+
+    .cmd-card-body {
+      padding: 16px 20px 8px;
+    }
+
+    .cmd-card-body textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      border: none;
+      outline: none;
+      font-size: 14.5px;
+      color: #0f172a;
+      font-family: inherit;
+      line-height: 1.65;
+      background: transparent;
+    }
+
+    .cmd-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 18px 14px;
+      border-top: 1px solid #f8fafc;
+      gap: 12px;
+    }
+
+    .cmd-action-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cmd-chip-btn {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .cmd-chip-btn:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+
+    .cmd-action-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cmd-voice-orb-btn {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      color: #0f172a;
+      padding: 6px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      font-weight: 700;
+    }
+
+    .cmd-voice-orb-btn:hover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+
+    .voice-orb-sm {
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
       background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
       display: grid;
       place-items: center;
       color: #ffffff;
-      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.30);
-      transition: all 0.25s ease;
-      position: relative;
-      z-index: 2;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
     }
 
-    .voice-cmd-btn:hover .voice-orb {
-      transform: scale(1.08);
-      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.40);
-    }
-
-    .voice-btn-details {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .voice-btn-details strong {
-      font-size: 12.5px;
-      font-weight: 800;
-      color: #0f172a;
-      letter-spacing: -0.01em;
-    }
-
-    .voice-sub-badge {
-      font-size: 10px;
+    .voice-orb-text {
+      font-size: 12px;
       font-weight: 700;
-      color: #2563eb;
-      background: rgba(37, 99, 235, 0.08);
-      padding: 3px 9px;
+      color: #1e293b;
+    }
+
+    .cmd-run-btn {
+      background: #cbd5e1;
+      color: #64748b;
+      border: none;
+      padding: 10px 22px;
       border-radius: 12px;
-      letter-spacing: 0.02em;
+      font-weight: 700;
+      font-size: 13.5px;
+      cursor: not-allowed;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.22s ease;
+      opacity: 0.7;
+    }
+
+    .cmd-run-btn:not([disabled]) {
+      background: linear-gradient(135deg, #f26f26 0%, #d85c18 100%);
+      color: #ffffff;
+      cursor: pointer;
+      opacity: 1;
+      box-shadow: 0 4px 14px rgba(242, 111, 38, 0.28);
+    }
+
+    .cmd-run-btn:not([disabled]):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(242, 111, 38, 0.38);
+    }
+
+    .cmd-shortcut-hint {
+      background: rgba(255, 255, 255, 0.25);
+      color: currentColor;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 5px;
+      letter-spacing: 0.04em;
     }
 
     /* Google AI Overview Style Animated Voice Listening Indicator */
@@ -2757,44 +2856,51 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           </div>
 
           <div class="input-area" style="margin-top: 0;">
-            <!-- CLEAN EXCEL DRAG & DROP INTERACTIVE PROMPT AREA (NO OUTER WRAPPER BOX) -->
-            <div id="dropZoneContainer" style="position: relative; border: none; background: transparent; padding: 0; transition: all 0.25s ease; margin-bottom: 20px;">
+            <!-- IMPECCABLE UNIFIED AI COMMAND BAR CARD -->
+            <div id="dropZoneContainer" class="impeccable-cmd-card">
               
-              <!-- TOP FILE STATUS BAR / DROP BADGE -->
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; margin-bottom: 16px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(15,23,42,0.02);">
-                <div id="activeFileBadge" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155;">
+              <!-- TOP HEADER BAR INSIDE COMMAND CARD -->
+              <div class="cmd-card-header">
+                <div id="activeFileBadge" class="cmd-dataset-badge">
                   <span id="activeFileIcon" style="color: #94a3b8; font-weight: 800;">📁</span>
                   <span>Active Dataset: <strong id="activeFileName" style="color: #0f172a;">There is no uploaded file</strong> <span id="activeFileMeta" style="color: #64748b; font-weight: 400;"></span></span>
                 </div>
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 6px 14px; border-radius: 10px; border: 1px solid #bfdbfe; transition: all 0.18s;">
+                <label class="cmd-upload-btn">
                   <span>📎 Drag &amp; Drop Excel or Click to Upload</span>
                   <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleExcelFileUpload(this.files[0])" />
                 </label>
               </div>
 
-              <!-- DUAL PROMPT TEXTAREA & VOICE BUTTON -->
-              <div style="display: flex; gap: 14px; align-items: stretch;">
-                <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or drag & drop your Excel file here / use Voice Command)..." style="flex: 1; min-height: 165px; resize: vertical; padding: 18px 20px; font-size: 14.5px; color: #0f172a; border-radius: 16px; border: 1.5px solid #cbd5e1; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; line-height: 1.6; background: #ffffff; box-shadow: 0 2px 10px rgba(15,23,42,0.03);"></textarea>
-                <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" class="voice-cmd-btn">
-                  <div class="voice-orb" id="voiceOrb">
-                    <span id="voiceIcon" style="display: grid; place-items: center;">
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-                    </span>
-                  </div>
-                  <div class="voice-btn-details">
-                    <strong id="voiceText">Voice AI Command</strong>
-                    <span id="voiceSubtext" class="voice-sub-badge">🎙️ Speak or Click</span>
-                  </div>
-                </button>
+              <!-- MIDDLE PROMPT TEXTAREA AREA -->
+              <div class="cmd-card-body">
+                <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or drag & drop your Excel file here / use Voice Command)..."></textarea>
               </div>
-            </div>
 
-            <!-- EXCEL WIZARD ACTION TOOLBAR (NO EMOJIS, CLEAN ENGLISH) -->
-            <div class="action-row" id="actionRow" style="display: flex; gap: 10px;">
-              <button class="primary-btn" onclick="runModule()" id="runBtnLabel" style="background: #cbd5e1; color: #64748b; border: none; opacity: 0.65; cursor: not-allowed; transition: all 0.25s ease; box-shadow: none; padding: 12px 26px; border-radius: 14px; font-weight: 700;" disabled>Run Analysis</button>
-              <button class="secondary-btn" onclick="openExcelPreview()" id="previewBtnLabel" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; padding: 12px 22px; border-radius: 14px; font-weight: 600;">Excel Preview</button>
-              <button class="secondary-btn" onclick="downloadExcel()" id="downloadBtnLabel" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; padding: 12px 22px; border-radius: 14px; font-weight: 600;">Export Excel</button>
+              <!-- BOTTOM INTEGRATED TOOLBAR (ACTIONS + VOICE ORB + PRIMARY RUN CTA) -->
+              <div class="cmd-card-footer" id="actionRow">
+                <div class="cmd-action-left">
+                  <button class="cmd-chip-btn" type="button" onclick="openExcelPreview()" id="previewBtnLabel">📊 Excel Preview</button>
+                  <button class="cmd-chip-btn" type="button" onclick="downloadExcel()" id="downloadBtnLabel">📥 Export Excel</button>
+                </div>
+                <div class="cmd-action-right">
+                  <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" class="cmd-voice-orb-btn">
+                    <span id="voiceOrb" class="voice-orb-sm">
+                      <span id="voiceIcon" style="display: grid; place-items: center;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                      </span>
+                    </span>
+                    <span id="voiceText" class="voice-orb-text">Voice AI</span>
+                    <span id="voiceSubtext" style="display: none;"></span>
+                  </button>
+                  <button class="primary-btn cmd-run-btn" onclick="runModule()" id="runBtnLabel" disabled>
+                    <span>Run Analysis</span>
+                    <kbd class="cmd-shortcut-hint">⌘ ↵</kbd>
+                  </button>
+                </div>
+              </div>
+
             </div>
+          </div>
           </div>
 
           <!-- INTEGRATED FULL-WIDTH OUTPUT BOX -->
@@ -3264,11 +3370,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       if (!input || !runBtn) return;
       const hasText = input.value.trim().length > 0;
       if (hasText) {
-        runBtn.style.background = "#2563eb";
+        runBtn.style.background = "linear-gradient(135deg, #f26f26 0%, #d85c18 100%)";
         runBtn.style.color = "#ffffff";
         runBtn.style.opacity = "1";
         runBtn.style.cursor = "pointer";
-        runBtn.style.boxShadow = "0 4px 14px rgba(37,99,235,0.35)";
+        runBtn.style.boxShadow = "0 4px 14px rgba(242,111,38,0.30)";
         runBtn.disabled = false;
       } else {
         runBtn.style.background = "#cbd5e1";
@@ -3279,6 +3385,17 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         runBtn.disabled = true;
       }
     }
+
+    // Keyboard shortcut handler (Command/Ctrl + Enter)
+    document.addEventListener("keydown", function(e) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        const runBtn = document.getElementById("runBtnLabel");
+        if (runBtn && !runBtn.disabled) {
+          e.preventDefault();
+          runModule();
+        }
+      }
+    });
 
     /* ── Drag & Drop Excel File Ingestion Handler ── */
     document.addEventListener("DOMContentLoaded", function() {
