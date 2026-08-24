@@ -2033,15 +2033,15 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       position: relative;
     }
 
-    /* ── SIDEBAR (IMPECCABLE DESIGN LANGUAGE) ── */
+    /* ── SIDEBAR (HOMEPAGE ORANGE DESIGN) ── */
     .sidebar {
-      background: #ffffff;
+      background: linear-gradient(180deg, #f26f26 0%, #d85c18 100%);
       padding: 26px 20px;
-      color: var(--text-900);
+      color: #ffffff;
       display: flex;
       flex-direction: column;
-      border-right: 1px solid var(--border);
-      box-shadow: 4px 0 16px rgba(15,23,42,0.02);
+      border-right: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 4px 0 20px rgba(242,111,38,0.18);
       z-index: 10;
     }
 
@@ -2050,44 +2050,37 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       align-items: center;
       gap: 12px;
       padding-bottom: 22px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid rgba(255,255,255,0.20);
       margin-bottom: 20px;
     }
 
     .brand-icon {
-      width: 42px; height: 42px;
+      width: 44px; height: 44px;
       border-radius: 12px;
-      background: linear-gradient(135deg, #f26f26 0%, #2563eb 100%);
+      background: #ffffff;
       display: grid;
       place-items: center;
-      color: #fff;
+      color: #f26f26;
       font-family: 'Outfit', sans-serif;
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 800;
-      box-shadow: 0 4px 14px rgba(37,99,235,0.25);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
       flex-shrink: 0;
     }
 
     .brand h1 {
       font-family: 'Outfit', sans-serif;
-      font-size: 19px;
+      font-size: 20px;
       line-height: 1.1;
       letter-spacing: -0.02em;
       font-weight: 800;
-      color: var(--text-900);
-    }
-    .brand p {
-      margin-top: 3px;
-      font-size: 11.5px;
-      color: var(--text-500);
-      font-weight: 600;
-      letter-spacing: 0.2px;
+      color: #ffffff;
     }
 
     .nav-label {
       font-size: 10.5px;
-      letter-spacing: 0.12em;
-      color: #94a3b8;
+      letter-spacing: 0.14em;
+      color: rgba(255,255,255,0.88);
       text-transform: uppercase;
       font-weight: 800;
       margin: 18px 10px 10px;
@@ -2475,10 +2468,9 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     <aside class="sidebar">
       <div>
         <div class="brand">
-          <div class="brand-icon">R</div>
+          <div class="brand-icon">D</div>
           <div>
-            <h1>Retail AI</h1>
-            <p>Analytics Console</p>
+            <h1>DataProvido</h1>
           </div>
         </div>
         <div class="nav-label" id="navLabelCategories">CATEGORIES</div>
@@ -2551,10 +2543,10 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       </div>
 
       <section class="workspace">
-        <div class="module-panel">
+        <div class="module-panel" style="padding: 32px 36px;">
           
           <!-- HOW TO USE INTERACTIVE GUIDANCE ACCORDION -->
-          <div class="how-to-use-box" style="margin-bottom: 18px; border: 1px solid var(--border-orange); background: linear-gradient(135deg, #fff8f4 0%, #ffffff 100%); border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(242,111,38,0.06);">
+          <div class="how-to-use-box" style="margin-bottom: 20px; border: 1px solid var(--border-orange); background: linear-gradient(135deg, #fff8f4 0%, #ffffff 100%); border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(242,111,38,0.06);">
             <button id="howToUseToggle" onclick="toggleHowToUse()" type="button" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 0; cursor: pointer; text-align: left; transition: background 0.2s;">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <span class="info-pulse" style="font-size: 16px; background: rgba(242,111,38,0.12); color: var(--orange); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; animation: pulse-glow 2.2s infinite;">ℹ️</span>
@@ -2594,25 +2586,25 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           </div>
 
           <div class="input-area" style="margin-top: 0;">
-            <!-- EXCEL DRAG & DROP INTERACTIVE PROMPT DROPZONE -->
-            <div id="dropZoneContainer" style="position: relative; border: 2px dashed #cbd5e1; border-radius: 18px; padding: 8px; background: #ffffff; transition: all 0.25s ease; margin-bottom: 16px;">
+            <!-- EXCEL DRAG & DROP INTERACTIVE PROMPT DROPZONE (NO DASHED BORDER) -->
+            <div id="dropZoneContainer" style="position: relative; border: 1px solid #e2e8f0; border-radius: 20px; padding: 12px; background: #ffffff; transition: all 0.25s ease; margin-bottom: 20px; box-shadow: 0 4px 24px rgba(15,23,42,0.04);">
               
               <!-- TOP FILE STATUS BAR / DROP BADGE -->
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; margin-bottom: 8px; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9;">
-                <div id="activeFileBadge" style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #334155;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; margin-bottom: 12px; background: #f8fafc; border-radius: 14px; border: 1px solid #f1f5f9;">
+                <div id="activeFileBadge" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155;">
                   <span style="color: #10b981; font-weight: 800;">✓</span>
                   <span>Active Dataset: <strong id="activeFileName" style="color: #0f172a;">default_retail_data.xlsx</strong> <span id="activeFileMeta" style="color: #64748b; font-weight: 400;">(1,450 rows, 12 columns)</span></span>
                 </div>
-                <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 5px 12px; border-radius: 8px; border: 1px solid #bfdbfe; transition: all 0.18s;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 6px 14px; border-radius: 10px; border: 1px solid #bfdbfe; transition: all 0.18s;">
                   <span>📎 Drag &amp; Drop Excel or Click to Upload</span>
                   <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleExcelFileUpload(this.files[0])" />
                 </label>
               </div>
 
-              <!-- DUAL PROMPT TEXTAREA & VOICE BUTTON -->
-              <div style="display: flex; gap: 12px; align-items: stretch;">
-                <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or drag & drop your Excel file here / use Voice Command)..." style="flex: 1; min-height: 120px; resize: vertical; padding: 14px 16px; font-size: 14px; color: #0f172a; border-radius: 14px; border: 1px solid transparent; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; line-height: 1.6; background: transparent;"></textarea>
-                <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #2563eb; padding: 12px 18px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; transition: all 0.2s; min-width: 130px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); align-self: stretch;">
+              <!-- DUAL PROMPT TEXTAREA & VOICE BUTTON (EXPANDED DOWNWARDS) -->
+              <div style="display: flex; gap: 14px; align-items: stretch;">
+                <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or drag & drop your Excel file here / use Voice Command)..." style="flex: 1; min-height: 165px; resize: vertical; padding: 16px 18px; font-size: 14.5px; color: #0f172a; border-radius: 14px; border: 1.5px solid #f1f5f9; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; line-height: 1.6; background: #fdfdfd;"></textarea>
+                <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #2563eb; padding: 14px 20px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; transition: all 0.2s; min-width: 140px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); align-self: stretch;">
                   <span id="voiceIcon" style="display: block;">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
                   </span>
