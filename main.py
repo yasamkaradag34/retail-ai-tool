@@ -2449,6 +2449,93 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       50% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(242,111,38,0); }
     }
 
+    /* ── HIGH-END AI VOICE COMMAND BUTTON ── */
+    .voice-cmd-btn {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border: 1.5px solid #cbd5e1;
+      color: #0f172a;
+      padding: 16px 20px;
+      border-radius: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      white-space: nowrap;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      min-width: 155px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+      align-self: stretch;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .voice-cmd-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(37,99,235,0.06) 0%, rgba(242,111,38,0.06) 100%);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .voice-cmd-btn:hover {
+      border-color: #3b82f6;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+    }
+
+    .voice-cmd-btn:hover::before {
+      opacity: 1;
+    }
+
+    .voice-orb {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      display: grid;
+      place-items: center;
+      color: #ffffff;
+      box-shadow: 0 4px 16px rgba(37, 99, 235, 0.30);
+      transition: all 0.25s ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    .voice-cmd-btn:hover .voice-orb {
+      transform: scale(1.08);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.40);
+    }
+
+    .voice-btn-details {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .voice-btn-details strong {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+    }
+
+    .voice-sub-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #2563eb;
+      background: rgba(37, 99, 235, 0.08);
+      padding: 3px 9px;
+      border-radius: 12px;
+      letter-spacing: 0.02em;
+    }
+
     /* Google AI Overview Style Animated Voice Listening Indicator */
     @keyframes ai-voice-pulse {
       0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6), 0 0 0 0 rgba(242, 111, 38, 0.4); transform: scale(1); }
@@ -2459,8 +2546,18 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     .voice-listening-active {
       background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%) !important;
       border-color: #ef4444 !important;
-      color: #dc2626 !important;
+      box-shadow: 0 8px 28px rgba(239, 68, 68, 0.22) !important;
       animation: ai-voice-pulse 1.5s infinite ease-in-out !important;
+    }
+
+    .voice-listening-active .voice-orb {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+      box-shadow: 0 4px 18px rgba(239, 68, 68, 0.5) !important;
+    }
+
+    .voice-listening-active .voice-sub-badge {
+      background: rgba(239, 68, 68, 0.12) !important;
+      color: #dc2626 !important;
     }
 
     .sound-wave-bars {
@@ -2676,11 +2773,16 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               <!-- DUAL PROMPT TEXTAREA & VOICE BUTTON -->
               <div style="display: flex; gap: 14px; align-items: stretch;">
                 <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or drag & drop your Excel file here / use Voice Command)..." style="flex: 1; min-height: 165px; resize: vertical; padding: 18px 20px; font-size: 14.5px; color: #0f172a; border-radius: 16px; border: 1.5px solid #cbd5e1; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; line-height: 1.6; background: #ffffff; box-shadow: 0 2px 10px rgba(15,23,42,0.03);"></textarea>
-                <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #2563eb; padding: 14px 20px; border-radius: 16px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; transition: all 0.2s; min-width: 140px; box-shadow: 0 2px 10px rgba(15,23,42,0.03); align-self: stretch;">
-                  <span id="voiceIcon" style="display: block;">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-                  </span>
-                  <span id="voiceText" style="font-size: 11.5px; font-weight: 700;">Voice Command</span>
+                <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" class="voice-cmd-btn">
+                  <div class="voice-orb" id="voiceOrb">
+                    <span id="voiceIcon" style="display: grid; place-items: center;">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                    </span>
+                  </div>
+                  <div class="voice-btn-details">
+                    <strong id="voiceText">Voice AI Command</strong>
+                    <span id="voiceSubtext" class="voice-sub-badge">🎙️ Speak or Click</span>
+                  </div>
                 </button>
               </div>
             </div>
@@ -3320,17 +3422,14 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
         recognition.onstart = function() {
           isListening = true;
+          const voiceSubtext = document.getElementById("voiceSubtext");
           voiceBtn.classList.add("voice-listening-active");
-          voiceBtn.style.background = "#fff1f2";
-          voiceBtn.style.borderColor = "#f43f5e";
-          voiceBtn.style.color = "#e11d48";
-          voiceIcon.innerHTML = `<div style="display: flex; align-items: center; gap: 4px;"><div class="sound-wave-bars"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></div>`;
-          voiceText.innerHTML = (currentLang === 'en') 
-            ? `<span style="font-size: 11px; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 1px;"><span>🔴 Recording...</span><span style="font-size: 9.5px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.04em; color: #be123c;">(Click to Stop)</span></span>` 
-            : `<span style="font-size: 11px; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 1px;"><span>🔴 Dinleniyor...</span><span style="font-size: 9.5px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.04em; color: #be123c;">(Durdurmak İçin Tıkla)</span></span>`;
+          voiceIcon.innerHTML = `<div class="sound-wave-bars"><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>`;
+          voiceText.textContent = (currentLang === 'en') ? "Recording..." : "Dinleniyor...";
+          if (voiceSubtext) voiceSubtext.textContent = (currentLang === 'en') ? "🔴 Click to Stop" : "🔴 Durdurmak İçin Tıkla";
           questionInput.placeholder = (currentLang === 'en') 
-            ? "🔴 Listening... Speak your Excel command now. Click '(Click to Stop)' button when finished..." 
-            : "🔴 Dinleniyor... Lütfen Excel komutunuzu söyleyin. Bitirdiğinizde '(Durdurmak İçin Tıkla)' butonuna basın...";
+            ? "🔴 Listening... Speak your Excel command now. Click button when finished..." 
+            : "🔴 Dinleniyor... Lütfen Excel komutunuzu söyleyin. Bitirdiğinizde butona basın...";
         };
 
         recognition.onresult = function(event) {
@@ -3368,12 +3467,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
         function stopListeningUI() {
           isListening = false;
+          const voiceSubtext = document.getElementById("voiceSubtext");
           voiceBtn.classList.remove("voice-listening-active");
-          voiceBtn.style.background = "#ffffff";
-          voiceBtn.style.borderColor = "#cbd5e1";
-          voiceBtn.style.color = "#2563eb";
-          voiceIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`;
-          voiceText.textContent = "Voice Command";
+          voiceIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`;
+          voiceText.textContent = "Voice AI Command";
+          if (voiceSubtext) voiceSubtext.textContent = "🎙️ Speak or Click";
         }
 
         try {
