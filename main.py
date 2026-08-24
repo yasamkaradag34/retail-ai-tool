@@ -5376,7 +5376,7 @@ def index():
   <div class="hero-content">
     <div class="hero-badge">✦ Local Intelligence. Zero Compromise.</div>
     <h1>Turn CRM data into<br><span>actionable insights.</span></h1>
-    <p class="hero-sub">DataProvido analyses your stock, funnel, and sales data locally — giving your team clear, real-time answers without sending a single byte to the cloud.</p>
+    <p class="hero-sub" style="max-width: 680px;">DataProvido doesn't just analyze your stock, funnel, and sales data locally — it revolutionizes your decision-making by delivering clear, prescriptive commercial actions your team can execute instantly with total data privacy.</p>
     <div class="hero-actions">
       <a href="/journey" class="btn-primary">Start Your Journey &nbsp;→</a>
       <a href="/how-works" class="btn-ghost">See How It Works</a>
