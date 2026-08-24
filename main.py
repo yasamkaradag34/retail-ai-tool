@@ -2625,22 +2625,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       <section class="workspace">
         <div class="module-panel" style="padding: 32px 36px;">
           
-          <!-- HOW TO USE INTERACTIVE GUIDANCE ACCORDION -->
-          <div class="how-to-use-box" style="margin-bottom: 20px; border: 1px solid var(--border-orange); background: linear-gradient(135deg, #fff8f4 0%, #ffffff 100%); border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(242,111,38,0.06);">
-            <button id="howToUseToggle" onclick="toggleHowToUse()" type="button" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: transparent; border: 0; cursor: pointer; text-align: left; transition: background 0.2s;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span class="info-pulse" style="font-size: 16px; background: rgba(242,111,38,0.12); color: var(--orange); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; animation: pulse-glow 2.2s infinite;">ℹ️</span>
-                <span style="font-size: 13px; font-weight: 700; color: var(--text-900);" id="howToUseHeaderTitle">How to Use Guide</span>
-              </div>
-              <span id="howToUseChevron" style="font-size: 13px; color: var(--orange); font-weight: 700; transition: transform 0.3s ease;">▼</span>
-            </button>
-            <div id="howToUseContent" style="max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, padding 0.3s ease; padding: 0 16px;">
-              <div id="howToUseBody" style="padding-bottom: 14px; font-size: 12.5px; color: var(--text-700); line-height: 1.65; border-top: 1px solid rgba(242,111,38,0.15); padding-top: 12px; margin-top: 4px;">
-                <!-- Dynamically updated -->
-              </div>
-            </div>
-          </div>
-
           <div class="module-head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid #e2e8f0;">
             <div style="flex: 1;">
               <h3 class="module-title" id="moduleTitle" style="font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.02em;">Excel Wizard</h3>
@@ -2672,8 +2656,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               <!-- TOP FILE STATUS BAR / DROP BADGE -->
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; margin-bottom: 12px; background: #f8fafc; border-radius: 14px; border: 1px solid #f1f5f9;">
                 <div id="activeFileBadge" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #334155;">
-                  <span style="color: #10b981; font-weight: 800;">✓</span>
-                  <span>Active Dataset: <strong id="activeFileName" style="color: #0f172a;">default_retail_data.xlsx</strong> <span id="activeFileMeta" style="color: #64748b; font-weight: 400;">(1,450 rows, 12 columns)</span></span>
+                  <span id="activeFileIcon" style="color: #94a3b8; font-weight: 800;">📁</span>
+                  <span>Active Dataset: <strong id="activeFileName" style="color: #0f172a;">There is no uploaded file</strong> <span id="activeFileMeta" style="color: #64748b; font-weight: 400;"></span></span>
                 </div>
                 <label style="cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 6px 14px; border-radius: 10px; border: 1px solid #bfdbfe; transition: all 0.18s;">
                   <span>📎 Drag &amp; Drop Excel or Click to Upload</span>
@@ -3229,8 +3213,13 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       if (savedFileName) {
         const activeFileName = document.getElementById("activeFileName");
         const activeFileMeta = document.getElementById("activeFileMeta");
+        const activeFileIcon = document.getElementById("activeFileIcon");
         if (activeFileName) activeFileName.textContent = savedFileName;
         if (activeFileMeta && savedFileMeta) activeFileMeta.textContent = savedFileMeta;
+        if (activeFileIcon) {
+          activeFileIcon.textContent = "✓";
+          activeFileIcon.style.color = "#10b981";
+        }
       }
     });
 
@@ -3245,7 +3234,12 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
       const activeFileName = document.getElementById("activeFileName");
       const activeFileMeta = document.getElementById("activeFileMeta");
+      const activeFileIcon = document.getElementById("activeFileIcon");
       if (activeFileName) activeFileName.textContent = file.name;
+      if (activeFileIcon) {
+        activeFileIcon.textContent = "✓";
+        activeFileIcon.style.color = "#10b981";
+      }
       
       const metaText = `(${(file.size / 1024).toFixed(1)} KB) ✓ Excel active & ready for commands`;
       if (activeFileMeta) activeFileMeta.textContent = metaText;
