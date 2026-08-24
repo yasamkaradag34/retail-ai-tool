@@ -2512,7 +2512,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     .cmd-card-body textarea {
       width: 100%;
-      min-height: 120px;
+      min-height: 220px;
       resize: vertical;
       border: none;
       outline: none;
@@ -2521,6 +2521,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       font-family: inherit;
       line-height: 1.65;
       background: transparent;
+      transition: height 0.15s ease;
     }
 
     .cmd-card-footer {
@@ -2873,7 +2874,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
               <!-- MIDDLE PROMPT TEXTAREA AREA -->
               <div class="cmd-card-body">
-                <textarea id="questionInput" oninput="updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or drag & drop your Excel file here / use Voice Command)..."></textarea>
+                <textarea id="questionInput" oninput="autoExpandPrompt(this); updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or drag & drop your Excel file here / use Voice Command)..."></textarea>
               </div>
 
               <!-- BOTTOM INTEGRATED TOOLBAR (ACTIONS + VOICE ORB + PRIMARY RUN CTA) -->
@@ -3362,6 +3363,13 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const activeBtn = document.querySelector(".menu-btn.active");
       if (activeBtn) renderModule(activeBtn.dataset.key);
       updateRunButtonState();
+    }
+
+    function autoExpandPrompt(textarea) {
+      if (!textarea) return;
+      textarea.style.height = 'auto';
+      const newHeight = Math.max(220, textarea.scrollHeight);
+      textarea.style.height = newHeight + 'px';
     }
 
     function updateRunButtonState() {
