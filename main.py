@@ -5206,6 +5206,7 @@ def index():
     <a href="/contact" class="nav-link">Contact</a>
     <a href="/who-we-are" class="nav-link">Who We Are?</a>
     <a href="/how-works" class="nav-link">How Works?</a>
+    <a href="/privacy" class="nav-link">Privacy Policy</a>
   </div>
   <a href="/journey" class="nav-cta">Start Journey &nbsp;→</a>
 </nav>
