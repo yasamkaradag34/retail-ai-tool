@@ -156,6 +156,11 @@ async def enforce_https_middleware(request: Request, call_next):
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+@app.get("/logo.png")
+def get_logo():
+    from fastapi.responses import FileResponse
+    return FileResponse("logo.png", media_type="image/png")
+
 # ─────────────────────────────────────────────────────────────
 #  LLM BACKEND  (env var: LLM_BACKEND=groq | ollama)
 #  Local  → Ollama running on localhost:11434
@@ -2468,7 +2473,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     <aside class="sidebar">
       <div>
         <div class="brand">
-          <div class="brand-icon">D</div>
+          <img src="/logo.png" alt="DataProvido Logo" style="width: 42px; height: 42px; object-fit: contain; border-radius: 12px; background: #ffffff; padding: 3px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); flex-shrink: 0;" />
           <div>
             <h1>DataProvido</h1>
           </div>
@@ -3782,7 +3787,7 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
   <!-- End Google Tag Manager (noscript) -->
 
   <nav class="nav">
-    <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>DataProvido</a>
+    <a href="/" class="nav-logo" style="display: flex; align-items: center; gap: 10px;"><img src="/logo.png" alt="DataProvido" style="height: 34px; width: 34px; object-fit: contain; border-radius: 8px;" /><span>DataProvido</span></a>
     <div class="nav-links">
       <a href="/pricing" class="{nav_pricing_cls}">Pricing</a>
       <a href="/contact" class="{nav_contact_cls}">Contact</a>
@@ -5195,7 +5200,7 @@ def index():
 <body>
 
 <nav class="nav" id="main-nav">
-  <a href="/" class="nav-logo"><div class="nav-logo-dot"></div>DataProvido</a>
+  <a href="/" class="nav-logo" style="display: flex; align-items: center; gap: 10px;"><img src="/logo.png" alt="DataProvido" style="height: 36px; width: 36px; object-fit: contain; border-radius: 8px;" /><span>DataProvido</span></a>
   <div class="nav-links">
     <a href="/pricing" class="nav-link">Pricing</a>
     <a href="/contact" class="nav-link">Contact</a>
@@ -5390,7 +5395,7 @@ def index():
 </div>
 
 <footer class="site-footer">
-  <div class="footer-left"><div class="nav-logo-dot"></div><span class="footer-logo">DataProvido</span><span class="footer-copy">· Local Intelligence. Zero Compromise.</span></div>
+  <div class="footer-left" style="display: flex; align-items: center; gap: 10px;"><img src="/logo.png" alt="DataProvido" style="height: 28px; width: 28px; object-fit: contain; border-radius: 6px;" /><span class="footer-logo">DataProvido</span><span class="footer-copy">· Local Intelligence. Zero Compromise.</span></div>
   <div class="footer-right">Powered by Llama 3.1 &nbsp;·&nbsp; Runs entirely offline</div>
 </footer>
 
