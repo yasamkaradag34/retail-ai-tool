@@ -2513,6 +2513,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     .cmd-card-body textarea {
       width: 100%;
       min-height: 220px;
+      max-height: 420px;
       resize: vertical;
       border: none;
       outline: none;
@@ -2521,8 +2522,13 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       font-family: inherit;
       line-height: 1.65;
       background: transparent;
+      overflow-y: auto;
       transition: height 0.15s ease;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 transparent;
     }
+    .cmd-card-body textarea::-webkit-scrollbar { width: 5px; }
+    .cmd-card-body textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
     .cmd-card-footer {
       display: flex;
@@ -3368,7 +3374,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     function autoExpandPrompt(textarea) {
       if (!textarea) return;
       textarea.style.height = 'auto';
-      const newHeight = Math.max(220, textarea.scrollHeight);
+      const newHeight = Math.min(420, Math.max(220, textarea.scrollHeight));
       textarea.style.height = newHeight + 'px';
     }
 
