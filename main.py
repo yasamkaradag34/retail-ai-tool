@@ -2140,65 +2140,61 @@ async def process_excel(req: ExcelCommandRequest):
     cat2_col = get_col(["cat2", "sub_category"])
     name_col = get_col(["product", "name", "title", "product_title", "ürün"])
 
-    # 1. UNIVERSAL DYNAMIC TEXT COLUMN FILTERING
-    filter_label = ""
-    matched_col = None
+    # 1. MULTI-CONDITION DYNAMIC FILTERING (Combining Brand + Availability/Risk + Category)
+    applied_filters = []
     target_term = ""
 
-    # Priority 1: E-commerce specific terms mapping
-    term_map = [
-        ("critical_low_stock", ["critical low stock", "critical_low_stock", "kritik stok", "low stock"]),
-        ("high risk", ["high risk", "yüksek risk", "yüksek stok riski", "yüksek riskli"]),
+    # Filter A: Brand Match
+    brands_list = ["apple", "samsung", "sony", "dyson", "philips", "logitech", "dji", "lg", "jbl", "xiaomi", "bosch", "stanley", "onvo", "ecovacs", "roborock", "braun", "daikin", "honor"]
+    matched_brand = next((b for b in brands_list if b in q), None)
+    if matched_brand and brand_col and brand_col in df.columns:
+        df_b = df[df[brand_col].astype(str).str.lower() == matched_brand]
+        if not df_b.empty:
+            df = df_b
+            b_name = matched_brand.upper()
+            applied_filters.append(f"'{brand_col}' = '{b_name}'")
+
+    # Filter B: Availability / Risk Match
+    status_terms = [
+        ("critical_low_stock", ["critical low stock", "critical_low_stock", "kritik düşük stok", "kritik stok", "low stock"]),
+        ("high risk", ["high risk", "yüksek risk", "yüksek stok riski"]),
         ("oos", ["oos", "out of stock", "out_of_stock", "stok yok", "stoksuz"]),
         ("in_stock", ["in stock", "in_stock", "stokta var"]),
         ("overstock", ["overstock", "fazla stok"]),
-        ("healthy", ["healthy", "sağlıklı"]),
-        ("apple", ["apple"]),
-        ("samsung", ["samsung"]),
-        ("dyson", ["dyson"]),
-        ("logitech", ["logitech"]),
-        ("telefon", ["telefon", "smartphone", "mobile"]),
-        ("bilgisayar", ["bilgisayar", "laptop", "pc"])
+        ("healthy", ["healthy", "sağlıklı"])
     ]
 
-    matched_exact = False
-    for label, aliases in term_map:
+    for label, aliases in status_terms:
         if any(alias in q for alias in aliases):
-            for col in text_cols:
-                col_str = df[col].astype(str).str.lower()
-                m1 = col_str == label.lower()
-                m2 = col_str.str.contains(label.lower(), na=False)
-                m3 = col_str.str.contains(label.replace(" ", "_").lower(), na=False)
-                m = m1 | m2 | m3
-                if m.any():
-                    df = df[m].copy()
-                    matched_col = col
+            target_col = get_col(["availability_status", "status"]) if ("critical" in label or "stock" in label or "in_" in label) else (risk_col or status_col)
+            if target_col and target_col in df.columns:
+                m_st = df[target_col].astype(str).str.lower().str.contains(label.replace(" ", "_"), na=False) | df[target_col].astype(str).str.lower().str.contains(label, na=False)
+                df_st = df[m_st]
+                if not df_st.empty:
+                    df = df_st
                     target_term = label
-                    matched_exact = True
-                    filter_label = f"'{col}' = '{label}'"
-                    break
-            if matched_exact:
-                break
+                    applied_filters.append(f"'{target_col}' = '{label}'")
+            break
 
-    # Priority 2: Generic fallback text search across all columns
-    if not matched_exact:
-        stopwords = ["active", "datasette", "dataset", "olan", "ürünlerin", "ürünleri", "satırlarını", "süzer", "misin", "lütfen", "getir", "göster", "filtrele", "listele", "bul", "tüm"]
-        words = [w for w in q.split() if w not in stopwords]
-        clean_phrase = " ".join(words).strip()
-        underscore_phrase = clean_phrase.replace(" ", "_")
+    # Filter C: Category Match
+    cat_terms = [
+        ("telefon", ["telefon", "smartphone", "mobile", "cep telefonları"]),
+        ("bilgisayar", ["bilgisayar", "laptop", "pc"]),
+        ("süpürge", ["süpürge", "süpürgeler", "ev aletleri"]),
+        ("tablet", ["tablet", "tabletler"]),
+        ("drone", ["drone"])
+    ]
+    for cat_label, cat_aliases in cat_terms:
+        if any(alias in q for alias in cat_aliases):
+            c_col = cat2_col if cat2_col and cat2_col in df.columns else cat1_col
+            if c_col and c_col in df.columns:
+                df_c = df[df[c_col].astype(str).str.lower().str.contains(cat_label, na=False) | (cat1_col and df[cat1_col].astype(str).str.lower().str.contains(cat_label, na=False))]
+                if not df_c.empty:
+                    df = df_c
+                    applied_filters.append(f"'category' = '{cat_label}'")
+            break
 
-        if clean_phrase:
-            mask = pd.Series([False] * len(df))
-            for col in text_cols:
-                col_str = df[col].astype(str).str.lower()
-                m = col_str.str.contains(clean_phrase, na=False) | col_str.str.contains(underscore_phrase, na=False)
-                if m.any():
-                    mask = mask | m
-                    matched_col = col
-            if mask.any():
-                df = df[mask].copy()
-                target_term = clean_phrase
-                filter_label = f"Search: '{clean_phrase}'"
+    filter_desc = " AND ".join(applied_filters) if applied_filters else ""
 
     # 2. DYNAMIC COLUMN CREATION & TAGGING
     if any(k in q for k in ["kolon", "column", "sütun", "ayrı kolonda", "topla", "ekle", "tag"]):
@@ -2248,8 +2244,8 @@ async def process_excel(req: ExcelCommandRequest):
         metric_msg += f" {len(df)} ürüne +{add_stock} adet stok eklendi."
 
     col_msg = f" Excel dosyasına '{new_col_name}' adında yeni sütun eklendi." if new_col_name else ""
-    filter_desc = f"{filter_label} olan " if filter_label else ""
-    action_note = f"⚡ EXCEL SÜZME OPERASYONU: {filter_desc}{len(df)} adet SKU filtrelendi.{metric_msg}{col_msg}"
+    filter_msg = f" {filter_desc} şartlarına uyan" if filter_desc else ""
+    action_note = f"⚡ EXCEL ÇOKLU FİLTRE OPERASYONU:{filter_msg} {len(df)} adet SKU filtrelendi.{metric_msg}{col_msg}"
 
     CURRENT_EXCEL_DF = df
     rows = df_to_preview_rows(df, max_rows=200)
