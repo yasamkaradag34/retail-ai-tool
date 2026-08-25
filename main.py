@@ -3272,6 +3272,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     var isHowToUseOpen = false;
     var recognition = null;
     var isListening = false;
+    var currentSpreadsheetData = [];
 
     /* ── How to Use Guide Content ── */
     const howToUseGuide = {
@@ -3932,7 +3933,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     window.closeUserProfileModal = closeUserProfileModal;
 
     /* ── Live Interactive Excel Spreadsheet Data Engine ── */
-    let currentSpreadsheetData = [];
 
     async function runModule() {
       const questionInput = document.getElementById("questionInput");
