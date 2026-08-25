@@ -2123,7 +2123,11 @@ async def process_excel(req: ExcelCommandRequest):
     stock_col = next((c for c in ["stock_qty", "Stock", "stock", "inventory"] if c in df.columns), None)
     rev_col = next((c for c in ["revenue", "Revenue", "sales_amount", "ciro"] if c in df.columns), None)
     status_col = next((c for c in ["availability_status", "Status", "status", "stock_risk_level"] if c in df.columns), None)
+    brand_col = next((c for c in ["brand", "Brand", "manufacturer", "marka"] if c in df.columns), None)
+    cat_col = next((c for c in ["cat1", "Category", "category", "cat2"] if c in df.columns), None)
+    name_col = next((c for c in ["product", "Name", "product_title", "title"] if c in df.columns), None)
 
+    # 1. Price mutations
     if any(k in q for k in ["artır", "increase", "%10", "zam", "yükselt"]):
         pct = 10
         if "20" in q: pct = 20
@@ -2154,6 +2158,7 @@ async def process_excel(req: ExcelCommandRequest):
                 df[status_col] = f"Discount Applied (-{pct}%)"
         action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: {mutated_count} üründe %{pct} fiyat indirimi uygulandı. Yeni değerler Excel'e işlendi."
 
+    # 2. Stock replenishment
     elif any(k in q for k in ["stok", "stock", "ekle", "replenish", "tedarik"]):
         add_stock = 100
         if stock_col:
@@ -2164,6 +2169,25 @@ async def process_excel(req: ExcelCommandRequest):
             if status_col:
                 df[status_col] = f"Stock Replenished (+{add_stock})"
         action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: {mutated_count} ürüne +{add_stock} adet stok eklendi ve toplam değer güncellendi."
+
+    # 3. Filtering & Searching by Brand/Category/Name
+    elif any(k in q for k in ["apple", "samsung", "sony", "dell", "macbook", "iphone", "ipad", "airpods", "laptop", "smartphone", "accessories", "tablet"]):
+        matched_kw = next((k for k in ["apple", "samsung", "sony", "dell", "macbook", "iphone", "ipad", "airpods", "laptop", "smartphone", "accessories", "tablet"] if k in q), "")
+        filter_mask = pd.Series([False] * len(df))
+        for col in [name_col, brand_col, cat_col]:
+            if col and col in df.columns:
+                filter_mask = filter_mask | df[col].astype(str).str.lower().str.contains(matched_kw, na=False)
+        
+        filtered_df = df[filter_mask]
+        if not filtered_df.empty:
+            df = filtered_df
+        action_note = f"⚡ EXCEL FİLTRELEME OPERASYONU: '{matched_kw.upper()}' aramasına uyan {len(df)} satır filtrelendi ve metrikler hesaplandı."
+
+    # 4. Sorting operations
+    elif any(k in q for k in ["sırala", "sort", "en yüksek", "highest", "top 10", "ilk 10"]):
+        if price_col:
+            df = df.sort_values(by=price_col, ascending=False)
+        action_note = f"⚡ EXCEL SIRALAMA OPERASYONU: Ürünler fiyata/değere göre en yüksekten en düşüğe sıralandı."
 
     else:
         action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: '{command}' komutu aktif {len(df)} satırlık Excel tablosu üzerinde hesaplandı."
