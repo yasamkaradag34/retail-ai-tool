@@ -3329,7 +3329,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       excel_outputs: {
         tr: `<strong>Excel Outputs Kullanım Rehberi:</strong><br>
         1. Daha önce çalıştırılan analiz sonuçlarını çoklu sheet (çalışma sayfası) formatında görün.<br>
-        2. Raporları anında bilgisayarınıza `.xlsx` dosyası olarak indirin.`,
+        2. Raporları anında bilgisayarınıza <b>.xlsx</b> dosyası olarak indirin.`,
         en: `<strong>Excel Outputs User Guide:</strong><br>
         1. Review all previous analysis runs structured into multi-sheet Workbooks.<br>
         2. Download formatted Excel files directly to your device.`
