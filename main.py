@@ -3983,6 +3983,12 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           const filteredStockValue = (data.updated_stock_value || 0).toLocaleString();
           const q = question.toLowerCase();
 
+          // Update top command card status bar with SKU count and operation feedback
+          const fileMeta = document.getElementById("activeFileMeta");
+          if (fileMeta) {
+            fileMeta.innerHTML = `<span style="color: #059669; font-weight: 700;"> (${data.total_rows} SKUs processed, ${data.total_columns || 58} cols) ✓ ${actionNote.replace('⚡ ', '')}</span>`;
+          }
+
           let outputHtml = `
             <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
@@ -4000,28 +4006,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               <div style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;">
                 <span>${actionNote}</span>
                 <span style="background: #10b981; color: #ffffff; font-size: 10.5px; padding: 2px 8px; border-radius: 999px;">EXCEL UPDATED</span>
-              </div>
-
-              <!-- KPI Summary Cards -->
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px;">
-                <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                  <div style="font-size: 11px; color: #64748b; font-weight: 600;">Processed SKUs</div>
-                  <div style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 4px;">${data.total_rows} Items</div>
-                </div>
-                ${data.total_pdp_views > 0 ? `
-                  <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                    <div style="font-size: 11px; color: #64748b; font-weight: 600;">Total PDP Views</div>
-                    <div style="font-size: 20px; font-weight: 800; color: #8b5cf6; margin-top: 4px;">${Number(data.total_pdp_views).toLocaleString()} Views</div>
-                  </div>
-                ` : ''}
-                <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                  <div style="font-size: 11px; color: #64748b; font-weight: 600;">Updated Avg Price</div>
-                  <div style="font-size: 20px; font-weight: 800; color: #2563eb; margin-top: 4px;">${filteredAvgPrice} TL</div>
-                </div>
-                <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                  <div style="font-size: 11px; color: #64748b; font-weight: 600;">Recalculated Stock Value</div>
-                  <div style="font-size: 20px; font-weight: 800; color: #10b981; margin-top: 4px;">${filteredStockValue} TL</div>
-                </div>
               </div>
 
               <!-- Filtered Table -->
