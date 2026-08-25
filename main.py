@@ -2085,15 +2085,34 @@ async def process_excel(req: ExcelCommandRequest):
     if CURRENT_ORIGINAL_EXCEL_DF is None:
         load_default_excel_df()
 
-    df = CURRENT_ORIGINAL_EXCEL_DF.copy()
     command = req.command.strip()
     q = command.lower()
 
+    # 0. RESET DATASET COMMAND CHECK
+    if any(k in q for k in ["reset", "sıfırla", "baştan başla", "tüm veriyi getir", "hepsini göster"]):
+        CURRENT_EXCEL_DF = CURRENT_ORIGINAL_EXCEL_DF.copy()
+        rows = df_to_preview_rows(CURRENT_EXCEL_DF, max_rows=200)
+        return {
+            "status": "success",
+            "command": command,
+            "action_note": f"⚡ EXCEL DATASET SIFIRLANDI: Orijinal {len(CURRENT_EXCEL_DF)} satır ve {len(CURRENT_EXCEL_DF.columns)} sütun yüklendi.",
+            "total_rows": len(CURRENT_EXCEL_DF),
+            "total_columns": len(CURRENT_EXCEL_DF.columns),
+            "column_names": CURRENT_EXCEL_DF.columns.tolist(),
+            "updated_avg_price": 0.0,
+            "updated_stock_value": 0.0,
+            "total_pdp_views": 0,
+            "rows": rows
+        }
+
+    df = CURRENT_ORIGINAL_EXCEL_DF.copy()
     action_note = ""
     total_pdp_sum = 0
     new_col_name = None
 
     all_columns = df.columns.tolist()
+    text_cols = [c for c in all_columns if not pd.api.types.is_numeric_dtype(df[c])]
+    numeric_cols = [c for c in all_columns if pd.api.types.is_numeric_dtype(df[c])]
 
     # Helper: Resolve column by name or alias
     def get_col(aliases: List[str]) -> Optional[str]:
@@ -2103,7 +2122,7 @@ async def process_excel(req: ExcelCommandRequest):
                     return c
         return None
 
-    # Primary column resolvers across all 58 columns
+    # Primary column resolvers
     price_col = get_col(["product_price", "price", "unit_price", "fiyat"])
     stock_col = get_col(["stock_qty", "stock", "inventory", "stok"])
     rev_col = get_col(["revenue", "ciro", "sales_amount"])
@@ -2121,48 +2140,70 @@ async def process_excel(req: ExcelCommandRequest):
     cat2_col = get_col(["cat2", "sub_category"])
     name_col = get_col(["product", "name", "title", "product_title", "ürün"])
 
-    # 1. SEMANTIC FILTERING (Risk, Category, Brand, Keyword, OOS)
+    # 1. UNIVERSAL DYNAMIC TEXT COLUMN FILTERING
     filter_label = ""
-    
-    if any(k in q for k in ["high risk", "yüksek risk", "stok risk leveli yüksek", "yüksek stok riski", "yüksek riskli"]):
-        if risk_col:
-            df = df[df[risk_col].astype(str).str.lower().str.contains("high risk|yüksek risk|^high$", na=False)].copy()
-            filter_label = "Stock Risk Level: High Risk"
-    elif any(k in q for k in ["oos", "out of stock", "stok yok", "stoksuz"]):
-        if risk_col:
-            df = df[df[risk_col].astype(str).str.lower().str.contains("^oos$|out of stock", na=False)].copy()
-            filter_label = "Stock Risk Level: OOS"
-    elif any(k in q for k in ["medium risk", "orta risk"]):
-        if risk_col:
-            df = df[df[risk_col].astype(str).str.lower().str.contains("medium", na=False)].copy()
-            filter_label = "Stock Risk Level: Medium Risk"
-    elif any(k in q for k in ["overstock", "fazla stok"]):
-        if risk_col:
-            df = df[df[risk_col].astype(str).str.lower().str.contains("overstock", na=False)].copy()
-            filter_label = "Stock Risk Level: Overstock"
-    elif any(k in q for k in ["apple", "samsung", "sony", "dyson", "philips", "logitech", "bosch", "lg", "jbl", "xiaomi"]):
-        matched_brand = next((b for b in ["apple", "samsung", "sony", "dyson", "philips", "logitech", "bosch", "lg", "jbl", "xiaomi"] if b in q), "")
-        if brand_col:
-            df = df[df[brand_col].astype(str).str.lower().str.contains(matched_brand, na=False)].copy()
-            filter_label = f"Brand: {matched_brand.upper()}"
-    elif any(k in q for k in ["telefon", "smartphone", "mobile"]):
-        if cat1_col:
-            df = df[df[cat1_col].astype(str).str.lower().str.contains("telefon|smartphone", na=False)].copy()
-            filter_label = "Category: Telefon"
-    elif any(k in q for k in ["bilgisayar", "laptop", "pc"]):
-        if cat1_col:
-            df = df[df[cat1_col].astype(str).str.lower().str.contains("bilgisayar|laptop", na=False)].copy()
-            filter_label = "Category: Bilgisayar"
-    elif any(k in q for k in ["süpürge", "ev aletleri"]):
-        col = cat2_col or cat1_col
-        if col:
-            df = df[df[col].astype(str).str.lower().str.contains("süpürge|ev aletleri", na=False)].copy()
-            filter_label = "Category: Süpürgeler / Ev Aletleri"
+    matched_col = None
+    target_term = ""
+
+    # Priority 1: E-commerce specific terms mapping
+    term_map = [
+        ("critical_low_stock", ["critical low stock", "critical_low_stock", "kritik stok", "low stock"]),
+        ("high risk", ["high risk", "yüksek risk", "yüksek stok riski", "yüksek riskli"]),
+        ("oos", ["oos", "out of stock", "out_of_stock", "stok yok", "stoksuz"]),
+        ("in_stock", ["in stock", "in_stock", "stokta var"]),
+        ("overstock", ["overstock", "fazla stok"]),
+        ("healthy", ["healthy", "sağlıklı"]),
+        ("apple", ["apple"]),
+        ("samsung", ["samsung"]),
+        ("dyson", ["dyson"]),
+        ("logitech", ["logitech"]),
+        ("telefon", ["telefon", "smartphone", "mobile"]),
+        ("bilgisayar", ["bilgisayar", "laptop", "pc"])
+    ]
+
+    matched_exact = False
+    for label, aliases in term_map:
+        if any(alias in q for alias in aliases):
+            for col in text_cols:
+                col_str = df[col].astype(str).str.lower()
+                m1 = col_str == label.lower()
+                m2 = col_str.str.contains(label.lower(), na=False)
+                m3 = col_str.str.contains(label.replace(" ", "_").lower(), na=False)
+                m = m1 | m2 | m3
+                if m.any():
+                    df = df[m].copy()
+                    matched_col = col
+                    target_term = label
+                    matched_exact = True
+                    filter_label = f"'{col}' = '{label}'"
+                    break
+            if matched_exact:
+                break
+
+    # Priority 2: Generic fallback text search across all columns
+    if not matched_exact:
+        stopwords = ["active", "datasette", "dataset", "olan", "ürünlerin", "ürünleri", "satırlarını", "süzer", "misin", "lütfen", "getir", "göster", "filtrele", "listele", "bul", "tüm"]
+        words = [w for w in q.split() if w not in stopwords]
+        clean_phrase = " ".join(words).strip()
+        underscore_phrase = clean_phrase.replace(" ", "_")
+
+        if clean_phrase:
+            mask = pd.Series([False] * len(df))
+            for col in text_cols:
+                col_str = df[col].astype(str).str.lower()
+                m = col_str.str.contains(clean_phrase, na=False) | col_str.str.contains(underscore_phrase, na=False)
+                if m.any():
+                    mask = mask | m
+                    matched_col = col
+            if mask.any():
+                df = df[mask].copy()
+                target_term = clean_phrase
+                filter_label = f"Search: '{clean_phrase}'"
 
     # 2. DYNAMIC COLUMN CREATION & TAGGING
     if any(k in q for k in ["kolon", "column", "sütun", "ayrı kolonda", "topla", "ekle", "tag"]):
-        tag_val = filter_label.replace("Stock Risk Level: ", "").replace("Brand: ", "").replace("Category: ", "") or "Processed Group"
-        new_col_name = f"Flagged_{tag_val.replace(' ', '_')}_SKUs"
+        tag_val = target_term.replace(" ", "_").upper() if target_term else "PROCESSED"
+        new_col_name = f"Flagged_{tag_val}_SKUs"
         df[new_col_name] = f"YES - {tag_val}"
 
     # 3. METRIC CALCULATION ACROSS ALL METRICS
@@ -2208,7 +2249,7 @@ async def process_excel(req: ExcelCommandRequest):
 
     col_msg = f" Excel dosyasına '{new_col_name}' adında yeni sütun eklendi." if new_col_name else ""
     filter_desc = f"{filter_label} olan " if filter_label else ""
-    action_note = f"⚡ EXCEL SEMANTİK OPERASYON: {filter_desc}{len(df)} adet SKU işlendi.{metric_msg}{col_msg}"
+    action_note = f"⚡ EXCEL SÜZME OPERASYONU: {filter_desc}{len(df)} adet SKU filtrelendi.{metric_msg}{col_msg}"
 
     CURRENT_EXCEL_DF = df
     rows = df_to_preview_rows(df, max_rows=200)
@@ -3165,6 +3206,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
                 <div class="cmd-action-left">
                   <button class="cmd-chip-btn" type="button" onclick="openExcelPreview()" id="previewBtnLabel">📊 Excel Preview</button>
                   <button class="cmd-chip-btn" type="button" onclick="downloadExcel()" id="downloadBtnLabel">📥 Export Excel</button>
+                  <button class="cmd-chip-btn" type="button" onclick="resetDataset()" id="resetBtnLabel">🔄 Reset Dataset</button>
                 </div>
                 <div class="cmd-action-right">
                   <button id="voiceBtn" onclick="toggleVoiceRecognition()" type="button" class="cmd-voice-orb-btn">
@@ -3966,6 +4008,38 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       if (modal) modal.style.display = "none";
     }
 
+    async function resetDataset() {
+      const resultBox = document.getElementById("resultBox");
+      const resultSection = document.getElementById("resultSection");
+      if (resultSection) resultSection.style.display = "block";
+      if (resultBox) {
+        resultBox.classList.remove("placeholder");
+        resultBox.classList.add("loading");
+        resultBox.innerHTML = (currentLang === 'en') ? "⚡ Resetting dataset to original..." : "⚡ Veri seti orijinal hale getiriliyor...";
+      }
+      try {
+        const response = await fetch("/process-excel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ command: "reset" })
+        });
+        const data = await response.json();
+        if (data.status === "success") {
+          currentSpreadsheetData = data.rows;
+          const fileMeta = document.getElementById("activeFileMeta");
+          if (fileMeta) {
+            fileMeta.innerHTML = `<span style="color: #059669; font-weight: 700;"> (${data.total_rows} rows, ${data.total_columns} cols) ✓ Orijinal veri seti yüklendi</span>`;
+          }
+          if (resultBox) {
+            resultBox.classList.remove("loading");
+            resultBox.innerHTML = `<div style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 14px 18px; border-radius: 12px; font-weight: 700; font-size: 13.5px;">${data.action_note}</div>`;
+          }
+        }
+      } catch (err) {
+        console.error("Reset error:", err);
+      }
+    }
+
     // Explicitly attach all interactive handlers to window object for global HTML onclick availability
     window.toggleVoiceRecognition = toggleVoiceRecognition;
     window.setLanguage = setLanguage;
@@ -3978,6 +4052,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     window.toggleHowToUse = toggleHowToUse;
     window.openUserProfileModal = openUserProfileModal;
     window.closeUserProfileModal = closeUserProfileModal;
+    window.resetDataset = resetDataset;
 
     /* ── Live Interactive Excel Spreadsheet Data Engine ── */
 
