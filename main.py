@@ -1993,14 +1993,16 @@ def build_excel_from_tool_result(raw_text: str) -> BytesIO:
 #  EXCEL MACHINE GLOBAL ENGINE & ENDPOINTS
 # ─────────────────────────────────────────────────────────────
 CURRENT_EXCEL_DF: Optional[pd.DataFrame] = None
+CURRENT_ORIGINAL_EXCEL_DF: Optional[pd.DataFrame] = None
 CURRENT_EXCEL_FILENAME: str = "ecommerce_ai_sample_data_200_rows.xlsx"
 
 def load_default_excel_df() -> pd.DataFrame:
-    global CURRENT_EXCEL_DF, CURRENT_EXCEL_FILENAME
+    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME
     sample_path = "data/ecommerce_ai_sample_data_200_rows.xlsx"
     if os.path.exists(sample_path):
         try:
             CURRENT_EXCEL_DF = pd.read_excel(sample_path)
+            CURRENT_ORIGINAL_EXCEL_DF = CURRENT_EXCEL_DF.copy()
             CURRENT_EXCEL_FILENAME = "ecommerce_ai_sample_data_200_rows.xlsx"
             return CURRENT_EXCEL_DF
         except Exception as e:
@@ -2016,6 +2018,7 @@ def load_default_excel_df() -> pd.DataFrame:
         {"SKU": "SKU-1006", "Name": "Sony WH-1000XM5 ANC", "Category": "Accessories", "Price": 13999, "CompPrice": 14500, "Stock": 44, "Revenue": 615956, "Status": "Underpriced (-3.4%)"},
         {"SKU": "SKU-1007", "Name": "Dell XPS 15 OLED i9", "Category": "Laptops", "Price": 89999, "CompPrice": 92000, "Stock": 12, "Revenue": 1079988, "Status": "Price Leader"}
     ])
+    CURRENT_ORIGINAL_EXCEL_DF = CURRENT_EXCEL_DF.copy()
     CURRENT_EXCEL_FILENAME = "default_retail_data.xlsx"
     return CURRENT_EXCEL_DF
 
@@ -2041,7 +2044,7 @@ def df_to_preview_rows(df: pd.DataFrame, max_rows: int = 200) -> List[dict]:
 
 @app.post("/upload-excel")
 async def upload_excel(file: UploadFile = File(...)):
-    global CURRENT_EXCEL_DF, CURRENT_EXCEL_FILENAME
+    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME
     try:
         contents = await file.read()
         filename = file.filename
@@ -2056,6 +2059,7 @@ async def upload_excel(file: UploadFile = File(...)):
             return JSONResponse(status_code=400, content={"error": "Unsupported file format. Please upload .xlsx, .xls, or .csv"})
 
         CURRENT_EXCEL_DF = df
+        CURRENT_ORIGINAL_EXCEL_DF = df.copy()
         CURRENT_EXCEL_FILENAME = filename
 
         rows = df_to_preview_rows(df, max_rows=200)
@@ -2077,117 +2081,140 @@ class ExcelCommandRequest(BaseModel):
 
 @app.post("/process-excel")
 async def process_excel(req: ExcelCommandRequest):
-    global CURRENT_EXCEL_DF, CURRENT_EXCEL_FILENAME
-    if CURRENT_EXCEL_DF is None:
+    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME
+    if CURRENT_ORIGINAL_EXCEL_DF is None:
         load_default_excel_df()
 
-    df = CURRENT_EXCEL_DF.copy()
+    df = CURRENT_ORIGINAL_EXCEL_DF.copy()
     command = req.command.strip()
     q = command.lower()
 
     action_note = ""
-    price_col = next((c for c in ["product_price", "Price", "price", "unit_price"] if c in df.columns), None)
-    stock_col = next((c for c in ["stock_qty", "Stock", "stock", "inventory"] if c in df.columns), None)
-    rev_col = next((c for c in ["revenue", "Revenue", "sales_amount", "ciro"] if c in df.columns), None)
-    status_col = next((c for c in ["availability_status", "Status", "status", "stock_risk_level"] if c in df.columns), None)
-    brand_col = next((c for c in ["brand", "Brand", "manufacturer", "marka"] if c in df.columns), None)
-    cat_col = next((c for c in ["cat1", "Category", "category", "cat2"] if c in df.columns), None)
-    name_col = next((c for c in ["product", "Name", "product_title", "title"] if c in df.columns), None)
-    risk_col = next((c for c in ["stock_risk_level", "stock_risk", "risk_level"] if c in df.columns), status_col)
-    pdp_col = next((c for c in ["total_unique_pdp_views_sum", "pdp_views", "pdp", "views"] if c in df.columns), None)
-
     total_pdp_sum = 0
     new_col_name = None
 
-    # 1. RISK LEVEL & PDP QUERY HANDLING:
-    if any(k in q for k in ["risk", "pdp", "görüntüleme", "görüntülenmesi", "görüntülemeleri", "view", "views"]):
-        if risk_col and risk_col in df.columns:
-            if any(k in q for k in ["oos", "out of stock", "stok yok"]):
-                risk_mask = df[risk_col].astype(str).str.lower().str.contains("^oos$|out of stock", na=False)
-                risk_label = "OOS"
-            else:
-                risk_mask = df[risk_col].astype(str).str.lower().str.contains("high risk|yüksek risk|^high$", na=False)
-                risk_label = "High Risk"
+    all_columns = df.columns.tolist()
 
-            if risk_mask.any():
-                df = df[risk_mask].copy()
-        
+    # Helper: Resolve column by name or alias
+    def get_col(aliases: List[str]) -> Optional[str]:
+        for alias in aliases:
+            for c in all_columns:
+                if alias == c.lower() or alias in c.lower():
+                    return c
+        return None
+
+    # Primary column resolvers across all 58 columns
+    price_col = get_col(["product_price", "price", "unit_price", "fiyat"])
+    stock_col = get_col(["stock_qty", "stock", "inventory", "stok"])
+    rev_col = get_col(["revenue", "ciro", "sales_amount"])
+    lost_rev_col = get_col(["estimated_lost_revenue", "lost_revenue", "kayıp_ciro"])
+    lost_sales_col = get_col(["estimated_lost_sales_qty", "lost_sales"])
+    risk_col = get_col(["stock_risk_level", "stock_risk", "availability_status", "status", "risk"])
+    pdp_col = get_col(["total_unique_pdp_views_sum", "pdp_views", "pdp", "views", "görüntüleme"])
+    a2c_col = get_col(["total_unique_add_to_carts_sum", "add_to_carts", "a2c", "sepet"])
+    trans_col = get_col(["total_transactions_sum", "transactions", "orders", "sipariş"])
+    c2d_col = get_col(["c2d_pct", "c2d"])
+    b2d_col = get_col(["b2d_pct", "b2d"])
+    br_col = get_col(["bounce_rate_pct", "bounce_rate"])
+    brand_col = get_col(["brand", "manufacturer", "marka"])
+    cat1_col = get_col(["cat1", "category", "kategori"])
+    cat2_col = get_col(["cat2", "sub_category"])
+    name_col = get_col(["product", "name", "title", "product_title", "ürün"])
+
+    # 1. SEMANTIC FILTERING (Risk, Category, Brand, Keyword, OOS)
+    filter_label = ""
+    
+    if any(k in q for k in ["high risk", "yüksek risk", "stok risk leveli yüksek", "yüksek stok riski", "yüksek riskli"]):
+        if risk_col:
+            df = df[df[risk_col].astype(str).str.lower().str.contains("high risk|yüksek risk|^high$", na=False)].copy()
+            filter_label = "Stock Risk Level: High Risk"
+    elif any(k in q for k in ["oos", "out of stock", "stok yok", "stoksuz"]):
+        if risk_col:
+            df = df[df[risk_col].astype(str).str.lower().str.contains("^oos$|out of stock", na=False)].copy()
+            filter_label = "Stock Risk Level: OOS"
+    elif any(k in q for k in ["medium risk", "orta risk"]):
+        if risk_col:
+            df = df[df[risk_col].astype(str).str.lower().str.contains("medium", na=False)].copy()
+            filter_label = "Stock Risk Level: Medium Risk"
+    elif any(k in q for k in ["overstock", "fazla stok"]):
+        if risk_col:
+            df = df[df[risk_col].astype(str).str.lower().str.contains("overstock", na=False)].copy()
+            filter_label = "Stock Risk Level: Overstock"
+    elif any(k in q for k in ["apple", "samsung", "sony", "dyson", "philips", "logitech", "bosch", "lg", "jbl", "xiaomi"]):
+        matched_brand = next((b for b in ["apple", "samsung", "sony", "dyson", "philips", "logitech", "bosch", "lg", "jbl", "xiaomi"] if b in q), "")
+        if brand_col:
+            df = df[df[brand_col].astype(str).str.lower().str.contains(matched_brand, na=False)].copy()
+            filter_label = f"Brand: {matched_brand.upper()}"
+    elif any(k in q for k in ["telefon", "smartphone", "mobile"]):
+        if cat1_col:
+            df = df[df[cat1_col].astype(str).str.lower().str.contains("telefon|smartphone", na=False)].copy()
+            filter_label = "Category: Telefon"
+    elif any(k in q for k in ["bilgisayar", "laptop", "pc"]):
+        if cat1_col:
+            df = df[df[cat1_col].astype(str).str.lower().str.contains("bilgisayar|laptop", na=False)].copy()
+            filter_label = "Category: Bilgisayar"
+    elif any(k in q for k in ["süpürge", "ev aletleri"]):
+        col = cat2_col or cat1_col
+        if col:
+            df = df[df[col].astype(str).str.lower().str.contains("süpürge|ev aletleri", na=False)].copy()
+            filter_label = "Category: Süpürgeler / Ev Aletleri"
+
+    # 2. DYNAMIC COLUMN CREATION & TAGGING
+    if any(k in q for k in ["kolon", "column", "sütun", "ayrı kolonda", "topla", "ekle", "tag"]):
+        tag_val = filter_label.replace("Stock Risk Level: ", "").replace("Brand: ", "").replace("Category: ", "") or "Processed Group"
+        new_col_name = f"Flagged_{tag_val.replace(' ', '_')}_SKUs"
+        df[new_col_name] = f"YES - {tag_val}"
+
+    # 3. METRIC CALCULATION ACROSS ALL METRICS
+    metric_msg = ""
+    if any(k in q for k in ["pdp", "görüntüleme", "görüntülenmesi", "görüntülemeleri"]):
         if pdp_col and pdp_col in df.columns:
             total_pdp_sum = float(df[pdp_col].sum())
+            metric_msg = f" Toplam PDP Görüntülenmesi: {total_pdp_sum:,.0f}."
+    elif any(k in q for k in ["kayıp ciro", "lost revenue"]):
+        if lost_rev_col and lost_rev_col in df.columns:
+            tot_lost = float(df[lost_rev_col].sum())
+            metric_msg = f" Toplam Tahmini Kayıp Ciro: {tot_lost:,.0f} TL."
+    elif any(k in q for k in ["b2d", "buy to detail"]):
+        if b2d_col and b2d_col in df.columns:
+            avg_b2d = float(df[b2d_col].mean())
+            metric_msg = f" Ortalama B2D Dönüşüm Oranı: %{avg_b2d*100:.2f}."
+    elif any(k in q for k in ["c2d", "cart to detail"]):
+        if c2d_col and c2d_col in df.columns:
+            avg_c2d = float(df[c2d_col].mean())
+            metric_msg = f" Ortalama C2D Dönüşüm Oranı: %{avg_c2d*100:.2f}."
 
-        # Check if user asked to add/collect in a new column in Excel
-        if any(k in q for k in ["kolon", "column", "sütun", "ayrı kolonda", "topla", "ekle"]):
-            new_col_name = "Flagged_High_Risk_SKUs"
-            df[new_col_name] = "YES - High Risk"
-
-        col_msg = f" Excel dosyasına '{new_col_name}' adında yeni sütun eklendi." if new_col_name else ""
-        pdp_msg = f" Toplam PDP Görüntülenmesi: {total_pdp_sum:,.0f}." if total_pdp_sum > 0 else ""
-        action_note = f"⚡ EXCEL FİLTRELEME & SÜTUN OPERASYONU: Stock Risk Level 'High Risk' olan {len(df)} adet SKU filtrelendi.{pdp_msg}{col_msg}"
-
-    # 2. EXPLICIT PRICE MUTATIONS (only when explicit action phrase used):
-    elif any(k in q for k in ["fiyatı artır", "fiyatları artır", "zam yap", "%10 zam", "fiyat indirimi", "fiyat düşür", "discount"]):
+    # 4. EXPLICIT PRICE & STOCK ACTIONS
+    if any(k in q for k in ["fiyatı artır", "fiyatları artır", "zam yap", "fiyat indirimi", "fiyat düşür", "discount"]):
         pct = 10
-        if "20" in q: pct = 20
-        elif "15" in q: pct = 15
-        elif "5" in q: pct = 5
-        
+        for p in [20, 15, 25, 30, 50, 5]:
+            if str(p) in q: pct = p; break
         is_discount = any(k in q for k in ["düşür", "discount", "indirim"])
         mult = (1 - pct/100) if is_discount else (1 + pct/100)
-        
         if price_col:
             df[price_col] = df[price_col].apply(lambda p: round(float(p) * mult, 2) if pd.notnull(p) else p)
-            mutated_count = len(df)
-            if rev_col and stock_col:
+            if rev_col and stock_col and rev_col in df.columns and stock_col in df.columns:
                 df[rev_col] = df[price_col] * df[stock_col]
-            if status_col:
-                df[status_col] = f"Discount (-{pct}%)" if is_discount else f"Price Increased (+{pct}%)"
-        
         action_label = f"%{pct} fiyat indirimi uygulandı" if is_discount else f"%{pct} fiyat artışı yapıldı"
-        action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: {mutated_count} üründe {action_label}. Ciro ve stok değerleri yeniden hesaplandı."
+        metric_msg += f" {len(df)} üründe {action_label}."
 
-    # 3. EXPLICIT STOCK MUTATIONS (only when explicit action phrase used):
     elif any(k in q for k in ["stok ekle", "stokları artır", "replenish", "tedarik ekle", "+100 stok"]):
         add_stock = 100
         if stock_col:
             df[stock_col] = df[stock_col].apply(lambda s: int(s) + add_stock if pd.notnull(s) else add_stock)
-            mutated_count = len(df)
-            if rev_col and price_col:
+            if rev_col and price_col and rev_col in df.columns and price_col in df.columns:
                 df[rev_col] = df[price_col] * df[stock_col]
-            if status_col:
-                df[status_col] = f"Stock Replenished (+{add_stock})"
-        action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: {mutated_count} ürüne +{add_stock} adet stok eklendi ve toplam değer güncellendi."
+        metric_msg += f" {len(df)} ürüne +{add_stock} adet stok eklendi."
 
-    # 4. BRAND / CATEGORY / KEYWORD FILTERING:
-    elif any(k in q for k in ["apple", "samsung", "sony", "dell", "macbook", "iphone", "ipad", "airpods", "laptop", "smartphone", "accessories", "tablet"]):
-        matched_kw = next((k for k in ["apple", "samsung", "sony", "dell", "macbook", "iphone", "ipad", "airpods", "laptop", "smartphone", "accessories", "tablet"] if k in q), "")
-        filter_mask = pd.Series([False] * len(df))
-        for col in [name_col, brand_col, cat_col]:
-            if col and col in df.columns:
-                filter_mask = filter_mask | df[col].astype(str).str.lower().str.contains(matched_kw, na=False)
-        
-        filtered_df = df[filter_mask]
-        if not filtered_df.empty:
-            df = filtered_df
-        action_note = f"⚡ EXCEL FİLTRELEME OPERASYONU: '{matched_kw.upper()}' aramasına uyan {len(df)} satır filtrelendi ve metrikler hesaplandı."
-
-    # 5. SORTING OPERATIONS:
-    elif any(k in q for k in ["sırala", "sort", "en yüksek", "highest", "top 10", "ilk 10"]):
-        if price_col:
-            df = df.sort_values(by=price_col, ascending=False)
-        action_note = f"⚡ EXCEL SIRALAMA OPERASYONU: Ürünler fiyata/değere göre en yüksekten en düşüğe sıralandı."
-
-    else:
-        action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: '{command}' komutu aktif {len(df)} satırlık Excel tablosu üzerinde hesaplandı."
+    col_msg = f" Excel dosyasına '{new_col_name}' adında yeni sütun eklendi." if new_col_name else ""
+    filter_desc = f"{filter_label} olan " if filter_label else ""
+    action_note = f"⚡ EXCEL SEMANTİK OPERASYON: {filter_desc}{len(df)} adet SKU işlendi.{metric_msg}{col_msg}"
 
     CURRENT_EXCEL_DF = df
     rows = df_to_preview_rows(df, max_rows=200)
 
-    avg_price = 0.0
-    tot_stock_val = 0.0
-    if price_col and price_col in df.columns:
-        avg_price = float(df[price_col].dropna().mean()) if not df[price_col].dropna().empty else 0.0
-    if rev_col and rev_col in df.columns:
-        tot_stock_val = float(df[rev_col].dropna().sum()) if not df[rev_col].dropna().empty else 0.0
+    avg_price = float(df[price_col].dropna().mean()) if price_col and price_col in df.columns and not df[price_col].dropna().empty else 0.0
+    tot_stock_val = float(df[rev_col].dropna().sum()) if rev_col and rev_col in df.columns and not df[rev_col].dropna().empty else 0.0
 
     return {
         "status": "success",
