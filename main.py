@@ -2126,40 +2126,54 @@ async def process_excel(req: ExcelCommandRequest):
     brand_col = next((c for c in ["brand", "Brand", "manufacturer", "marka"] if c in df.columns), None)
     cat_col = next((c for c in ["cat1", "Category", "category", "cat2"] if c in df.columns), None)
     name_col = next((c for c in ["product", "Name", "product_title", "title"] if c in df.columns), None)
+    risk_col = next((c for c in ["stock_risk_level", "stock_risk", "risk_level"] if c in df.columns), status_col)
+    pdp_col = next((c for c in ["total_unique_pdp_views_sum", "pdp_views", "pdp", "views"] if c in df.columns), None)
 
-    # 1. Price mutations
-    if any(k in q for k in ["artır", "increase", "%10", "zam", "yükselt"]):
+    total_pdp_sum = 0
+    new_col_name = None
+
+    # 1. RISK LEVEL & PDP QUERY HANDLING:
+    if any(k in q for k in ["risk", "pdp", "görüntüleme", "görüntülenmesi", "görüntülemeleri", "view", "views"]):
+        if risk_col and risk_col in df.columns:
+            high_risk_mask = df[risk_col].astype(str).str.lower().str.contains("high|yüksek|critical|oos", na=False)
+            if high_risk_mask.any():
+                df = df[high_risk_mask].copy()
+        
+        if pdp_col and pdp_col in df.columns:
+            total_pdp_sum = float(df[pdp_col].sum())
+
+        # Check if user asked to add/collect in a new column in Excel
+        if any(k in q for k in ["kolon", "column", "sütun", "ayrı kolonda", "topla", "ekle"]):
+            new_col_name = "Flagged_High_Risk_SKUs"
+            df[new_col_name] = "YES - High Risk"
+
+        col_msg = f" Excel dosyasına '{new_col_name}' adında yeni sütun eklendi." if new_col_name else ""
+        pdp_msg = f" Toplam PDP Görüntülenmesi: {total_pdp_sum:,.0f}." if total_pdp_sum > 0 else ""
+        action_note = f"⚡ EXCEL FİLTRELEME & SÜTUN OPERASYONU: Stock Risk Level 'High Risk' olan {len(df)} adet SKU filtrelendi.{pdp_msg}{col_msg}"
+
+    # 2. EXPLICIT PRICE MUTATIONS (only when explicit action phrase used):
+    elif any(k in q for k in ["fiyatı artır", "fiyatları artır", "zam yap", "%10 zam", "fiyat indirimi", "fiyat düşür", "discount"]):
         pct = 10
         if "20" in q: pct = 20
         elif "15" in q: pct = 15
         elif "5" in q: pct = 5
         
-        if price_col:
-            df[price_col] = df[price_col].apply(lambda p: round(float(p) * (1 + pct/100), 2) if pd.notnull(p) else p)
-            mutated_count = len(df)
-            if rev_col and stock_col:
-                df[rev_col] = df[price_col] * df[stock_col]
-            if status_col:
-                df[status_col] = f"Price Increased (+{pct}%)"
-        action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: Tablodaki {mutated_count} satırın fiyatı %{pct} artırıldı. Ciro ve stok değerleri yeniden hesaplandı."
-
-    elif any(k in q for k in ["düşür", "discount", "indirim", "ucuzlat", "düşüt"]):
-        pct = 10
-        if "20" in q: pct = 20
-        elif "15" in q: pct = 15
-        elif "5" in q: pct = 5
+        is_discount = any(k in q for k in ["düşür", "discount", "indirim"])
+        mult = (1 - pct/100) if is_discount else (1 + pct/100)
         
         if price_col:
-            df[price_col] = df[price_col].apply(lambda p: round(float(p) * (1 - pct/100), 2) if pd.notnull(p) else p)
+            df[price_col] = df[price_col].apply(lambda p: round(float(p) * mult, 2) if pd.notnull(p) else p)
             mutated_count = len(df)
             if rev_col and stock_col:
                 df[rev_col] = df[price_col] * df[stock_col]
             if status_col:
-                df[status_col] = f"Discount Applied (-{pct}%)"
-        action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: {mutated_count} üründe %{pct} fiyat indirimi uygulandı. Yeni değerler Excel'e işlendi."
+                df[status_col] = f"Discount (-{pct}%)" if is_discount else f"Price Increased (+{pct}%)"
+        
+        action_label = f"%{pct} fiyat indirimi uygulandı" if is_discount else f"%{pct} fiyat artışı yapıldı"
+        action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: {mutated_count} üründe {action_label}. Ciro ve stok değerleri yeniden hesaplandı."
 
-    # 2. Stock replenishment
-    elif any(k in q for k in ["stok", "stock", "ekle", "replenish", "tedarik"]):
+    # 3. EXPLICIT STOCK MUTATIONS (only when explicit action phrase used):
+    elif any(k in q for k in ["stok ekle", "stokları artır", "replenish", "tedarik ekle", "+100 stok"]):
         add_stock = 100
         if stock_col:
             df[stock_col] = df[stock_col].apply(lambda s: int(s) + add_stock if pd.notnull(s) else add_stock)
@@ -2170,7 +2184,7 @@ async def process_excel(req: ExcelCommandRequest):
                 df[status_col] = f"Stock Replenished (+{add_stock})"
         action_note = f"⚡ EXCEL OPERASYONU TAMAMLANTI: {mutated_count} ürüne +{add_stock} adet stok eklendi ve toplam değer güncellendi."
 
-    # 3. Filtering & Searching by Brand/Category/Name
+    # 4. BRAND / CATEGORY / KEYWORD FILTERING:
     elif any(k in q for k in ["apple", "samsung", "sony", "dell", "macbook", "iphone", "ipad", "airpods", "laptop", "smartphone", "accessories", "tablet"]):
         matched_kw = next((k for k in ["apple", "samsung", "sony", "dell", "macbook", "iphone", "ipad", "airpods", "laptop", "smartphone", "accessories", "tablet"] if k in q), "")
         filter_mask = pd.Series([False] * len(df))
@@ -2183,7 +2197,7 @@ async def process_excel(req: ExcelCommandRequest):
             df = filtered_df
         action_note = f"⚡ EXCEL FİLTRELEME OPERASYONU: '{matched_kw.upper()}' aramasına uyan {len(df)} satır filtrelendi ve metrikler hesaplandı."
 
-    # 4. Sorting operations
+    # 5. SORTING OPERATIONS:
     elif any(k in q for k in ["sırala", "sort", "en yüksek", "highest", "top 10", "ilk 10"]):
         if price_col:
             df = df.sort_values(by=price_col, ascending=False)
@@ -2205,6 +2219,7 @@ async def process_excel(req: ExcelCommandRequest):
         "total_rows": len(df),
         "updated_avg_price": round(avg_price, 2),
         "updated_stock_value": round(tot_stock_val, 2),
+        "total_pdp_views": round(total_pdp_sum, 0),
         "rows": rows
     }
 
@@ -4020,6 +4035,12 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
                   <div style="font-size: 11px; color: #64748b; font-weight: 600;">Processed SKUs</div>
                   <div style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 4px;">${data.total_rows} Items</div>
                 </div>
+                ${data.total_pdp_views > 0 ? `
+                  <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <div style="font-size: 11px; color: #64748b; font-weight: 600;">Total PDP Views</div>
+                    <div style="font-size: 20px; font-weight: 800; color: #8b5cf6; margin-top: 4px;">${Number(data.total_pdp_views).toLocaleString()} Views</div>
+                  </div>
+                ` : ''}
                 <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
                   <div style="font-size: 11px; color: #64748b; font-weight: 600;">Updated Avg Price</div>
                   <div style="font-size: 20px; font-weight: 800; color: #2563eb; margin-top: 4px;">${filteredAvgPrice} TL</div>
@@ -4040,7 +4061,9 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
                       <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Category</th>
                       <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Price</th>
                       <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Stock</th>
-                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Status</th>
+                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">PDP Views</th>
+                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Risk Status</th>
+                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Excel Added Column</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -4051,7 +4074,9 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
                         <td style="padding: 10px 14px; color: #475569;">${r.Category}</td>
                         <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">${Number(r.Price).toLocaleString()} TL</td>
                         <td style="padding: 10px 14px; font-weight: 600; color: #334155;">${r.Stock} units</td>
+                        <td style="padding: 10px 14px; font-weight: 700; color: #8b5cf6;">${Number(r.PDPViews || 0).toLocaleString()}</td>
                         <td style="padding: 10px 14px;"><span style="background: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${r.Status}</span></td>
+                        <td style="padding: 10px 14px;"><span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${r.Flag || 'Flagged_High_Risk_SKUs'}</span></td>
                       </tr>
                     `).join('')}
                   </tbody>
