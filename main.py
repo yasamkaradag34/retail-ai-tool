@@ -3136,7 +3136,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
               <!-- MIDDLE PROMPT TEXTAREA AREA -->
               <div class="cmd-card-body">
-                <textarea id="questionInput" oninput="autoExpandPrompt(this); updateRunButtonState()" placeholder="E.g.: What is the average price and total inventory value of APPLE products? (or drag & drop your Excel file here / use Voice Command)..."></textarea>
+                <textarea id="questionInput" oninput="autoExpandPrompt(this); updateRunButtonState()" placeholder="Type your command or use Voice AI to process your Excel data..."></textarea>
               </div>
 
               <!-- BOTTOM INTEGRATED TOOLBAR (ACTIONS + VOICE ORB + PRIMARY RUN CTA) -->
@@ -3377,8 +3377,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           en: "Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail & e-commerce Excel data using English or Turkish voice commands."
         },
         placeholder: {
-          tr: "Örn: APPLE markasının ortalama fiyatı ve stok tutarı nedir? (veya Voice Command kullanın)",
-          en: "E.g.: Calculate average price and total inventory value for APPLE products (or use Voice Command)"
+          tr: "Excel veriniz üzerinde yapmak istediğiniz komutu yazın veya sesle söyleyin...",
+          en: "Type your command or use Voice AI to process your Excel data..."
         },
         suggestions: { tr: [], en: [] }
       },
@@ -3640,7 +3640,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const runBtn = document.getElementById("runBtnLabel");
       if (!input || !runBtn) return;
       const hasText = input.value.trim().length > 0;
-      if (hasText) {
+      const hasDataset = currentSpreadsheetData && currentSpreadsheetData.length > 0;
+      if (hasText || hasDataset) {
         runBtn.style.background = "linear-gradient(135deg, #f26f26 0%, #d85c18 100%)";
         runBtn.style.color = "#ffffff";
         runBtn.style.opacity = "1";
@@ -3767,10 +3768,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           }
 
           const questionInput = document.getElementById("questionInput");
-          if (questionInput && !questionInput.value.trim()) {
-            questionInput.value = (currentLang === 'en')
-              ? `Calculate average price and total inventory value for dataset '${file.name}'`
-              : `'${file.name}' veri seti için ortalama fiyatı ve toplam stok tutarını hesapla`;
+          if (questionInput) {
+            questionInput.value = "";
+            questionInput.placeholder = (currentLang === 'en')
+              ? `Type your command or use Voice AI to process '${file.name}'...`
+              : `'${file.name}' üzerinde yapmak istediğiniz işlemi yazın veya sesle söyleyin...`;
             updateRunButtonState();
           }
         } else {
@@ -3962,8 +3964,12 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       const questionInput = document.getElementById("questionInput");
       const resultBox = document.getElementById("resultBox");
       if (!questionInput || !resultBox) return;
-      const question = questionInput.value.trim();
-      if (!question) return;
+      let question = questionInput.value.trim();
+      if (!question) {
+        question = (currentLang === 'en')
+          ? "Calculate dataset metrics across active spreadsheet rows"
+          : "Aktif veri seti için ortalama fiyat, stok ve ciro değerlerini hesapla";
+      }
 
       const resultSection = document.getElementById("resultSection");
       if (resultSection) resultSection.style.display = "block";
