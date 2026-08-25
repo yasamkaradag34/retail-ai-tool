@@ -2102,9 +2102,15 @@ async def process_excel(req: ExcelCommandRequest):
     # 1. RISK LEVEL & PDP QUERY HANDLING:
     if any(k in q for k in ["risk", "pdp", "görüntüleme", "görüntülenmesi", "görüntülemeleri", "view", "views"]):
         if risk_col and risk_col in df.columns:
-            high_risk_mask = df[risk_col].astype(str).str.lower().str.contains("high|yüksek|critical|oos", na=False)
-            if high_risk_mask.any():
-                df = df[high_risk_mask].copy()
+            if any(k in q for k in ["oos", "out of stock", "stok yok"]):
+                risk_mask = df[risk_col].astype(str).str.lower().str.contains("^oos$|out of stock", na=False)
+                risk_label = "OOS"
+            else:
+                risk_mask = df[risk_col].astype(str).str.lower().str.contains("high risk|yüksek risk|^high$", na=False)
+                risk_label = "High Risk"
+
+            if risk_mask.any():
+                df = df[risk_mask].copy()
         
         if pdp_col and pdp_col in df.columns:
             total_pdp_sum = float(df[pdp_col].sum())
