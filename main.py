@@ -2023,50 +2023,20 @@ def df_to_preview_rows(df: pd.DataFrame, max_rows: int = 200) -> List[dict]:
     if df is None or df.empty:
         return []
     
-    rows = []
-    sub_df = df.head(max_rows)
-    for idx, r in sub_df.iterrows():
-        sku = str(r.get("sku") if pd.notnull(r.get("sku")) else r.get("SKU") if pd.notnull(r.get("SKU")) else r.get("item_id") if pd.notnull(r.get("item_id")) else f"SKU-{1001+idx}")
-        name = str(r.get("product") if pd.notnull(r.get("product")) else r.get("Name") if pd.notnull(r.get("Name")) else r.get("product_title") if pd.notnull(r.get("product_title")) else f"Product #{idx+1}")
-        category = str(r.get("cat1") if pd.notnull(r.get("cat1")) else r.get("Category") if pd.notnull(r.get("Category")) else r.get("cat2") if pd.notnull(r.get("cat2")) else "General")
-        
-        price_val = r.get("product_price") if "product_price" in r and pd.notnull(r.get("product_price")) else r.get("Price", 0)
-        try:
-            price = float(price_val)
-        except Exception:
-            price = 0.0
-
-        stock_val = r.get("stock_qty") if "stock_qty" in r and pd.notnull(r.get("stock_qty")) else r.get("Stock", 0)
-        try:
-            stock = int(stock_val)
-        except Exception:
-            stock = 0
-
-        rev_val = r.get("revenue") if "revenue" in r and pd.notnull(r.get("revenue")) else r.get("Revenue", price * stock)
-        try:
-            revenue = float(rev_val)
-        except Exception:
-            revenue = price * stock
-
-        comp_val = r.get("benchmark_price") if "benchmark_price" in r and pd.notnull(r.get("benchmark_price")) else r.get("CompPrice", price * 0.95)
-        try:
-            comp_price = float(comp_val)
-        except Exception:
-            comp_price = price
-
-        status = str(r.get("availability_status") if pd.notnull(r.get("availability_status")) else r.get("Status") if pd.notnull(r.get("Status")) else r.get("stock_risk_level") if pd.notnull(r.get("stock_risk_level")) else "Active")
-
-        rows.append({
-            "SKU": sku,
-            "Name": name,
-            "Category": category,
-            "Price": round(price, 2),
-            "CompPrice": round(comp_price, 2),
-            "Stock": stock,
-            "Revenue": round(revenue, 2),
-            "Status": status
-        })
-    return rows
+    sub_df = df.head(max_rows).copy()
+    records = []
+    for idx, row in sub_df.iterrows():
+        row_dict = {}
+        for col in sub_df.columns:
+            val = row[col]
+            if pd.isna(val):
+                row_dict[col] = "-"
+            elif isinstance(val, (int, float)):
+                row_dict[col] = round(val, 2)
+            else:
+                row_dict[col] = str(val)
+        records.append(row_dict)
+    return records
 
 
 @app.post("/upload-excel")
@@ -2116,9 +2086,6 @@ async def process_excel(req: ExcelCommandRequest):
     q = command.lower()
 
     action_note = ""
-    mutated_count = 0
-
-    # Identify primary columns
     price_col = next((c for c in ["product_price", "Price", "price", "unit_price"] if c in df.columns), None)
     stock_col = next((c for c in ["stock_qty", "Stock", "stock", "inventory"] if c in df.columns), None)
     rev_col = next((c for c in ["revenue", "Revenue", "sales_amount", "ciro"] if c in df.columns), None)
@@ -2209,14 +2176,20 @@ async def process_excel(req: ExcelCommandRequest):
     CURRENT_EXCEL_DF = df
     rows = df_to_preview_rows(df, max_rows=200)
 
-    avg_price = sum(r["Price"] for r in rows) / (len(rows) or 1)
-    tot_stock_val = sum(r["Revenue"] for r in rows)
+    avg_price = 0.0
+    tot_stock_val = 0.0
+    if price_col and price_col in df.columns:
+        avg_price = float(df[price_col].dropna().mean()) if not df[price_col].dropna().empty else 0.0
+    if rev_col and rev_col in df.columns:
+        tot_stock_val = float(df[rev_col].dropna().sum()) if not df[rev_col].dropna().empty else 0.0
 
     return {
         "status": "success",
         "command": command,
         "action_note": action_note,
         "total_rows": len(df),
+        "total_columns": len(df.columns),
+        "column_names": df.columns.tolist(),
         "updated_avg_price": round(avg_price, 2),
         "updated_stock_value": round(tot_stock_val, 2),
         "total_pdp_views": round(total_pdp_sum, 0),
@@ -4053,30 +4026,26 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
               <!-- Filtered Table -->
               <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; max-height: 400px;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; white-space: nowrap;">
                   <thead>
                     <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 2;">
-                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">SKU</th>
-                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Product Title</th>
-                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Category</th>
-                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Price</th>
-                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Stock</th>
-                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">PDP Views</th>
-                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Risk Status</th>
-                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Excel Added Column</th>
+                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">#</th>
+                      ${Object.keys(filteredRows[0] || {}).slice(0, 12).map(col => `<th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">${col}</th>`).join('')}
                     </tr>
                   </thead>
                   <tbody>
                     ${filteredRows.slice(0, 100).map((r, i) => `
                       <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#fcfcfd'}; border-bottom: 1px solid #f1f5f9;">
-                        <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${r.SKU}</td>
-                        <td style="padding: 10px 14px; font-weight: 600; color: #0f172a;">${r.Name}</td>
-                        <td style="padding: 10px 14px; color: #475569;">${r.Category}</td>
-                        <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">${Number(r.Price).toLocaleString()} TL</td>
-                        <td style="padding: 10px 14px; font-weight: 600; color: #334155;">${r.Stock} units</td>
-                        <td style="padding: 10px 14px; font-weight: 700; color: #8b5cf6;">${Number(r.PDPViews || 0).toLocaleString()}</td>
-                        <td style="padding: 10px 14px;"><span style="background: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${r.Status}</span></td>
-                        <td style="padding: 10px 14px;"><span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${r.Flag || 'Flagged_High_Risk_SKUs'}</span></td>
+                        <td style="padding: 9px 14px; font-size: 11px; color: #94a3b8; font-weight: 600;">${i + 1}</td>
+                        ${Object.keys(r).slice(0, 12).map(col => {
+                          let val = r[col];
+                          let valStr = (val === null || val === undefined) ? "-" : val.toString();
+                          let isFlag = col.toLowerCase().includes("flag") || col.toLowerCase().includes("group");
+                          if (isFlag) {
+                            return `<td style="padding: 9px 14px;"><span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${valStr}</span></td>`;
+                          }
+                          return `<td style="padding: 9px 14px; color: #1e293b;">${valStr}</td>`;
+                        }).join('')}
                       </tr>
                     `).join('')}
                   </tbody>
@@ -4113,45 +4082,40 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       if (rowCountLabel) rowCountLabel.textContent = (currentLang === 'en') ? `Showing: ${dataList.length} Rows` : `Gösterilen: ${dataList.length} Satır`;
       if (!container) return;
 
-      if (dataList.length === 0) {
+      if (!dataList || dataList.length === 0) {
         container.innerHTML = "<div style='text-align: center; color: #94a3b8; padding: 40px;'>No rows match your filter.</div>";
         return;
       }
 
-      let html = `<table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
+      const colNames = Object.keys(dataList[0]);
+
+      let html = `<div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow-x: auto; max-height: 580px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; white-space: nowrap;">
         <thead>
-          <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">SKU</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Title</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Category</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Price</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Comp Price</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Stock</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Revenue</th>
-            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Status</th>
+          <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 2;">
+            <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">#</th>
+            ${colNames.map(col => `<th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">${col}</th>`).join('')}
           </tr>
         </thead>
         <tbody>`;
 
       dataList.forEach((r, idx) => {
-        const bg = idx % 2 === 0 ? "#ffffff" : "#fdfdfe";
-        const priceFormatted = typeof r.Price === 'number' ? r.Price.toLocaleString() + " TL" : r.Price;
-        const compPriceFormatted = typeof r.CompPrice === 'number' ? r.CompPrice.toLocaleString() + " TL" : r.CompPrice;
-        const revenueFormatted = typeof r.Revenue === 'number' ? r.Revenue.toLocaleString() + " TL" : r.Revenue;
-
+        const bg = idx % 2 === 0 ? "#ffffff" : "#f8fafc";
         html += `<tr style="background: ${bg}; border-bottom: 1px solid #e2e8f0;">
-          <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${r.SKU}</td>
-          <td style="padding: 10px 14px; font-weight: 600; color: #0f172a;">${r.Name}</td>
-          <td style="padding: 10px 14px; color: #475569;">${r.Category}</td>
-          <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">${priceFormatted}</td>
-          <td style="padding: 10px 14px; color: #64748b;">${compPriceFormatted}</td>
-          <td style="padding: 10px 14px; font-weight: 600; color: #334155;">${r.Stock} units</td>
-          <td style="padding: 10px 14px; font-weight: 700; color: #047857;">${revenueFormatted}</td>
-          <td style="padding: 10px 14px;"><span style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 3px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${r.Status}</span></td>
+          <td style="padding: 9px 14px; font-size: 11px; color: #94a3b8; font-weight: 600;">${idx + 1}</td>
+          ${colNames.map(col => {
+            let val = r[col];
+            let valStr = (val === null || val === undefined) ? "-" : val.toString();
+            let isFlag = col.toLowerCase().includes("flag") || col.toLowerCase().includes("group");
+            if (isFlag) {
+              return `<td style="padding: 9px 14px;"><span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${valStr}</span></td>`;
+            }
+            return `<td style="padding: 9px 14px; color: #1e293b;">${valStr}</td>`;
+          }).join('')}
         </tr>`;
       });
 
-      html += `</tbody></table>`;
+      html += `</tbody></table></div>`;
       container.innerHTML = html;
     }
 
@@ -4162,10 +4126,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         return;
       }
       const filtered = currentSpreadsheetData.filter(r => 
-        r.SKU.toLowerCase().includes(q) || 
-        r.Name.toLowerCase().includes(q) || 
-        r.Category.toLowerCase().includes(q) || 
-        r.Status.toLowerCase().includes(q)
+        Object.values(r).some(v => v !== null && v !== undefined && v.toString().toLowerCase().includes(q))
       );
       renderPreviewTable(filtered);
     }
