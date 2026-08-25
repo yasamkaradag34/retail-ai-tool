@@ -3957,82 +3957,88 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
         resultBox.classList.remove("loading");
         
-                  <span style="font-size: 11px; background: #eff6ff; color: #2563eb; padding: 3px 10px; border-radius: 999px; font-weight: 700; border: 1px solid #bfdbfe;">Live Chart Rendered</span>
-                </div>
-                <div style="display: flex; align-items: flex-end; gap: 18px; height: 160px; padding: 12px 10px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
-                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end;">
-                    <span style="font-size: 11px; font-weight: 700; color: #2563eb;">7.8M TL</span>
-                    <div style="width: 100%; max-width: 54px; height: 90%; background: linear-gradient(180deg, #2563eb 0%, #3b82f6 100%); border-radius: 6px 6px 0 0; box-shadow: 0 4px 10px rgba(37,99,235,0.25);"></div>
-                    <span style="font-size: 11px; font-weight: 600; color: #475569;">Smartphones</span>
-                  </div>
-                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end;">
-                    <span style="font-size: 11px; font-weight: 700; color: #10b981;">4.5M TL</span>
-                    <div style="width: 100%; max-width: 54px; height: 60%; background: linear-gradient(180deg, #10b981 0%, #34d399 100%); border-radius: 6px 6px 0 0; box-shadow: 0 4px 10px rgba(16,185,129,0.25);"></div>
-                    <span style="font-size: 11px; font-weight: 600; color: #475569;">Laptops</span>
-                  </div>
-                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end;">
-                    <span style="font-size: 11px; font-weight: 700; color: #f59e0b;">3.2M TL</span>
-                    <div style="width: 100%; max-width: 54px; height: 42%; background: linear-gradient(180deg, #f59e0b 0%, #fbbf24 100%); border-radius: 6px 6px 0 0; box-shadow: 0 4px 10px rgba(245,158,11,0.25);"></div>
-                    <span style="font-size: 11px; font-weight: 600; color: #475569;">Accessories</span>
-                  </div>
-                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end;">
-                    <span style="font-size: 11px; font-weight: 700; color: #8b5cf6;">2.2M TL</span>
-                    <div style="width: 100%; max-width: 54px; height: 32%; background: linear-gradient(180deg, #8b5cf6 0%, #a78bfa 100%); border-radius: 6px 6px 0 0; box-shadow: 0 4px 10px rgba(139,92,246,0.25);"></div>
-                    <span style="font-size: 11px; font-weight: 600; color: #475569;">Tablets</span>
-                  </div>
-                </div>
-                <div style="font-size: 12px; color: #475569; font-weight: 500; text-align: center;">✓ Chart data calculated from active Excel rows. Rendered directly inside Excel workspace.</div>
-              </div>
-            ` : ''}
+        if (data.status === "success") {
+          currentSpreadsheetData = data.rows;
+          const actionNote = data.action_note;
+          const filteredRows = data.rows;
+          const filteredAvgPrice = (data.updated_avg_price || 0).toLocaleString();
+          const filteredStockValue = (data.updated_stock_value || 0).toLocaleString();
+          const q = question.toLowerCase();
 
-            <!-- KPI Summary Cards -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px;">
-              <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Processed SKUs</div>
-                <div style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 4px;">${filteredRows.length} Items</div>
+          let outputHtml = `
+            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
+                <div>
+                  <span style="font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Direct Excel Operation Output</span>
+                  <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">Executed Command: "${question}"</h4>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button onclick="openExcelPreview()" type="button" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 7px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">Inspect Modified Table</button>
+                  <button onclick="downloadExcel()" type="button" style="background: #2563eb; color: #ffffff; border: none; padding: 7px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">Download Updated Excel</button>
+                </div>
               </div>
-              <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Updated Avg Price</div>
-                <div style="font-size: 20px; font-weight: 800; color: #2563eb; margin-top: 4px;">${filteredAvgPrice} TL</div>
-              </div>
-              <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
-                <div style="font-size: 11px; color: #64748b; font-weight: 600;">Recalculated Stock Value</div>
-                <div style="font-size: 20px; font-weight: 800; color: #10b981; margin-top: 4px;">${filteredStockValue} TL</div>
-              </div>
-            </div>
 
-            <!-- Filtered Table -->
-            <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px;">
-              <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
-                <thead>
-                  <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">SKU</th>
-                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Product Title</th>
-                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Category</th>
-                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Price</th>
-                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Stock</th>
-                    <th style="padding: 10px 14px; font-weight: 700; color: #0f172a;">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${filteredRows.map((r, i) => `
-                    <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#fcfcfd'}; border-bottom: 1px solid #f1f5f9;">
-                      <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${r.SKU}</td>
-                      <td style="padding: 10px 14px; font-weight: 600; color: #0f172a;">${r.Name}</td>
-                      <td style="padding: 10px 14px; color: #475569;">${r.Category}</td>
-                      <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">${Number(r.Price).toLocaleString()} TL</td>
-                      <td style="padding: 10px 14px; font-weight: 600; color: #334155;">${r.Stock} units</td>
-                      <td style="padding: 10px 14px;"><span style="background: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${r.Status}</span></td>
+              <!-- AUDIT LOG BANNER -->
+              <div style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;">
+                <span>${actionNote}</span>
+                <span style="background: #10b981; color: #ffffff; font-size: 10.5px; padding: 2px 8px; border-radius: 999px;">EXCEL UPDATED</span>
+              </div>
+
+              <!-- KPI Summary Cards -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                  <div style="font-size: 11px; color: #64748b; font-weight: 600;">Processed SKUs</div>
+                  <div style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 4px;">${data.total_rows} Items</div>
+                </div>
+                <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                  <div style="font-size: 11px; color: #64748b; font-weight: 600;">Updated Avg Price</div>
+                  <div style="font-size: 20px; font-weight: 800; color: #2563eb; margin-top: 4px;">${filteredAvgPrice} TL</div>
+                </div>
+                <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                  <div style="font-size: 11px; color: #64748b; font-weight: 600;">Recalculated Stock Value</div>
+                  <div style="font-size: 20px; font-weight: 800; color: #10b981; margin-top: 4px;">${filteredStockValue} TL</div>
+                </div>
+              </div>
+
+              <!-- Filtered Table -->
+              <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; max-height: 400px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
+                  <thead>
+                    <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 2;">
+                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">SKU</th>
+                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Product Title</th>
+                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Category</th>
+                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Price</th>
+                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Stock</th>
+                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">Status</th>
                     </tr>
-                  `).join('')}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    ${filteredRows.slice(0, 100).map((r, i) => `
+                      <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#fcfcfd'}; border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${r.SKU}</td>
+                        <td style="padding: 10px 14px; font-weight: 600; color: #0f172a;">${r.Name}</td>
+                        <td style="padding: 10px 14px; color: #475569;">${r.Category}</td>
+                        <td style="padding: 10px 14px; font-weight: 700; color: #0f172a;">${Number(r.Price).toLocaleString()} TL</td>
+                        <td style="padding: 10px 14px; font-weight: 600; color: #334155;">${r.Stock} units</td>
+                        <td style="padding: 10px 14px;"><span style="background: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${r.Status}</span></td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        `;
+          `;
 
-        resultBox.innerHTML = outputHtml;
-      }, 300);
+          resultBox.innerHTML = outputHtml;
+        } else {
+          resultBox.innerHTML = `<div style="color: #ef4444; font-weight: 700; padding: 16px;">⚠️ Excel İşleme Hatası: ${data.error || 'Bilinmeyen hata'}</div>`;
+        }
+      } catch(err) {
+        console.error("Process error:", err);
+        resultBox.classList.remove("loading");
+        resultBox.innerHTML = `<div style="color: #ef4444; font-weight: 700; padding: 16px;">⚠️ Bağlantı hatası: ${err.message}</div>`;
+      }
     }
 
     function openExcelPreview() {
