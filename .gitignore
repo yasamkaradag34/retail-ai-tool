@@ -43,6 +43,7 @@ secrets.json
 data/*.xlsx
 data/*.csv
 data/*.xls
+data/uploads/
 # Uncomment below to allow sample data:
 # !data/sample_*.xlsx
 

@@ -1994,35 +1994,60 @@ def build_excel_from_tool_result(raw_text: str) -> BytesIO:
 # ─────────────────────────────────────────────────────────────
 CURRENT_EXCEL_DF: Optional[pd.DataFrame] = None
 CURRENT_ORIGINAL_EXCEL_DF: Optional[pd.DataFrame] = None
-CURRENT_EXCEL_FILENAME: str = "ecommerce_ai_sample_data_200_rows.xlsx"
+CURRENT_EXCEL_FILENAME: str = "Yüklü dosya yok"
+IS_DATASET_CLEARED: bool = False
 
-def load_default_excel_df() -> pd.DataFrame:
-    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME
-    sample_path = "data/ecommerce_ai_sample_data_200_rows.xlsx"
-    if os.path.exists(sample_path):
+UPLOAD_DIR = "data/uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+ACTIVE_UPLOAD_FILE = os.path.join(UPLOAD_DIR, "active_uploaded_dataset.xlsx")
+ACTIVE_ORIGINAL_FILE = os.path.join(UPLOAD_DIR, "active_original_dataset.xlsx")
+ACTIVE_META_FILE = os.path.join(UPLOAD_DIR, "active_meta.json")
+
+def wipe_active_dataset_files():
+    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME, IS_DATASET_CLEARED
+    CURRENT_EXCEL_DF = None
+    CURRENT_ORIGINAL_EXCEL_DF = None
+    CURRENT_EXCEL_FILENAME = "Yüklü dosya yok"
+    IS_DATASET_CLEARED = True
+
+    for p in [ACTIVE_UPLOAD_FILE, ACTIVE_ORIGINAL_FILE, ACTIVE_META_FILE]:
+        if os.path.exists(p):
+            try:
+                os.remove(p)
+            except Exception as e:
+                print("Notice removing file during reset:", p, e)
+
+def load_default_excel_df() -> Optional[pd.DataFrame]:
+    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME, IS_DATASET_CLEARED
+
+    if IS_DATASET_CLEARED:
+        CURRENT_EXCEL_DF = None
+        CURRENT_ORIGINAL_EXCEL_DF = None
+        CURRENT_EXCEL_FILENAME = "Yüklü dosya yok"
+        return None
+
+    # Only load user-uploaded dataset if it exists on disk
+    if os.path.exists(ACTIVE_UPLOAD_FILE) and os.path.exists(ACTIVE_ORIGINAL_FILE):
         try:
-            CURRENT_EXCEL_DF = pd.read_excel(sample_path)
-            CURRENT_ORIGINAL_EXCEL_DF = CURRENT_EXCEL_DF.copy()
-            CURRENT_EXCEL_FILENAME = "ecommerce_ai_sample_data_200_rows.xlsx"
+            CURRENT_EXCEL_DF = pd.read_excel(ACTIVE_UPLOAD_FILE)
+            CURRENT_ORIGINAL_EXCEL_DF = pd.read_excel(ACTIVE_ORIGINAL_FILE)
+            if os.path.exists(ACTIVE_META_FILE):
+                with open(ACTIVE_META_FILE, "r", encoding="utf-8") as f:
+                    meta = json.load(f)
+                    CURRENT_EXCEL_FILENAME = meta.get("filename", "uploaded_dataset.xlsx")
+            else:
+                CURRENT_EXCEL_FILENAME = "uploaded_dataset.xlsx"
             return CURRENT_EXCEL_DF
         except Exception as e:
-            print("Notice loading default sample excel:", e)
+            print("Notice loading active uploaded file from disk:", e)
 
-    # Fallback default dataset
-    CURRENT_EXCEL_DF = pd.DataFrame([
-        {"SKU": "SKU-1001", "Name": "iPhone 15 Pro Max 256GB", "Category": "Smartphones", "Price": 54999, "CompPrice": 52490, "Stock": 142, "Revenue": 7809858, "Status": "Competitive"},
-        {"SKU": "SKU-1002", "Name": "MacBook Pro 16 M3 Max", "Category": "Laptops", "Price": 124999, "CompPrice": 129000, "Stock": 28, "Revenue": 3499972, "Status": "Price Leader"},
-        {"SKU": "SKU-1003", "Name": "iPad Air 11 M2 Wi-Fi", "Category": "Tablets", "Price": 24999, "CompPrice": 24999, "Stock": 89, "Revenue": 2224911, "Status": "Benchmark Matched"},
-        {"SKU": "SKU-1004", "Name": "AirPods Pro 2nd Gen USB-C", "Category": "Accessories", "Price": 8499, "CompPrice": 7990, "Stock": 310, "Revenue": 2634690, "Status": "Overpriced (+6.3%)"},
-        {"SKU": "SKU-1005", "Name": "Samsung Galaxy S24 Ultra", "Category": "Smartphones", "Price": 64999, "CompPrice": 61900, "Stock": 65, "Revenue": 4224935, "Status": "Overpriced (+5.0%)"},
-        {"SKU": "SKU-1006", "Name": "Sony WH-1000XM5 ANC", "Category": "Accessories", "Price": 13999, "CompPrice": 14500, "Stock": 44, "Revenue": 615956, "Status": "Underpriced (-3.4%)"},
-        {"SKU": "SKU-1007", "Name": "Dell XPS 15 OLED i9", "Category": "Laptops", "Price": 89999, "CompPrice": 92000, "Stock": 12, "Revenue": 1079988, "Status": "Price Leader"}
-    ])
-    CURRENT_ORIGINAL_EXCEL_DF = CURRENT_EXCEL_DF.copy()
-    CURRENT_EXCEL_FILENAME = "default_retail_data.xlsx"
-    return CURRENT_EXCEL_DF
+    # When no user file has been uploaded, default state is empty
+    CURRENT_EXCEL_DF = None
+    CURRENT_ORIGINAL_EXCEL_DF = None
+    CURRENT_EXCEL_FILENAME = "Yüklü dosya yok"
+    return None
 
-def df_to_preview_rows(df: pd.DataFrame, max_rows: int = 200) -> List[dict]:
+def df_to_preview_rows(df: Optional[pd.DataFrame], max_rows: int = 200) -> List[dict]:
     if df is None or df.empty:
         return []
     
@@ -2042,9 +2067,66 @@ def df_to_preview_rows(df: pd.DataFrame, max_rows: int = 200) -> List[dict]:
     return records
 
 
+@app.get("/active-excel-state")
+async def get_active_excel_state():
+    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME, IS_DATASET_CLEARED
+    if not IS_DATASET_CLEARED and (CURRENT_ORIGINAL_EXCEL_DF is None or CURRENT_EXCEL_DF is None):
+        load_default_excel_df()
+
+    if IS_DATASET_CLEARED or CURRENT_EXCEL_DF is None:
+        return {
+            "status": "success",
+            "filename": "Yüklü dosya yok",
+            "total_rows": 0,
+            "total_columns": 0,
+            "is_modified": False,
+            "original_rows": [],
+            "processed_rows": [],
+            "original_column_names": [],
+            "processed_column_names": []
+        }
+
+    orig_rows = df_to_preview_rows(CURRENT_ORIGINAL_EXCEL_DF, max_rows=200)
+    proc_rows = df_to_preview_rows(CURRENT_EXCEL_DF, max_rows=200)
+
+    is_modified = False
+    if CURRENT_EXCEL_DF is not None and CURRENT_ORIGINAL_EXCEL_DF is not None:
+        try:
+            is_modified = (orig_rows != proc_rows) or (len(CURRENT_EXCEL_DF) != len(CURRENT_ORIGINAL_EXCEL_DF)) or (CURRENT_EXCEL_DF.columns.tolist() != CURRENT_ORIGINAL_EXCEL_DF.columns.tolist())
+        except Exception:
+            is_modified = True
+
+    return {
+        "status": "success",
+        "filename": CURRENT_EXCEL_FILENAME or "default_retail_data.xlsx",
+        "total_rows": len(CURRENT_EXCEL_DF) if CURRENT_EXCEL_DF is not None else 0,
+        "total_columns": len(CURRENT_EXCEL_DF.columns) if CURRENT_EXCEL_DF is not None else 0,
+        "is_modified": is_modified,
+        "original_rows": orig_rows,
+        "processed_rows": proc_rows,
+        "original_column_names": CURRENT_ORIGINAL_EXCEL_DF.columns.tolist() if CURRENT_ORIGINAL_EXCEL_DF is not None else [],
+        "processed_column_names": CURRENT_EXCEL_DF.columns.tolist() if CURRENT_EXCEL_DF is not None else []
+    }
+
+
+@app.post("/reset-dataset")
+async def reset_dataset_endpoint():
+    wipe_active_dataset_files()
+    return {
+        "status": "success",
+        "action_note": "⚡ Aktif veri seti ve önizleme verileri tamamen sıfırlandı.",
+        "filename": "Yüklü dosya yok",
+        "total_rows": 0,
+        "total_columns": 0,
+        "original_rows": [],
+        "processed_rows": [],
+        "rows": []
+    }
+
+
 @app.post("/upload-excel")
 async def upload_excel(file: UploadFile = File(...)):
-    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME
+    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME, IS_DATASET_CLEARED
     try:
         contents = await file.read()
         filename = file.filename
@@ -2061,15 +2143,34 @@ async def upload_excel(file: UploadFile = File(...)):
         CURRENT_EXCEL_DF = df
         CURRENT_ORIGINAL_EXCEL_DF = df.copy()
         CURRENT_EXCEL_FILENAME = filename
+        IS_DATASET_CLEARED = False
 
-        rows = df_to_preview_rows(df, max_rows=200)
+        # Persist to disk
+        try:
+            df.to_excel(ACTIVE_UPLOAD_FILE, index=False)
+            df.to_excel(ACTIVE_ORIGINAL_FILE, index=False)
+            with open(ACTIVE_META_FILE, "w", encoding="utf-8") as f:
+                json.dump({
+                    "filename": filename,
+                    "uploaded_at": str(pd.Timestamp.now()),
+                    "total_rows": len(df),
+                    "total_columns": len(df.columns)
+                }, f, ensure_ascii=False)
+        except Exception as save_err:
+            print("Notice persisting uploaded dataset to disk:", save_err)
+
+        orig_rows = df_to_preview_rows(CURRENT_ORIGINAL_EXCEL_DF, max_rows=200)
+        proc_rows = df_to_preview_rows(CURRENT_EXCEL_DF, max_rows=200)
+
         return {
             "status": "success",
             "filename": filename,
             "total_rows": len(df),
             "total_columns": len(df.columns),
             "column_names": df.columns.tolist(),
-            "rows": rows
+            "original_rows": orig_rows,
+            "processed_rows": proc_rows,
+            "rows": proc_rows
         }
     except Exception as e:
         from fastapi.responses import JSONResponse
@@ -2089,21 +2190,26 @@ async def process_excel(req: ExcelCommandRequest):
     q = command.lower()
 
     # 0. RESET DATASET COMMAND CHECK
-    if any(k in q for k in ["reset", "sıfırla", "baştan başla", "tüm veriyi getir", "hepsini göster"]):
-        CURRENT_EXCEL_DF = CURRENT_ORIGINAL_EXCEL_DF.copy()
-        rows = df_to_preview_rows(CURRENT_EXCEL_DF, max_rows=200)
+    if any(k in q for k in ["reset", "sıfırla", "baştan başla"]):
+        wipe_active_dataset_files()
         return {
             "status": "success",
             "command": command,
-            "action_note": f"⚡ EXCEL DATASET SIFIRLANDI: Orijinal {len(CURRENT_EXCEL_DF)} satır ve {len(CURRENT_EXCEL_DF.columns)} sütun yüklendi.",
-            "total_rows": len(CURRENT_EXCEL_DF),
-            "total_columns": len(CURRENT_EXCEL_DF.columns),
-            "column_names": CURRENT_EXCEL_DF.columns.tolist(),
+            "action_note": "⚡ Aktif veri seti ve önizleme verileri tamamen sıfırlandı.",
+            "total_rows": 0,
+            "total_columns": 0,
+            "column_names": [],
             "updated_avg_price": 0.0,
             "updated_stock_value": 0.0,
             "total_pdp_views": 0,
-            "rows": rows
+            "original_rows": [],
+            "processed_rows": [],
+            "rows": []
         }
+
+    if CURRENT_ORIGINAL_EXCEL_DF is None:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=400, content={"error": "Yüklü veri seti bulunamadı. Lütfen öncelikle 'Drag & Drop Excel or Click to Upload' alanından bir Excel veya CSV dosyası yükleyin."})
 
     df = CURRENT_ORIGINAL_EXCEL_DF.copy()
     action_note = ""
@@ -2248,7 +2354,13 @@ async def process_excel(req: ExcelCommandRequest):
     action_note = f"⚡ EXCEL ÇOKLU FİLTRE OPERASYONU:{filter_msg} {len(df)} adet SKU filtrelendi.{metric_msg}{col_msg}"
 
     CURRENT_EXCEL_DF = df
-    rows = df_to_preview_rows(df, max_rows=200)
+    try:
+        df.to_excel(ACTIVE_UPLOAD_FILE, index=False)
+    except Exception as save_err:
+        print("Notice persisting modified dataset to disk:", save_err)
+
+    orig_rows = df_to_preview_rows(CURRENT_ORIGINAL_EXCEL_DF, max_rows=200)
+    proc_rows = df_to_preview_rows(df, max_rows=200)
 
     avg_price = float(df[price_col].dropna().mean()) if price_col and price_col in df.columns and not df[price_col].dropna().empty else 0.0
     tot_stock_val = float(df[rev_col].dropna().sum()) if rev_col and rev_col in df.columns and not df[rev_col].dropna().empty else 0.0
@@ -2263,7 +2375,9 @@ async def process_excel(req: ExcelCommandRequest):
         "updated_avg_price": round(avg_price, 2),
         "updated_stock_value": round(tot_stock_val, 2),
         "total_pdp_views": round(total_pdp_sum, 0),
-        "rows": rows
+        "original_rows": orig_rows,
+        "processed_rows": proc_rows,
+        "rows": proc_rows
     }
 
 
@@ -3260,6 +3374,17 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         <button onclick="closeExcelPreview()" style="background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; font-weight: 700; cursor: pointer; color: var(--text-700); display: grid; place-items: center; transition: background 0.2s;">✕</button>
       </div>
 
+      <!-- Modal Tabs (Original vs Processed Preview) -->
+      <div style="padding: 10px 28px; background: #f8fafc; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <button id="previewTabOriginal" onclick="switchPreviewTab('original')" style="padding: 7px 16px; border-radius: 10px; font-weight: 700; font-size: 12.5px; border: 1.5px solid #2563eb; background: #ffffff; color: #2563eb; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+          📄 <span id="labelTabOriginal">Orijinal Veri (Upload Ettiğiniz Hali)</span>
+        </button>
+        <button id="previewTabProcessed" onclick="switchPreviewTab('processed')" style="padding: 7px 16px; border-radius: 10px; font-weight: 700; font-size: 12.5px; border: 1.5px solid transparent; background: transparent; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+          ⚡ <span id="labelTabProcessed">İşlenmiş Veri (Sonuç / İşlem Yapılmış Hali)</span>
+        </button>
+        <span id="previewModifiedBadge" style="display: none; background: #dcfce7; color: #166534; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1px solid #86efac; margin-left: auto;">⚡ İşlem Yapıldı</span>
+      </div>
+
       <!-- Modal Toolbar & Search -->
       <div style="padding: 12px 28px; background: #ffffff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 14px;">
         <input type="text" id="modalTableSearch" oninput="filterPreviewTable(this.value)" placeholder="🔍 Search in table (SKU, Brand, Category)..." style="flex: 1; max-width: 400px; padding: 8px 14px; font-size: 12.5px; border: 1.4px solid var(--border); border-radius: 10px; outline: none;" />
@@ -3767,21 +3892,50 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         }, false);
       }
 
-      // Recover cached active file from browser sessionStorage on page load
-      const savedFileName = sessionStorage.getItem("activeExcelFileName");
-      const savedFileMeta = sessionStorage.getItem("activeExcelFileMeta");
-      if (savedFileName) {
-        const activeFileName = document.getElementById("activeFileName");
-        const activeFileMeta = document.getElementById("activeFileMeta");
-        const activeFileIcon = document.getElementById("activeFileIcon");
-        if (activeFileName) activeFileName.textContent = savedFileName;
-        if (activeFileMeta && savedFileMeta) activeFileMeta.textContent = savedFileMeta;
-        if (activeFileIcon) {
-          activeFileIcon.textContent = "✓";
-          activeFileIcon.style.color = "#10b981";
-        }
-      }
+      // Auto-restore active Excel state from server disk storage on page load
+      fetchActiveExcelState();
     });
+
+    let originalSpreadsheetData = [];
+    let processedSpreadsheetData = [];
+    let activePreviewTab = 'original';
+
+    async function fetchActiveExcelState() {
+      try {
+        const res = await fetch("/active-excel-state");
+        const data = await res.json();
+        if (data.status === "success") {
+          originalSpreadsheetData = data.original_rows || [];
+          processedSpreadsheetData = data.processed_rows || [];
+          currentSpreadsheetData = (data.is_modified && processedSpreadsheetData.length > 0)
+            ? processedSpreadsheetData
+            : originalSpreadsheetData;
+
+          const activeFileName = document.getElementById("activeFileName");
+          const activeFileMeta = document.getElementById("activeFileMeta");
+          const activeFileIcon = document.getElementById("activeFileIcon");
+          if (activeFileName) activeFileName.textContent = data.filename;
+          if (activeFileIcon) {
+            activeFileIcon.textContent = "✓";
+            activeFileIcon.style.color = "#10b981";
+          }
+          const metaText = `(${data.total_rows} rows, ${data.total_columns} cols) ✓ Excel active & ready for commands`;
+          if (activeFileMeta) activeFileMeta.textContent = metaText;
+
+          const modBadge = document.getElementById("previewModifiedBadge");
+          if (modBadge) {
+            modBadge.style.display = data.is_modified ? "inline-flex" : "none";
+          }
+          if (data.is_modified) {
+            activePreviewTab = "processed";
+          }
+
+          updateRunButtonState();
+        }
+      } catch (err) {
+        console.warn("fetchActiveExcelState notice:", err);
+      }
+    }
 
     function handleExcelFileUpload(file) {
       if (!file) return;
@@ -3811,7 +3965,14 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       .then(res => res.json())
       .then(data => {
         if (data.status === "success") {
-          currentSpreadsheetData = data.rows;
+          originalSpreadsheetData = data.original_rows || data.rows;
+          processedSpreadsheetData = data.processed_rows || data.rows;
+          currentSpreadsheetData = processedSpreadsheetData;
+          activePreviewTab = "original";
+
+          const modBadge = document.getElementById("previewModifiedBadge");
+          if (modBadge) modBadge.style.display = "none";
+
           if (activeFileIcon) {
             activeFileIcon.textContent = "✓";
             activeFileIcon.style.color = "#10b981";
@@ -4011,25 +4172,40 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       if (resultBox) {
         resultBox.classList.remove("placeholder");
         resultBox.classList.add("loading");
-        resultBox.innerHTML = (currentLang === 'en') ? "⚡ Resetting dataset to original..." : "⚡ Veri seti orijinal hale getiriliyor...";
+        resultBox.innerHTML = (currentLang === 'en') ? "⚡ Resetting & clearing dataset..." : "⚡ Veri seti ve önizlemeler tamamen sıfırlanıyor...";
       }
       try {
-        const response = await fetch("/process-excel", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ command: "reset" })
-        });
+        const response = await fetch("/reset-dataset", { method: "POST" });
         const data = await response.json();
         if (data.status === "success") {
-          currentSpreadsheetData = data.rows;
-          const fileMeta = document.getElementById("activeFileMeta");
-          if (fileMeta) {
-            fileMeta.innerHTML = `<span style="color: #059669; font-weight: 700;"> (${data.total_rows} rows, ${data.total_columns} cols) ✓ Orijinal veri seti yüklendi</span>`;
+          originalSpreadsheetData = [];
+          processedSpreadsheetData = [];
+          currentSpreadsheetData = [];
+          activePreviewTab = "original";
+
+          const activeFileName = document.getElementById("activeFileName");
+          const activeFileMeta = document.getElementById("activeFileMeta");
+          const activeFileIcon = document.getElementById("activeFileIcon");
+          if (activeFileName) activeFileName.textContent = (currentLang === 'en') ? "There is no uploaded file" : "Yüklü dosya yok";
+          if (activeFileMeta) activeFileMeta.textContent = "";
+          if (activeFileIcon) {
+            activeFileIcon.textContent = "📁";
+            activeFileIcon.style.color = "#94a3b8";
           }
+
+          const modBadge = document.getElementById("previewModifiedBadge");
+          if (modBadge) modBadge.style.display = "none";
+
+          try {
+            sessionStorage.removeItem("activeExcelFileName");
+            sessionStorage.removeItem("activeExcelFileMeta");
+          } catch(e) {}
+
           if (resultBox) {
             resultBox.classList.remove("loading");
-            resultBox.innerHTML = `<div style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 14px 18px; border-radius: 12px; font-weight: 700; font-size: 13.5px;">${data.action_note}</div>`;
+            resultBox.innerHTML = `<div style="background: #fef2f2; border: 1.5px solid #fca5a5; color: #991b1b; padding: 14px 18px; border-radius: 12px; font-weight: 700; font-size: 13.5px;">⚡ ${data.action_note || "Aktif veri seti ve önizleme verileri tamamen sıfırlandı."}</div>`;
           }
+          updateRunButtonState();
         }
       } catch (err) {
         console.error("Reset error:", err);
@@ -4080,7 +4256,14 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         resultBox.classList.remove("loading");
         
         if (data.status === "success") {
-          currentSpreadsheetData = data.rows;
+          originalSpreadsheetData = data.original_rows || originalSpreadsheetData;
+          processedSpreadsheetData = data.processed_rows || data.rows;
+          currentSpreadsheetData = processedSpreadsheetData;
+          activePreviewTab = "processed";
+
+          const modBadge = document.getElementById("previewModifiedBadge");
+          if (modBadge) modBadge.style.display = "inline-flex";
+
           const actionNote = data.action_note;
           const filteredRows = data.rows;
           const filteredAvgPrice = (data.updated_avg_price || 0).toLocaleString();
@@ -4153,10 +4336,49 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       }
     }
 
+    function switchPreviewTab(tab) {
+      activePreviewTab = tab;
+      const btnOrig = document.getElementById("previewTabOriginal");
+      const btnProc = document.getElementById("previewTabProcessed");
+      const targetDataset = (tab === 'original') 
+        ? originalSpreadsheetData 
+        : (processedSpreadsheetData && processedSpreadsheetData.length > 0 ? processedSpreadsheetData : originalSpreadsheetData);
+
+      if (tab === 'original') {
+        if (btnOrig) {
+          btnOrig.style.border = "1.5px solid #2563eb";
+          btnOrig.style.background = "#ffffff";
+          btnOrig.style.color = "#2563eb";
+          btnOrig.style.boxShadow = "0 1px 3px rgba(0,0,0,0.08)";
+        }
+        if (btnProc) {
+          btnProc.style.border = "1.5px solid transparent";
+          btnProc.style.background = "transparent";
+          btnProc.style.color = "#64748b";
+          btnProc.style.boxShadow = "none";
+        }
+      } else {
+        if (btnProc) {
+          btnProc.style.border = "1.5px solid #2563eb";
+          btnProc.style.background = "#ffffff";
+          btnProc.style.color = "#2563eb";
+          btnProc.style.boxShadow = "0 1px 3px rgba(0,0,0,0.08)";
+        }
+        if (btnOrig) {
+          btnOrig.style.border = "1.5px solid transparent";
+          btnOrig.style.background = "transparent";
+          btnOrig.style.color = "#64748b";
+          btnOrig.style.boxShadow = "none";
+        }
+      }
+
+      renderPreviewTable(targetDataset);
+    }
+
     function openExcelPreview() {
       const modal = document.getElementById("excelPreviewModal");
       if (modal) modal.style.display = "flex";
-      renderPreviewTable(currentSpreadsheetData);
+      switchPreviewTab(activePreviewTab || 'original');
     }
 
     function closeExcelPreview() {
@@ -4167,11 +4389,17 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     function renderPreviewTable(dataList) {
       const container = document.getElementById("excelPreviewTableContainer");
       const rowCountLabel = document.getElementById("modalRowCount");
-      if (rowCountLabel) rowCountLabel.textContent = (currentLang === 'en') ? `Showing: ${dataList.length} Rows` : `Gösterilen: ${dataList.length} Satır`;
+      if (rowCountLabel) rowCountLabel.textContent = (currentLang === 'en') ? `Showing: ${(dataList || []).length} Rows` : `Gösterilen: ${(dataList || []).length} Satır`;
       if (!container) return;
 
       if (!dataList || dataList.length === 0) {
-        container.innerHTML = "<div style='text-align: center; color: #94a3b8; padding: 40px;'>No rows match your filter.</div>";
+        container.innerHTML = `
+          <div style="text-align: center; color: #64748b; padding: 50px 20px; background: #f8fafc; border-radius: 16px; border: 1.5px dashed #cbd5e1;">
+            <div style="font-size: 38px; margin-bottom: 10px;">📁</div>
+            <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">${(currentLang === 'en') ? "No Dataset Loaded" : "Yüklü Veri Seti Bulunmuyor"}</h4>
+            <p style="font-size: 12.5px; color: #64748b; max-width: 440px; margin: 0 auto;">${(currentLang === 'en') ? "Please upload an Excel (.xlsx, .xls) or CSV file using the upload button to preview rows & columns." : "Veri satırlarını ve kolonları önizlemek için lütfen 'Drag & Drop Excel or Click to Upload' alanından yeni bir Excel dosyası yükleyin."}</p>
+          </div>
+        `;
         return;
       }
 
@@ -4208,12 +4436,15 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     }
 
     function filterPreviewTable(query) {
+      const dataset = (activePreviewTab === 'original')
+        ? originalSpreadsheetData
+        : (processedSpreadsheetData && processedSpreadsheetData.length > 0 ? processedSpreadsheetData : originalSpreadsheetData);
       const q = query.toLowerCase().trim();
       if (!q) {
-        renderPreviewTable(currentSpreadsheetData);
+        renderPreviewTable(dataset);
         return;
       }
-      const filtered = currentSpreadsheetData.filter(r => 
+      const filtered = dataset.filter(r => 
         Object.values(r).some(v => v !== null && v !== undefined && v.toString().toLowerCase().includes(q))
       );
       renderPreviewTable(filtered);
