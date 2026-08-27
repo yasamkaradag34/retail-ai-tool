@@ -2349,6 +2349,29 @@ async def process_excel(req: ExcelCommandRequest):
                 df[rev_col] = df[price_col] * df[stock_col]
         metric_msg += f" {len(df)} ürüne +{add_stock} adet stok eklendi."
 
+    avg_price = float(df[price_col].dropna().mean()) if price_col and price_col in df.columns and not df[price_col].dropna().empty else 0.0
+    tot_stock_val = float(df[rev_col].dropna().sum()) if rev_col and rev_col in df.columns and not df[rev_col].dropna().empty else 0.0
+
+    # 5. GENERATE HUMAN-READABLE EXECUTIVE SUMMARY & DIRECT ANSWER
+    if any(k in q for k in ["kaç satır", "kaç tane satır", "satır sayısı", "kaç ürün", "ürün sayısı", "kaç adet ürün", "kaç tane ürün", "row count", "how many rows", "total rows"]):
+        executive_summary = f"Aktif Excel dosyasında toplam **{len(df):,}** adet satır (ürün / SKU) bulunmaktadır."
+    elif any(k in q for k in ["kaç sütun", "kaç tane sütun", "sütun sayısı", "kolon sayısı", "sütunlar", "kolonlar", "column count", "how many columns"]):
+        cols_preview = ", ".join(df.columns[:8])
+        executive_summary = f"Aktif Excel dosyasında toplam **{len(df.columns)}** adet sütun bulunmaktadır: *{cols_preview}...*"
+    elif any(k in q for k in ["ortalama fiyat", "average price", "fiyat ortalaması"]):
+        executive_summary = f"Seçili **{len(df)}** adet üründe ortalama fiyat **₺{avg_price:,.2f}** olarak hesaplanmıştır."
+    elif any(k in q for k in ["toplam stok", "total stock", "stok miktarı"]):
+        tot_stock_qty = int(df[stock_col].sum()) if stock_col and stock_col in df.columns else 0
+        executive_summary = f"Seçili **{len(df)}** adet üründe toplam stok miktarı **{tot_stock_qty:,} adet** olarak hesaplanmıştır."
+    elif any(k in q for k in ["toplam ciro", "total revenue", "gmv", "toplam ciro nedir"]):
+        executive_summary = f"Seçili **{len(df)}** adet üründe toplam ciro **₺{tot_stock_val:,.2f}** olarak hesaplanmıştır."
+    elif any(k in q for k in ["zam", "fiyatı artır", "fiyat indirimi", "fiyat düşür", "stok ekle"]):
+        executive_summary = f"Excel verisi üzerinde yapılan işlem ile **{len(df)}** adet üründe {metric_msg.strip()} gerçekleşmiştir."
+    elif filter_desc:
+        executive_summary = f"**{filter_desc}** filtreleme kriterlerine uyan toplam **{len(df)}** adet ürün filtrelenmiş ve listelenmiştir."
+    else:
+        executive_summary = f"Sorgulanan veride toplam **{len(df):,}** adet satır (ürün / SKU) ve **{len(df.columns)}** adet sütun analiz edilmiştir."
+
     col_msg = f" Excel dosyasına '{new_col_name}' adında yeni sütun eklendi." if new_col_name else ""
     filter_msg = f" {filter_desc} şartlarına uyan" if filter_desc else ""
     action_note = f"⚡ EXCEL ÇOKLU FİLTRE OPERASYONU:{filter_msg} {len(df)} adet SKU filtrelendi.{metric_msg}{col_msg}"
@@ -2362,12 +2385,10 @@ async def process_excel(req: ExcelCommandRequest):
     orig_rows = df_to_preview_rows(CURRENT_ORIGINAL_EXCEL_DF, max_rows=200)
     proc_rows = df_to_preview_rows(df, max_rows=200)
 
-    avg_price = float(df[price_col].dropna().mean()) if price_col and price_col in df.columns and not df[price_col].dropna().empty else 0.0
-    tot_stock_val = float(df[rev_col].dropna().sum()) if rev_col and rev_col in df.columns and not df[rev_col].dropna().empty else 0.0
-
     return {
         "status": "success",
         "command": command,
+        "executive_summary": executive_summary,
         "action_note": action_note,
         "total_rows": len(df),
         "total_columns": len(df.columns),
@@ -4107,103 +4128,81 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
         try {
           recognition.start();
-        } catch(e) {
-          console.error("Start error:", e);
-        }
-      }
-    }
+           let outputHtml = `
+            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 22px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
+              <!-- HEADER ROW -->
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #f1f5f9;">
+                <div>
+                  <span style="font-size: 11px; font-weight: 800; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Direct Excel Operation Output</span>
+                  <h4 style="font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 2px;">Executed Command: "${question}"</h4>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button onclick="openExcelPreview()" type="button" style="background: #eff6ff; color: #2563eb; border: 1.5px solid #bfdbfe; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; transition: all 0.2s;">Inspect Modified Table</button>
+                  <button onclick="downloadExcel()" type="button" style="background: #2563eb; color: #ffffff; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(37,99,235,0.25);">Download Updated Excel</button>
+                </div>
+              </div>
 
-    function toggleHowToUse() {
-      isHowToUseOpen = !isHowToUseOpen;
-      const body = document.getElementById("howToUseBody");
-      const icon = document.getElementById("howToUseIcon");
-      if (body && icon) {
-        body.style.display = isHowToUseOpen ? "block" : "none";
-        icon.style.transform = isHowToUseOpen ? "rotate(180deg)" : "rotate(0deg)";
-      }
-    }
+              <!-- 🎯 EXECUTIVE DIRECT ANSWER CARD -->
+              <div style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1.5px solid #bfdbfe; border-left: 6px solid #2563eb; border-radius: 14px; padding: 18px 22px; margin-bottom: 20px; box-shadow: 0 3px 10px rgba(37,99,235,0.06);">
+                <div style="display: flex; align-items: flex-start; gap: 14px;">
+                  <div style="width: 40px; height: 40px; border-radius: 12px; background: #2563eb; color: #ffffff; font-size: 20px; display: grid; place-items: center; box-shadow: 0 4px 10px rgba(37,99,235,0.30); flex-shrink: 0;">🎯</div>
+                  <div style="flex: 1;">
+                    <span style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 4px;">Analiz Çıktısı &amp; Yanıt</span>
+                    <div style="font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.5;">${(data.executive_summary || actionNote).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div>
+                  </div>
+                </div>
+              </div>
 
-    function renderHowToUse() {
-      const body = document.getElementById("howToUseBody");
-      if (!body) return;
-      const content = howToUseGuide[currentModule] || howToUseGuide.business_calculator;
-      body.innerHTML = content[currentLang] || content.tr;
-    }
+              <!-- 📊 STATISTICAL KPI CARDS ROW -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+                  <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Toplam Satır (SKU)</span>
+                  <span style="font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 4px; display: block;">${data.total_rows.toLocaleString()} <span style="font-size: 12px; color: #10b981; font-weight: 700;">satır</span></span>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+                  <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Sütun (Kolon) Sayısı</span>
+                  <span style="font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 4px; display: block;">${data.total_columns || Object.keys(filteredRows[0]||{}).length} <span style="font-size: 12px; color: #2563eb; font-weight: 700;">sütun</span></span>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px;">
+                  <span style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Ortalama Ürün Fiyatı</span>
+                  <span style="font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 4px; display: block;">₺${filteredAvgPrice}</span>
+                </div>
+              </div>
 
-    function renderModule(key) {
-      currentModule = key;
-      const conf = modules[key] || modules.business_calculator;
+              <!-- AUDIT LOG BANNER -->
+              <div style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 12px 16px; border-radius: 12px; font-size: 12.5px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;">
+                <span>${actionNote}</span>
+                <span style="background: #10b981; color: #ffffff; font-size: 10.5px; padding: 2px 8px; border-radius: 999px;">EXCEL VERİSİ HAZIR</span>
+              </div>
 
-      const menuButtons = document.querySelectorAll(".menu-btn");
-      menuButtons.forEach(btn => {
-        if (btn.dataset.key === key) {
-          btn.classList.add("active");
-        } else {
-          btn.classList.remove("active");
-        }
-      });
-
-      const moduleTitle = document.getElementById("moduleTitle");
-      const moduleDesc = document.getElementById("moduleDesc");
-      const questionInput = document.getElementById("questionInput");
-
-      if (moduleTitle) moduleTitle.textContent = conf.title;
-      if (moduleDesc) moduleDesc.textContent = conf.desc[currentLang] || conf.desc.tr;
-      if (questionInput) questionInput.placeholder = conf.placeholder[currentLang] || conf.placeholder.tr;
-
-      renderHowToUse();
-      updateRunButtonState();
-    }
-
-    function openUserProfileModal() {
-      const modal = document.getElementById("userProfileModal");
-      if (modal) modal.style.display = "flex";
-    }
-
-    function closeUserProfileModal() {
-      const modal = document.getElementById("userProfileModal");
-      if (modal) modal.style.display = "none";
-    }
-
-    async function resetDataset() {
-      const resultBox = document.getElementById("resultBox");
-      const resultSection = document.getElementById("resultSection");
-      if (resultSection) resultSection.style.display = "block";
-      if (resultBox) {
-        resultBox.classList.remove("placeholder");
-        resultBox.classList.add("loading");
-        resultBox.innerHTML = (currentLang === 'en') ? "⚡ Resetting & clearing dataset..." : "⚡ Veri seti ve önizlemeler tamamen sıfırlanıyor...";
-      }
-      try {
-        const response = await fetch("/reset-dataset", { method: "POST" });
-        const data = await response.json();
-        if (data.status === "success") {
-          originalSpreadsheetData = [];
-          processedSpreadsheetData = [];
-          currentSpreadsheetData = [];
-          activePreviewTab = "original";
-
-          const activeFileName = document.getElementById("activeFileName");
-          const activeFileMeta = document.getElementById("activeFileMeta");
-          const activeFileIcon = document.getElementById("activeFileIcon");
-          if (activeFileName) activeFileName.textContent = (currentLang === 'en') ? "There is no uploaded file" : "Yüklü dosya yok";
-          if (activeFileMeta) activeFileMeta.textContent = "";
-          if (activeFileIcon) {
-            activeFileIcon.textContent = "📁";
-            activeFileIcon.style.color = "#94a3b8";
-          }
-
-          const modBadge = document.getElementById("previewModifiedBadge");
-          if (modBadge) modBadge.style.display = "none";
-
-          try {
-            sessionStorage.removeItem("activeExcelFileName");
-            sessionStorage.removeItem("activeExcelFileMeta");
-          } catch(e) {}
-
-          if (resultBox) {
-            resultBox.classList.remove("loading");
-            resultBox.innerHTML = `<div style="background: #fef2f2; border: 1.5px solid #fca5a5; color: #991b1b; padding: 14px 18px; border-radius: 12px; font-weight: 700; font-size: 13.5px;">⚡ ${data.action_note || "Aktif veri seti ve önizleme verileri tamamen sıfırlandı."}</div>`;
+              <!-- Filtered Table -->
+              <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; max-height: 420px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; white-space: nowrap;">
+                  <thead>
+                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 2;">
+                      <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">#</th>
+                      ${Object.keys(filteredRows[0] || {}).slice(0, 12).map(col => `<th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">${col}</th>`).join('')}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${filteredRows.slice(0, 100).map((r, i) => `
+                      <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#fcfcfd'}; border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 9px 14px; font-size: 11px; color: #94a3b8; font-weight: 600;">${i + 1}</td>
+                        ${Object.keys(r).slice(0, 12).map(col => {
+                          let val = r[col];
+                          let valStr = (val === null || val === undefined) ? "-" : val.toString();
+                          let isFlag = col.toLowerCase().includes("flag") || col.toLowerCase().includes("group");
+                          if (isFlag) {
+                            return `<td style="padding: 9px 14px;"><span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${valStr}</span></td>`;
+                          }
+                          return `<td style="padding: 9px 14px; color: #1e293b;">${valStr}</td>`;
+                        }).join('')}
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>`;lor: #991b1b; padding: 14px 18px; border-radius: 12px; font-weight: 700; font-size: 13.5px;">⚡ ${data.action_note || "Aktif veri seti ve önizleme verileri tamamen sıfırlandı."}</div>`;
           }
           updateRunButtonState();
         }
