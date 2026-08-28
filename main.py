@@ -5569,9 +5569,9 @@ def checkout(plan: str = "standard"):
             session = stripe.checkout.Session.create(
                 line_items=line_items,
                 mode="subscription",
+                allow_promotion_codes=True,
                 success_url=f"{base_url}/checkout/success?plan={'pro' if is_pro else 'standard'}&session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{base_url}/pricing",
-                managed_payments={"enabled": False}
+                cancel_url=f"{base_url}/pricing"
             )
             from fastapi.responses import RedirectResponse
             return RedirectResponse(url=session.url, status_code=303)
