@@ -3182,15 +3182,15 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           <button class="menu-btn" data-key="category_insights">
             <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             <span class="menu-btn-text">
-              <strong>Category Insights</strong>
-              <span id="sub_category_insights">Category &amp; sector analysis</span>
+              <strong>Category &amp; Product Analysis</strong>
+              <span id="sub_category_insights">Category &amp; product deep-dive</span>
             </span>
           </button>
           <button class="menu-btn" data-key="price_competition">
             <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
             <span class="menu-btn-text">
-              <strong>Price Competition</strong>
-              <span id="sub_price_competition">Merchant benchmark</span>
+              <strong>Price &amp; Sector Competition</strong>
+              <span id="sub_price_competition">Price &amp; sector benchmark</span>
             </span>
           </button>
           <button class="menu-btn" data-key="action_executor">
@@ -3292,8 +3292,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               <h3 class="module-title" id="moduleTitle" style="font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.02em;">Excel Wizard</h3>
               <p class="module-desc" id="moduleDesc" style="font-size: 13.5px; color: #475569; line-height: 1.6; font-weight: 400; max-width: 760px;">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
             </div>
-            <!-- TOP RIGHT LANGUAGE SWITCHER PILLS & UX TOAST BADGE -->
-            <div style="position: relative; flex-shrink: 0;">
+            <!-- TOP RIGHT GUIDED TOUR & LANGUAGE SWITCHER PILLS -->
+            <div style="position: relative; flex-shrink: 0; display: flex; align-items: center; gap: 10px;">
+              <button onclick="openOnboardingModal()" type="button" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1.5px solid #93c5fd; color: #1d4ed8; padding: 7px 14px; border-radius: 12px; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,99,235,0.12); transition: all 0.2s;" id="onboardingTriggerBtn">
+                🚀 <span id="onboardingTriggerText">Guided Tour</span>
+              </button>
               <div id="langToastBadge" style="display: none; position: absolute; top: -38px; right: 0; background: #0f172a; color: #ffffff; font-size: 11.5px; font-weight: 700; padding: 6px 14px; border-radius: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.18); transition: all 0.25s ease; z-index: 99; white-space: nowrap; pointer-events: none;">🌐 Voice Mode Switched</div>
               <div style="display: flex; gap: 4px; background: #f8fafc; padding: 4px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
                 <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid #2563eb; background: #2563eb; color: #ffffff; padding: 7px 16px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 2px 6px rgba(37,99,235,0.20);">English Voice</button>
@@ -3494,6 +3497,123 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     </div>
   </div>
 
+  <!-- USER ONBOARDING WIZARD MODAL -->
+  <div id="onboardingModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.78); backdrop-filter: blur(12px); z-index: 999999; align-items: center; justify-content: center; padding: 24px;">
+    <div style="background: #ffffff; border-radius: 28px; width: 100%; max-width: 720px; overflow: hidden; box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.45); border: 1px solid #e2e8f0; display: flex; flex-direction: column;">
+      
+      <!-- ONBOARDING HEADER WITH GRADIENT & PROGRESS BAR -->
+      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 24px 32px; color: #ffffff; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="/logo.png" alt="DataProvido" style="width: 32px; height: 32px; object-fit: contain; border-radius: 8px; background: #ffffff; padding: 2px;" />
+            <span style="font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #f26f26;">DataProvido Onboarding</span>
+          </div>
+          <button onclick="closeOnboardingModal()" type="button" style="background: rgba(255,255,255,0.12); border: none; color: #ffffff; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: 700; cursor: pointer; display: grid; place-items: center; transition: all 0.2s;">✕</button>
+        </div>
+        
+        <h3 id="onboardingHeaderTitle" style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #ffffff; margin: 0 0 6px;">Welcome! Discover DataProvido Console</h3>
+        <p id="onboardingHeaderSub" style="font-size: 12.5px; color: #94a3b8; margin: 0; line-height: 1.5;">Transform your retail and e-commerce data into actionable insights in 4 easy steps.</p>
+
+        <!-- STEP PILLS PROGRESS BAR -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 20px;">
+          <div id="onboardingPill1" onclick="setOnboardingStep(1)" style="height: 6px; border-radius: 999px; background: #f26f26; transition: all 0.3s; cursor: pointer;"></div>
+          <div id="onboardingPill2" onclick="setOnboardingStep(2)" style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.2); transition: all 0.3s; cursor: pointer;"></div>
+          <div id="onboardingPill3" onclick="setOnboardingStep(3)" style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.2); transition: all 0.3s; cursor: pointer;"></div>
+          <div id="onboardingPill4" onclick="setOnboardingStep(4)" style="height: 6px; border-radius: 999px; background: rgba(255,255,255,0.2); transition: all 0.3s; cursor: pointer;"></div>
+        </div>
+      </div>
+
+      <!-- ONBOARDING DYNAMIC BODY CONTENT -->
+      <div style="padding: 28px 32px; min-height: 320px; display: flex; flex-direction: column; justify-content: center; background: #ffffff;">
+        
+        <!-- STEP 1: WELCOME & PRIVACY -->
+        <div id="onboardingStep1" class="onboarding-step-panel">
+          <div style="display: flex; gap: 20px; align-items: flex-start;">
+            <div style="width: 56px; height: 56px; border-radius: 16px; background: #eff6ff; border: 1.5px solid #bfdbfe; color: #2563eb; font-size: 26px; display: grid; place-items: center; flex-shrink: 0; box-shadow: 0 4px 14px rgba(37,99,235,0.15);">⚡</div>
+            <div>
+              <span style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase; letter-spacing: 0.08em;" id="obStep1Badge">Step 1 / 4 · 100% Private &amp; Offline AI</span>
+              <h4 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 4px 0 10px;" id="obStep1Title">Secure Local AI Processing Engine</h4>
+              <p style="font-size: 13.5px; color: #475569; line-height: 1.6; margin: 0 0 16px;" id="obStep1Desc">DataProvido processes your sales, stock, and price benchmark datasets locally on your machine without sending private data to external servers.</p>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px;">
+                  <strong style="display: block; font-size: 12.5px; color: #0f172a;" id="obStep1Box1Title">🔒 Absolute Data Privacy</strong>
+                  <span style="font-size: 11.5px; color: #64748b;" id="obStep1Box1Sub">Your spreadsheets never leave your local workspace.</span>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px;">
+                  <strong style="display: block; font-size: 12.5px; color: #0f172a;" id="obStep1Box2Title">⚡ Zero Cloud Latency</strong>
+                  <span style="font-size: 11.5px; color: #64748b;" id="obStep1Box2Sub">Instant DuckDB &amp; local LLM analytics.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: CONNECT DATA & EXCEL WIZARD -->
+        <div id="onboardingStep2" class="onboarding-step-panel" style="display: none;">
+          <div style="display: flex; gap: 20px; align-items: flex-start;">
+            <div style="width: 56px; height: 56px; border-radius: 16px; background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #059669; font-size: 26px; display: grid; place-items: center; flex-shrink: 0; box-shadow: 0 4px 14px rgba(5,150,105,0.15);">📂</div>
+            <div>
+              <span style="font-size: 11px; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 0.08em;" id="obStep2Badge">Step 2 / 4 · Data Ingestion &amp; Live Preview</span>
+              <h4 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 4px 0 10px;" id="obStep2Title">Connect Excel &amp; CSV Files in Seconds</h4>
+              <p style="font-size: 13.5px; color: #475569; line-height: 1.6; margin: 0 0 16px;" id="obStep2Desc">Upload product catalogs, order histories, or price benchmark sheets into the Excel Wizard. Inspect original vs processed spreadsheets in real-time dual-tab previewer.</p>
+              
+              <div style="background: #f0fdf4; border: 1.5px dashed #10b981; border-radius: 14px; padding: 14px; text-align: center; color: #047857; font-size: 12.5px; font-weight: 700;" id="obStep2Box">
+                📁 Use "Drag &amp; Drop Excel or Click to Upload" to instantly connect your datasets.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: VOICE AI & COMMANDS -->
+        <div id="onboardingStep3" class="onboarding-step-panel" style="display: none;">
+          <div style="display: flex; gap: 20px; align-items: flex-start;">
+            <div style="width: 56px; height: 56px; border-radius: 16px; background: #fff7ed; border: 1.5px solid #ffbb7c; color: #f26f26; font-size: 26px; display: grid; place-items: center; flex-shrink: 0; box-shadow: 0 4px 14px rgba(242,111,38,0.15);">🎙️</div>
+            <div>
+              <span style="font-size: 11px; font-weight: 800; color: #f26f26; text-transform: uppercase; letter-spacing: 0.08em;" id="obStep3Badge">Step 3 / 4 · Voice AI &amp; Direct Excel Commands</span>
+              <h4 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 4px 0 10px;" id="obStep3Title">Execute Excel Operations via Natural Speech</h4>
+              <p style="font-size: 13.5px; color: #475569; line-height: 1.6; margin: 0 0 14px;" id="obStep3Desc">Click the microphone button to speak English or Turkish commands, or type directly into the prompt box:</p>
+              
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="background: #f8fafc; border-left: 4px solid #f26f26; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: #0f172a; font-weight: 600;" id="obStep3Ex1">🗣️ "Increase prices by 10% and update inventory values"</div>
+                <div style="background: #f8fafc; border-left: 4px solid #2563eb; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: #0f172a; font-weight: 600;" id="obStep3Ex2">🗣️ "List high C2D items with critical stock levels"</div>
+                <div style="background: #f8fafc; border-left: 4px solid #10b981; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; color: #0f172a; font-weight: 600;" id="obStep3Ex3">🗣️ "How many total rows are in this Excel?"</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4: ACTION EXECUTOR & EXPORTS -->
+        <div id="onboardingStep4" class="onboarding-step-panel" style="display: none;">
+          <div style="display: flex; gap: 20px; align-items: flex-start;">
+            <div style="width: 56px; height: 56px; border-radius: 16px; background: #faf5ff; border: 1.5px solid #e9d5ff; color: #9333ea; font-size: 26px; display: grid; place-items: center; flex-shrink: 0; box-shadow: 0 4px 14px rgba(147,51,234,0.15);">📥</div>
+            <div>
+              <span style="font-size: 11px; font-weight: 800; color: #9333ea; text-transform: uppercase; letter-spacing: 0.08em;" id="obStep4Badge">Step 4 / 4 · Action Plans &amp; Export Workbooks</span>
+              <h4 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 4px 0 10px;" id="obStep4Title">Automated Action Plans &amp; Excel Downloads</h4>
+              <p style="font-size: 13.5px; color: #475569; line-height: 1.6; margin: 0 0 16px;" id="obStep4Desc">Export your updated spreadsheets in multi-sheet Excel Workbooks using "Download Updated Excel", or generate prioritized business action plans with Action Executor.</p>
+              
+              <div style="background: #fdf4ff; border: 1px solid #f0abfc; border-radius: 12px; padding: 12px 16px; color: #701a75; font-size: 12.5px; font-weight: 700;" id="obStep4Box">
+                🚀 You're all set! Start processing your e-commerce data right away.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ONBOARDING FOOTER CONTROLS -->
+      <div style="padding: 16px 32px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+        <button id="onboardingPrevBtn" onclick="prevOnboardingStep()" type="button" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 9px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; visibility: hidden; transition: all 0.2s;">← <span id="obBtnPrev">Back</span></button>
+        
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button onclick="closeOnboardingModal()" type="button" style="background: transparent; border: none; color: #64748b; font-size: 12.5px; font-weight: 600; cursor: pointer;" id="obBtnSkip">Skip Tour</button>
+          <button id="onboardingNextBtn" onclick="nextOnboardingStep()" type="button" class="primary-btn" style="padding: 9px 24px; font-size: 13.5px; background: linear-gradient(135deg, #f26f26 0%, #d85c18 100%); border: none; color: #ffffff; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(242,111,38,0.30);"><span id="obBtnNext">Next Step →</span></button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <script>
     /* ── Global State ── */
     var currentLang = 'en';
@@ -3588,14 +3708,14 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         suggestions: { tr: [], en: [] }
       },
       category_insights: {
-        title: "Category Insights",
+        title: "Category & Product Analysis",
         desc: {
-          tr: "Seçilen kategori için performans, kazanan segmentler, riskler ve yönetici özeti çıkarır.",
-          en: "Generates category performance metrics, winning segments, risk analysis, and executive summaries."
+          tr: "Seçilen kategori ve ürünler için performans, kazanan segmentler, riskler ve yönetici özeti çıkarır.",
+          en: "Generates category & product performance metrics, winning segments, risk analysis, and executive summaries."
         },
         placeholder: {
-          tr: "Örn: Tablet kategorisinin performans insightını ver",
-          en: "E.g.: Provide detailed performance insight for Tablets category"
+          tr: "Örn: Tablet kategorisinin ve ürünlerinin detaylı analizini ver",
+          en: "E.g.: Provide detailed performance insight for Tablets category & products"
         },
         suggestions: {
           tr: [
@@ -3616,10 +3736,10 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         }
       },
       price_competition: {
-        title: "Price Competition",
+        title: "Price & Sector Competition",
         desc: {
-          tr: "Merchant benchmark datasına göre pahalı, ucuz, rekabetçi ve riskli ürünleri analiz eder.",
-          en: "Analyzes benchmark price positioning (expensive, cheap, competitive, at-risk SKUs)."
+          tr: "Sektör ve rakip benchmark datasına göre pahalı, ucuz, rekabetçi ve riskli ürünleri analiz eder.",
+          en: "Analyzes sector & competitor benchmark price positioning (expensive, cheap, competitive, at-risk SKUs)."
         },
         placeholder: {
           tr: "Örn: Cep Telefonları kategorisinde fiyat rekabeti analizi yap",
@@ -3915,6 +4035,15 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
       // Auto-restore active Excel state from server disk storage on page load
       fetchActiveExcelState();
+
+      // Auto-launch onboarding tour for first-time visitors
+      try {
+        if (!localStorage.getItem("hasSeenOnboarding")) {
+          setTimeout(() => {
+            openOnboardingModal();
+          }, 700);
+        }
+      } catch (e) {}
     });
 
     let originalSpreadsheetData = [];
@@ -4224,6 +4353,69 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     window.openUserProfileModal = openUserProfileModal;
     window.closeUserProfileModal = closeUserProfileModal;
     window.resetDataset = resetDataset;
+
+    /* ── User Onboarding Wizard Engine ── */
+    var currentOnboardingStep = 1;
+
+    function openOnboardingModal() {
+      const modal = document.getElementById("onboardingModal");
+      if (modal) {
+        modal.style.display = "flex";
+        setOnboardingStep(1);
+      }
+    }
+
+    function closeOnboardingModal() {
+      const modal = document.getElementById("onboardingModal");
+      if (modal) modal.style.display = "none";
+      try {
+        localStorage.setItem("hasSeenOnboarding", "true");
+      } catch (e) {}
+    }
+
+    function setOnboardingStep(step) {
+      currentOnboardingStep = step;
+      for (let i = 1; i <= 4; i++) {
+        const panel = document.getElementById("onboardingStep" + i);
+        const pill = document.getElementById("onboardingPill" + i);
+        if (panel) panel.style.display = (i === step) ? "block" : "none";
+        if (pill) {
+          pill.style.background = (i === step) ? "#f26f26" : "rgba(255,255,255,0.25)";
+        }
+      }
+
+      const prevBtn = document.getElementById("onboardingPrevBtn");
+      const obBtnNext = document.getElementById("obBtnNext");
+
+      if (prevBtn) prevBtn.style.visibility = (step > 1) ? "visible" : "hidden";
+      if (obBtnNext) {
+        if (step === 4) {
+          obBtnNext.textContent = (currentLang === 'en') ? "🚀 Get Started & Launch Console" : "🚀 Başlayın ve Konsolu Açın";
+        } else {
+          obBtnNext.textContent = (currentLang === 'en') ? "Next Step →" : "İleri (Next) →";
+        }
+      }
+    }
+
+    function nextOnboardingStep() {
+      if (currentOnboardingStep < 4) {
+        setOnboardingStep(currentOnboardingStep + 1);
+      } else {
+        closeOnboardingModal();
+      }
+    }
+
+    function prevOnboardingStep() {
+      if (currentOnboardingStep > 1) {
+        setOnboardingStep(currentOnboardingStep - 1);
+      }
+    }
+
+    window.openOnboardingModal = openOnboardingModal;
+    window.closeOnboardingModal = closeOnboardingModal;
+    window.setOnboardingStep = setOnboardingStep;
+    window.nextOnboardingStep = nextOnboardingStep;
+    window.prevOnboardingStep = prevOnboardingStep;
 
     /* ── Live Interactive Excel Spreadsheet Data Engine ── */
 
