@@ -3140,6 +3140,32 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       100% { transform: scaleY(1.15); }
     }
 
+    /* Interactive Hotspot Beacon & Balloon Tour Styles */
+    @keyframes tour-beacon-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(242, 111, 38, 0.8), 0 0 0 0 rgba(37, 99, 235, 0.5); transform: scale(1); }
+      50% { box-shadow: 0 0 0 14px rgba(242, 111, 38, 0.25), 0 0 0 24px rgba(37, 99, 235, 0); transform: scale(1.1); }
+      100% { box-shadow: 0 0 0 0 rgba(242, 111, 38, 0), 0 0 0 0 rgba(37, 99, 235, 0); transform: scale(1); }
+    }
+
+    .tour-hotspot-beacon {
+      position: fixed;
+      z-index: 1000002;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f26f26 0%, #d85c18 100%);
+      border: 3px solid #ffffff;
+      animation: tour-beacon-pulse 1.4s infinite ease-in-out;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 4px 14px rgba(242, 111, 38, 0.45);
+      pointer-events: auto;
+    }
+
     @media (max-width: 1180px) {
       .workspace { grid-template-columns: 1fr; }
       .module-panel, .result-panel { min-height: auto; }
@@ -3178,6 +3204,14 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               <strong>Excel Wizard</strong>
               <span id="sub_business_calculator">Voice &amp; text Excel commands</span>
             </span>
+          </button>
+          <button class="menu-btn" data-key="user_onboarding" onclick="startInteractiveTour()">
+            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-3.05 11a22.35 22.35 0 0 1-3.95 2z"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+            <span class="menu-btn-text">
+              <strong id="label_user_onboarding">User Onboarding</strong>
+              <span id="sub_user_onboarding">Interactive product tour</span>
+            </span>
+            <span class="menu-badge" style="background: linear-gradient(135deg, #f26f26 0%, #d85c18 100%); color: #ffffff; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; display: grid; place-items: center; font-size: 10.5px; font-weight: 800; margin-left: 6px; box-shadow: 0 2px 6px rgba(242,111,38,0.4);">TOUR</span>
           </button>
           <button class="menu-btn" data-key="category_insights">
             <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -3611,6 +3645,26 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- INTERACTIVE HOTSPOT BEACON & TOOLTIP BALLOON TOUR CONTAINERS -->
+  <div id="tourOverlayMask" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1000000; pointer-events: auto;" onclick="stopInteractiveTour()"></div>
+  
+  <div id="tourHighlightBox" style="display: none; position: fixed; z-index: 1000001; border: 3px solid #f26f26; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.68), 0 0 30px rgba(242, 111, 38, 0.60); transition: all 0.35s ease; pointer-events: none;"></div>
+  
+  <div id="tourBeaconDot" class="tour-hotspot-beacon" onclick="nextTourStep()" style="display: none;" title="Tıklayın: Sonraki Balona Geç">🎈</div>
+
+  <div id="tourTooltipBalloon" style="display: none; position: fixed; z-index: 1000002; width: 340px; background: #ffffff; border: 2px solid #f26f26; border-radius: 20px; padding: 20px; box-shadow: 0 20px 45px rgba(0,0,0,0.35); transition: all 0.3s ease;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+      <span style="background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;" id="tourStepBadge">ADIM 1 / 7 · EXCEL WIZARD</span>
+      <button onclick="stopInteractiveTour()" style="background: transparent; border: none; color: #94a3b8; font-size: 16px; font-weight: 700; cursor: pointer; padding: 2px;">✕</button>
+    </div>
+    <h4 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0 0 6px;" id="tourStepTitle">1. Excel Wizard Menüsü</h4>
+    <p style="font-size: 13.5px; color: #475569; line-height: 1.5; margin: 0 0 16px;" id="tourStepDesc">Tüm manuel Excel işlerinizi sesinizle veya metin komutlarınızla saniyeler içinde yapabileceğiniz ana AI aracı.</p>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <button id="tourPrevBtn" onclick="prevTourStep()" style="background: #f1f5f9; border: none; color: #475569; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">← Geri</button>
+      <button id="tourNextBtn" onclick="nextTourStep()" style="background: linear-gradient(135deg, #f26f26 0%, #d85c18 100%); border: none; color: #ffffff; padding: 8px 18px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(242,111,38,0.30); transition: all 0.2s;">Sonraki Balon (Next) →</button>
     </div>
   </div>
 
@@ -4416,6 +4470,197 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     window.setOnboardingStep = setOnboardingStep;
     window.nextOnboardingStep = nextOnboardingStep;
     window.prevOnboardingStep = prevOnboardingStep;
+
+    /* ── Interactive Pulsing Hotspot Beacon & Tooltip Tour Engine ── */
+    var tourCurrentIndex = 0;
+    var tourIsActive = false;
+
+    const tourSteps = [
+      {
+        targetSelector: '[data-key="business_calculator"]',
+        titleTR: "1. Excel Wizard Ana Menüsü",
+        titleEN: "1. Excel Wizard Navigation",
+        descTR: "Perakende ve e-ticaret Excel verilerinizi doğal dil ve sesli komutlarla yönetebileceğiniz ana yapay zeka modülü.",
+        descEN: "The core AI module for executing natural language and voice operations on retail spreadsheets."
+      },
+      {
+        targetSelector: '#excelDropZone',
+        titleTR: "2. Excel & CSV Yükleme Alanı",
+        titleEN: "2. Excel & CSV Upload Zone",
+        descTR: "Ürün listelerinizi, stok veya rakip fiyat dosyalarınızı sürükleyip bırakarak buraya anında yükleyin.",
+        descEN: "Drag & drop your sales, inventory, or benchmark sheets here for instant local ingestion."
+      },
+      {
+        targetSelector: '#previewBtn',
+        titleTR: "3. Canlı Excel Tablo Önizleyici",
+        titleEN: "3. Live Excel Previewer",
+        descTR: "Yüklediğiniz Excel'in orijinal hali ile işlem görmüş son halini çift sekmeli modalda canlı inceleyin.",
+        descEN: "Inspect original vs processed spreadsheets side-by-side in real-time dual-tab viewer."
+      },
+      {
+        targetSelector: '#questionInput',
+        titleTR: "4. Doğal Dil & Komut Girişi",
+        titleEN: "4. Natural Language Input",
+        descTR: "Excel verileriniz üzerinde yapmak istediğiniz işlemi Türkçe/İngilizce yazın (Örn: 'Fiyatları %10 artır').",
+        descEN: "Type your desired spreadsheet calculation or filter (e.g., 'Increase prices by 10%')."
+      },
+      {
+        targetSelector: '#voiceOrbBtn',
+        titleTR: "5. Sesli Komut Mikrofonu (Voice AI)",
+        titleEN: "5. Voice AI Microphone",
+        descTR: "Mikrofon butonuna tıklayıp konuşarak komut verin. Sistem sesinizi anında metne çevirip Excel'e uygular.",
+        descEN: "Click to speak commands in Turkish or English. Audio is converted to text & executed live."
+      },
+      {
+        targetSelector: '#runCmdBtn',
+        titleTR: "6. Komutu Çalıştır & Hesapla",
+        titleEN: "6. Run Command Button",
+        descTR: "Komutunuzu çalıştırmak ve yönetici özeti, KPI kartları ile işlenmiş tabloyu üretmek için tıklayın.",
+        descEN: "Execute your query to generate executive summaries, KPI metrics, and updated tables."
+      },
+      {
+        targetSelector: '#resetBtnLabel',
+        titleTR: "7. Veri Setini Sıfırla (Reset Dataset)",
+        titleEN: "7. Reset Dataset Button",
+        descTR: "Aktif veri setini bellekten ve diskten tamamen silip varsayılan temiz duruma dönmek için kullanılır.",
+        descEN: "Wipe active dataset from memory & disk to reset back to a clean state."
+      }
+    ];
+
+    function startInteractiveTour() {
+      if (typeof renderModule === 'function') {
+        renderModule('business_calculator');
+      }
+      closeOnboardingModal();
+      tourIsActive = true;
+      tourCurrentIndex = 0;
+      showTourStep(tourCurrentIndex);
+      window.addEventListener('resize', repositionTourStep);
+    }
+
+    function stopInteractiveTour() {
+      tourIsActive = false;
+      const mask = document.getElementById("tourOverlayMask");
+      const highlight = document.getElementById("tourHighlightBox");
+      const beacon = document.getElementById("tourBeaconDot");
+      const balloon = document.getElementById("tourTooltipBalloon");
+
+      if (mask) mask.style.display = "none";
+      if (highlight) highlight.style.display = "none";
+      if (beacon) beacon.style.display = "none";
+      if (balloon) balloon.style.display = "none";
+      window.removeEventListener('resize', repositionTourStep);
+    }
+
+    function setTourStep(index) {
+      if (index < 0 || index >= tourSteps.length) return;
+      tourCurrentIndex = index;
+      showTourStep(tourCurrentIndex);
+    }
+
+    function nextTourStep() {
+      if (tourCurrentIndex < tourSteps.length - 1) {
+        tourCurrentIndex++;
+        showTourStep(tourCurrentIndex);
+      } else {
+        stopInteractiveTour();
+      }
+    }
+
+    function prevTourStep() {
+      if (tourCurrentIndex > 0) {
+        tourCurrentIndex--;
+        showTourStep(tourCurrentIndex);
+      }
+    }
+
+    function repositionTourStep() {
+      if (tourIsActive) {
+        showTourStep(tourCurrentIndex);
+      }
+    }
+
+    function showTourStep(index) {
+      const step = tourSteps[index];
+      if (!step) return;
+
+      const targetEl = document.querySelector(step.targetSelector);
+      if (!targetEl) {
+        console.warn("Tour target not found:", step.targetSelector);
+        return;
+      }
+
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      setTimeout(() => {
+        const rect = targetEl.getBoundingClientRect();
+        const mask = document.getElementById("tourOverlayMask");
+        const highlight = document.getElementById("tourHighlightBox");
+        const beacon = document.getElementById("tourBeaconDot");
+        const balloon = document.getElementById("tourTooltipBalloon");
+
+        if (mask) mask.style.display = "block";
+        
+        if (highlight) {
+          highlight.style.display = "block";
+          highlight.style.left = (rect.left - 6) + "px";
+          highlight.style.top = (rect.top - 6) + "px";
+          highlight.style.width = (rect.width + 12) + "px";
+          highlight.style.height = (rect.height + 12) + "px";
+        }
+
+        if (beacon) {
+          beacon.style.display = "grid";
+          beacon.style.left = (rect.right - 14) + "px";
+          beacon.style.top = (rect.top - 10) + "px";
+        }
+
+        if (balloon) {
+          balloon.style.display = "block";
+          
+          const stepBadge = document.getElementById("tourStepBadge");
+          const stepTitle = document.getElementById("tourStepTitle");
+          const stepDesc = document.getElementById("tourStepDesc");
+          const prevBtn = document.getElementById("tourPrevBtn");
+          const nextBtn = document.getElementById("tourNextBtn");
+
+          const isEN = (currentLang === 'en');
+          if (stepBadge) stepBadge.textContent = isEN ? `STEP ${index + 1} / ${tourSteps.length} · EXCEL WIZARD` : `ADIM ${index + 1} / ${tourSteps.length} · EXCEL WIZARD`;
+          if (stepTitle) stepTitle.textContent = isEN ? step.titleEN : step.titleTR;
+          if (stepDesc) stepDesc.textContent = isEN ? step.descEN : step.descTR;
+
+          if (prevBtn) prevBtn.style.visibility = (index > 0) ? "visible" : "hidden";
+          if (nextBtn) {
+            if (index === tourSteps.length - 1) {
+              nextBtn.textContent = isEN ? "🎉 Finish Tour" : "🎉 Turu Tamamla";
+            } else {
+              nextBtn.textContent = isEN ? "Next Balloon →" : "Sonraki Balon (Next) →";
+            }
+          }
+
+          let balloonLeft = rect.left;
+          let balloonTop = rect.bottom + 16;
+          
+          if (balloonTop + 240 > window.innerHeight) {
+            balloonTop = rect.top - 230;
+          }
+          if (balloonLeft + 350 > window.innerWidth) {
+            balloonLeft = window.innerWidth - 370;
+          }
+          if (balloonLeft < 10) balloonLeft = 10;
+          if (balloonTop < 10) balloonTop = 10;
+
+          balloon.style.left = balloonLeft + "px";
+          balloon.style.top = balloonTop + "px";
+        }
+      }, 150);
+    }
+
+    window.startInteractiveTour = startInteractiveTour;
+    window.stopInteractiveTour = stopInteractiveTour;
+    window.setTourStep = setTourStep;
+    window.nextTourStep = nextTourStep;
+    window.prevTourStep = prevTourStep;
 
     /* ── Live Interactive Excel Spreadsheet Data Engine ── */
 
