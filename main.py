@@ -5392,7 +5392,7 @@ def pricing():
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>15+ Analytical Engines:</strong> Stock Risk, Funnel Master, Price Radar, GfK Market Share</span>
+                <span><strong>15+ Analytical Engines:</strong> Stock Risk, Funnel Master, Price Radar, Category &amp; Sector Intelligence</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
@@ -6238,7 +6238,7 @@ def how_works():
               </div>
             </div>
             <p style="font-size: 14px; color: var(--text-700); line-height: 1.8; margin-bottom: 0;">
-              Ingest enterprise stock balances (<code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">stok.xlsx</code>), transaction orders (<code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">orders.xlsx</code>), GfK market share panels (<code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">GfK_Leaderpanel.xlsx</code>, <code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">gfk_sku.xlsx</code>), and funnel tracking data. All files are loaded locally without any cloud exposure.
+              Ingest enterprise stock balances (<code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">stok.xlsx</code>), transaction orders (<code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">orders.xlsx</code>), pricing benchmark panels (<code style="background: var(--bg-3); padding: 2px 6px; border-radius: 4px;">pricing.xlsx</code>), and funnel tracking data. All files are loaded locally without any cloud exposure.
             </p>
           </div>
 
@@ -6594,7 +6594,7 @@ def index():
         </div>
         <div class="sc-tab" data-sc="4">
           <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
-          <div class="sc-tab-head"><span class="sc-tab-icon">🏆</span><span class="sc-tab-title">GFK Market Share</span></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">🏷️</span><span class="sc-tab-title">Category &amp; Product Analysis</span></div>
           <div class="sc-tab-desc">Brand rankings and SKU-level competitive positioning.</div>
         </div>
         <div class="sc-tab" data-sc="5">
@@ -6646,14 +6646,14 @@ def index():
           <div class="sc-slide-visual">💰</div>
         </div>
         <div class="sc-slide" data-panel="4">
-          <div class="sc-slide-tag">🏆 Market Intelligence</div>
-          <h3>Dominate your category<br>with GFK insights</h3>
-          <p>Upload GFK reports and instantly get brand performance rankings, category share analysis, and SKU-level competitive positioning — without touching a spreadsheet.</p>
+          <div class="sc-slide-tag">🏷️ Category Intelligence</div>
+          <h3>Dominate your category<br>with product insights</h3>
+          <p>Upload product datasets and instantly get brand performance rankings, category share analysis, and SKU-level competitive positioning — without touching a spreadsheet.</p>
           <div class="sc-metrics">
             <div class="sc-metric"><div class="sc-metric-val">Auto</div><div class="sc-metric-label">Report parsing</div></div>
             <div class="sc-metric"><div class="sc-metric-val">Brand+SKU</div><div class="sc-metric-label">Two-level view</div></div>
           </div>
-          <div class="sc-slide-visual">🏆</div>
+          <div class="sc-slide-visual">🏷️</div>
         </div>
         <div class="sc-slide" data-panel="5">
           <div class="sc-slide-tag">⚡ Automation</div>
