@@ -311,8 +311,32 @@ def filter_by_category(df: pd.DataFrame, category: str, question: Optional[str] 
             if value:
                 mask = mask | normalized_col.str.contains(value, na=False, regex=False)
 
-    filtered = df[mask].copy()
-    return filtered, selected
+def extract_sku_triggers(df: pd.DataFrame) -> Dict[str, List[Dict]]:
+    triggers = {
+        "most_added_not_purchased": [],
+        "most_bounced_products": [],
+        "price_increase_transaction_decrease": []
+    }
+    if df.empty:
+        return triggers
+
+    c2d_avg = df["c2d_pct"].mean() if "c2d_pct" in df.columns else 10.0
+    b2d_avg = df["b2d_pct"].mean() if "b2d_pct" in df.columns else 2.0
+    
+    if "pdp_views" in df.columns and "add_to_carts" in df.columns:
+        opp_mask = (df["pdp_views"] >= 100)
+        opp_df = df[opp_mask].sort_values(by="add_to_carts", ascending=False).head(10)
+        triggers["most_added_not_purchased"] = df_to_records(opp_df)
+
+    if "bounce_rate_pct" in df.columns:
+        bounced_df = df[df["bounce_rate_pct"] >= 50.0].sort_values(by="bounce_rate_pct", ascending=False).head(10)
+        triggers["most_bounced_products"] = df_to_records(bounced_df)
+
+    if "product_price_delta_pct" in df.columns and "transactions_delta_pct" in df.columns:
+        price_drop_df = df[(df["product_price_delta_pct"] >= 3.0) & (df["transactions_delta_pct"] < 0)].sort_values(by="transactions_delta_pct", ascending=True).head(10)
+        triggers["price_increase_transaction_decrease"] = df_to_records(price_drop_df)
+
+    return triggers
 
 
 def generate_category_insight(
@@ -437,6 +461,7 @@ def generate_category_insight(
         "traffic_insights": df_to_records(traffic_insights.head(10)),
         "winning_categories": df_to_records(winners),
         "losing_categories": df_to_records(losers),
+        "sku_triggers": extract_sku_triggers(filtered_df),
         "recommended_actions": actions,
         "price_scenarios": price_scenarios,
         "seasonal_trends": seasonal_trends,
