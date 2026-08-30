@@ -3480,14 +3480,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               <span id="sub_business_calculator">Voice &amp; text Excel commands</span>
             </span>
           </button>
-          <button class="menu-btn" data-key="user_onboarding" onclick="openOnboardingModal()">
-            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-3.05 11a22.35 22.35 0 0 1-3.95 2z"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
-            <span class="menu-btn-text">
-              <strong id="label_user_onboarding">User Onboarding</strong>
-              <span id="sub_user_onboarding">Interactive product tour</span>
-            </span>
-            <span class="menu-badge" style="background: linear-gradient(135deg, #f26f26 0%, #d85c18 100%); color: #ffffff; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; display: grid; place-items: center; font-size: 10.5px; font-weight: 800; margin-left: 6px; box-shadow: 0 2px 6px rgba(242,111,38,0.4);">TOUR</span>
-          </button>
           <button class="menu-btn" data-key="category_insights" onclick="renderModule('category_insights')">
             <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             <span class="menu-btn-text">
