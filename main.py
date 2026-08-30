@@ -3593,11 +3593,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               <h3 class="module-title" id="moduleTitle" style="font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.02em;">Excel Wizard</h3>
               <p class="module-desc" id="moduleDesc" style="font-size: 13.5px; color: #475569; line-height: 1.6; font-weight: 400; max-width: 760px;">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
             </div>
-            <!-- TOP RIGHT GUIDED TOUR & LANGUAGE SWITCHER PILLS -->
-            <div style="position: relative; flex-shrink: 0; display: flex; align-items: center; gap: 10px;">
-              <button onclick="openOnboardingModal()" type="button" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1.5px solid #93c5fd; color: #1d4ed8; padding: 7px 14px; border-radius: 12px; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,99,235,0.12); transition: all 0.2s;" id="onboardingTriggerBtn">
-                🚀 <span id="onboardingTriggerText">Guided Tour</span>
-              </button>
+            <!-- TOP RIGHT LANGUAGE SWITCHER PILLS & UX TOAST BADGE -->
+            <div style="position: relative; flex-shrink: 0;">
               <div id="langToastBadge" style="display: none; position: absolute; top: -38px; right: 0; background: #0f172a; color: #ffffff; font-size: 11.5px; font-weight: 700; padding: 6px 14px; border-radius: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.18); transition: all 0.25s ease; z-index: 99; white-space: nowrap; pointer-events: none;">🌐 Voice Mode Switched</div>
               <div style="display: flex; gap: 4px; background: #f8fafc; padding: 4px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
                 <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid #2563eb; background: #2563eb; color: #ffffff; padding: 7px 16px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 2px 6px rgba(37,99,235,0.20);">English Voice</button>
