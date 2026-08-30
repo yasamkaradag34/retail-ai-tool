@@ -3668,6 +3668,8 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
                   <canvas id="categoryConversionChartCanvas"></canvas>
                 </div>
               </div>
+            </div> <!-- Close Dashboard Grid -->
+          </div> <!-- Close categoryWorkspaceContainer -->
 
             <!-- DATA CONNECTORS & IMPLEMENTATION GUIDE CONTAINER -->
           <div id="dataConnectorsWorkspaceContainer" style="display: none; margin-bottom: 22px; flex-direction: column; gap: 18px;">
@@ -3816,7 +3818,6 @@ print(res.json())
               </div>
 
             </div>
-          </div>
           </div>
 
           <!-- INTEGRATED FULL-WIDTH OUTPUT BOX -->
