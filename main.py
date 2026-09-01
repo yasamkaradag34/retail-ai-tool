@@ -6387,7 +6387,8 @@ def checkout(plan: str = "standard"):
                         "currency": "eur",
                         "product_data": {
                             "name": plan_name,
-                            "description": "100% Offline On-Premise Retail AI License" + (" with 1.5h Weekly Support" if is_pro else "")
+                            "description": "100% Offline On-Premise Retail AI License" + (" with 1.5h Weekly Support" if is_pro else ""),
+                            "tax_code": "txcd_10000000"
                         },
                         "unit_amount": amount_cents,
                         "recurring": {"interval": "month"}
@@ -6395,13 +6396,25 @@ def checkout(plan: str = "standard"):
                     "quantity": 1
                 }]
 
-            session = stripe.checkout.Session.create(
-                line_items=line_items,
-                mode="subscription",
-                allow_promotion_codes=True,
-                success_url=f"{base_url}/checkout/success?plan={'pro' if is_pro else 'standard'}&session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{base_url}/pricing"
-            )
+            session_params = {
+                "line_items": line_items,
+                "mode": "subscription",
+                "allow_promotion_codes": True,
+                "success_url": f"{base_url}/checkout/success?plan={'pro' if is_pro else 'standard'}&session_id={{CHECKOUT_SESSION_ID}}",
+                "cancel_url": f"{base_url}/pricing",
+                "managed_payments": {"enabled": False}
+            }
+
+            try:
+                session = stripe.checkout.Session.create(**session_params)
+            except Exception as mp_err:
+                # If managed_payments param is not accepted by older Stripe API version, retry without it
+                if "managed_payments" in str(mp_err):
+                    session_params.pop("managed_payments", None)
+                    session = stripe.checkout.Session.create(**session_params)
+                else:
+                    raise mp_err
+
             from fastapi.responses import RedirectResponse
             return RedirectResponse(url=session.url, status_code=303)
         except Exception as e:
