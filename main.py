@@ -2703,6 +2703,8 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback").strip()
 COOKIE_SECRET = os.getenv("COOKIE_SECRET", "dataprovido-secret-key-change-in-prod").strip()
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hqocolyxpvpkxohhjxvz.supabase.co").strip()
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "").strip()
 
 GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/analytics.readonly",
@@ -7855,7 +7857,7 @@ def privacy():
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page():
-    return HTMLResponse(content=f"""<!DOCTYPE html>
+    return HTMLResponse(content="""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -7995,17 +7997,30 @@ def login_page():
     <form action="/api/auth/login" method="POST">
       <div class="input-group">
         <label>Email Address</label>
-        <input type="email" name="email" placeholder="name@company.com" required>
+        <input type="email" id="loginEmail" name="email" placeholder="name@company.com" required>
       </div>
       <div class="input-group">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <label style="margin-bottom: 0;">Password</label>
-          <a href="#" style="font-size: 11.5px; color: #f26f26; text-decoration: none; font-weight: 700;">Forgot?</a>
+          <a href="#" onclick="toggleForgotForm()" style="font-size: 11.5px; color: #f26f26; text-decoration: none; font-weight: 700;">Forgot?</a>
         </div>
         <input type="password" name="password" placeholder="••••••••" required>
       </div>
       
-      <button type="submit" class="btn-login">Log In to Console &nbsp;→ flex</button>
+      <button type="submit" class="btn-login">Log In to Console &nbsp;→</button>
+    </form>
+
+    <!-- FORGOT PASSWORD FORM (Hidden by default) -->
+    <form id="forgotPasswordForm" action="/api/auth/forgot-password" method="POST" style="display: none; margin-top: 16px; padding: 16px; background: #fff7ed; border: 1.5px solid #ffedd5; border-radius: 16px;">
+      <strong style="display: block; font-size: 13px; color: #ea580c; margin-bottom: 6px;">Reset Your Password</strong>
+      <p style="font-size: 12px; color: #9a3412; margin-bottom: 12px; line-height: 1.4;">Enter your registered email address and we will send a password reset link to your inbox.</p>
+      <div class="input-group" style="margin-bottom: 12px;">
+        <input type="email" id="forgotEmail" name="email" placeholder="name@company.com" required style="padding: 10px 14px; font-size: 13px;">
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" onclick="toggleForgotForm()" style="background: transparent; border: 1px solid #cbd5e1; color: #475569; padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;">Cancel</button>
+        <button type="submit" style="background: #ea580c; border: none; color: #ffffff; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; flex: 1;">Send Reset Link →</button>
+      </div>
     </form>
 
     <div class="divider">OR SIGN IN WITH GOOGLE</div>
@@ -8019,18 +8034,57 @@ def login_page():
       Don't have an account? <a href="/pricing">View Plans &amp; Subscribe →</a>
     </div>
   </div>
+
+  <script>
+    function toggleForgotForm() {
+      const form = document.getElementById('forgotPasswordForm');
+      if (form) {
+        if (form.style.display === 'none') {
+          form.style.display = 'block';
+          const mainEmail = document.getElementById('loginEmail');
+          const forgotEmail = document.getElementById('forgotEmail');
+          if (mainEmail && forgotEmail && mainEmail.value) {
+            forgotEmail.value = mainEmail.value;
+          }
+        } else {
+          form.style.display = 'none';
+        }
+      }
+    }
+  </script>
 </body>
 </html>""")
 
 @app.post("/api/auth/login")
 async def email_password_login(request: Request):
-    """Handle email & password login from /login page."""
+    """Handle email & password login via Supabase Auth API."""
     form_data = await request.form()
-    email = form_data.get("email", "")
+    email = form_data.get("email", "").strip()
+    password = form_data.get("password", "").strip()
+    
+    supabase_token = ""
+    if SUPABASE_URL and SUPABASE_ANON_KEY and email and password:
+        try:
+            supa_resp = requests.post(
+                f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
+                headers={
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Content-Type": "application/json"
+                },
+                json={"email": email, "password": password},
+                timeout=5
+            )
+            if supa_resp.status_code == 200:
+                data = supa_resp.json()
+                supabase_token = data.get("access_token", "")
+        except Exception as e:
+            print("Supabase login error:", e)
+
     cookie_data = json.dumps({
         "email": email,
         "name": email.split("@")[0].title() if "@" in email else "User",
-        "login_type": "email"
+        "login_type": "email",
+        "supabase_token": supabase_token
     })
     encrypted = _encrypt_token(cookie_data)
     from fastapi.responses import RedirectResponse
@@ -8045,6 +8099,29 @@ async def email_password_login(request: Request):
         path="/"
     )
     return response
+
+@app.post("/api/auth/forgot-password")
+async def forgot_password_handler(request: Request):
+    """Handle password reset requests via Supabase Auth API."""
+    form_data = await request.form()
+    email = form_data.get("email", "").strip()
+    
+    if SUPABASE_URL and SUPABASE_ANON_KEY and email:
+        try:
+            requests.post(
+                f"{SUPABASE_URL}/auth/v1/recover",
+                headers={
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Content-Type": "application/json"
+                },
+                json={"email": email, "redirectTo": "https://dataprovido.com/login"},
+                timeout=5
+            )
+        except Exception as e:
+            print("Supabase password reset error:", e)
+            
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/login?notice=password_reset_sent", status_code=303)
 
 @app.get("/pricing", response_class=HTMLResponse)
 def pricing():
