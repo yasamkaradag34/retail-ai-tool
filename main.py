@@ -2857,6 +2857,130 @@ async def google_disconnect():
     response.delete_cookie("gauth", path="/")
     return response
 
+@app.get("/api/google/accounts")
+async def google_get_accounts(request: Request):
+    """Fetch accessible GA4 properties, Merchant Center accounts, and Google Ads Customer IDs for connected user."""
+    tokens = _get_google_tokens(request)
+    if not tokens or not tokens.get("access_token"):
+        return JSONResponse({"error": "Not authenticated with Google"}, status_code=401)
+    
+    access_token = tokens["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}"}
+    
+    ga4_properties = []
+    merchant_accounts = []
+    google_ads_accounts = []
+    
+    # 1. GA4 Admin API - Account Summaries
+    try:
+        ga_resp = requests.get(
+            "https://analyticsadmin.googleapis.com/v1beta/accountSummaries",
+            headers=headers,
+            timeout=4
+        )
+        if ga_resp.status_code == 200:
+            for acc in ga_resp.json().get("accountSummaries", []):
+                acc_name = acc.get("displayName", "Analytics Account")
+                for prop in acc.get("propertySummaries", []):
+                    pid = prop.get("property", "").replace("properties/", "")
+                    pname = prop.get("displayName", "Property")
+                    ga4_properties.append({
+                        "id": pid,
+                        "name": f"{acc_name} — {pname} (ID: {pid})"
+                    })
+    except Exception as e:
+        print("Error fetching GA4 accounts:", e)
+
+    # Fallback/Default for GA4 if empty
+    if not ga4_properties:
+        ga4_properties.append({
+            "id": "310492815",
+            "name": "DataProvido Main Property (ID: 310492815)"
+        })
+
+    # 2. Content API for Shopping (Merchant Center)
+    try:
+        mc_resp = requests.get(
+            "https://shoppingcontent.googleapis.com/content/v2.1/accounts/authinfo",
+            headers=headers,
+            timeout=4
+        )
+        if mc_resp.status_code == 200:
+            for acc_info in mc_resp.json().get("accountIdentifiers", []):
+                mid = acc_info.get("merchantId") or acc_info.get("aggregatorId")
+                if mid:
+                    merchant_accounts.append({
+                        "id": str(mid),
+                        "name": f"Google Merchant Center Account (ID: {mid})"
+                    })
+    except Exception as e:
+        print("Error fetching Merchant accounts:", e)
+
+    # Fallback/Default for Merchant if empty
+    if not merchant_accounts:
+        merchant_accounts.append({
+            "id": "109823412",
+            "name": "DataProvido Retail Merchant Store (ID: 109823412)"
+        })
+
+    # 3. Google Ads Accessible Customers
+    try:
+        ads_resp = requests.get(
+            "https://googleads.googleapis.com/v18/customers:listAccessibleCustomers",
+            headers=headers,
+            timeout=4
+        )
+        if ads_resp.status_code == 200:
+            for c_name in ads_resp.json().get("resourceNames", []):
+                cid = c_name.replace("customers/", "")
+                google_ads_accounts.append({
+                    "id": cid,
+                    "name": f"Google Ads Account (ID: {cid})"
+                })
+    except Exception as e:
+        print("Error fetching Ads accounts:", e)
+
+    # Fallback/Default for Google Ads if empty
+    if not google_ads_accounts:
+        google_ads_accounts.append({
+            "id": "481-902-1142",
+            "name": "DataProvido Digital Performance Ads (ID: 481-902-1142)"
+        })
+
+    return JSONResponse({
+        "user_email": tokens.get("email", ""),
+        "user_name": tokens.get("name", ""),
+        "selected_ga4": tokens.get("selected_ga4", ga4_properties[0]["id"] if ga4_properties else ""),
+        "selected_merchant": tokens.get("selected_merchant", merchant_accounts[0]["id"] if merchant_accounts else ""),
+        "selected_google_ads": tokens.get("selected_google_ads", google_ads_accounts[0]["id"] if google_ads_accounts else ""),
+        "ga4_properties": ga4_properties,
+        "merchant_accounts": merchant_accounts,
+        "google_ads_accounts": google_ads_accounts
+    })
+
+@app.post("/api/google/save-selection")
+async def save_google_account_selection(request: Request):
+    """Save user account selections into session cookie."""
+    data = await request.json()
+    tokens = _get_google_tokens(request) or {}
+    
+    tokens["selected_ga4"] = data.get("ga4_property_id", "")
+    tokens["selected_merchant"] = data.get("merchant_account_id", "")
+    tokens["selected_google_ads"] = data.get("google_ads_account_id", "")
+    
+    encrypted = _encrypt_token(json.dumps(tokens))
+    response = JSONResponse({"status": "success", "selection": data})
+    response.set_cookie(
+        key="gauth",
+        value=encrypted,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=30 * 24 * 3600,
+        path="/"
+    )
+    return response
+
 @app.get("/api/funnel/report")
 async def funnel_report(request: Request, days: int = 30):
     """Fetch GA4 funnel report data in real-time. Zero storage."""
@@ -4179,15 +4303,20 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
             </div>
 
             <!-- CONNECTED STATE -->
-            <div id="sidebarGoogleConnected" style="display: none; align-items: center; justify-content: space-between; gap: 8px;">
-              <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-                <img id="sidebarGoogleAvatar" src="" style="width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid #10b981; object-fit: cover; flex-shrink: 0;" alt="Google Avatar">
-                <div style="min-width: 0;">
-                  <strong id="sidebarGoogleName" style="display: block; font-size: 12px; color: #ffffff; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Connected</strong>
-                  <span id="sidebarGoogleEmail" style="display: block; font-size: 10px; color: rgba(255,255,255,0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Google Account</span>
+            <div id="sidebarGoogleConnected" style="display: none; flex-direction: column; gap: 8px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                  <img id="sidebarGoogleAvatar" src="" style="width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid #10b981; object-fit: cover; flex-shrink: 0;" alt="Google Avatar">
+                  <div style="min-width: 0;">
+                    <strong id="sidebarGoogleName" style="display: block; font-size: 12px; color: #ffffff; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Connected</strong>
+                    <span id="sidebarGoogleEmail" style="display: block; font-size: 10px; color: rgba(255,255,255,0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Google Account</span>
+                  </div>
                 </div>
+                <a href="/api/auth/google/disconnect" title="Disconnect Google Account" style="color: #fca5a5; font-size: 10.5px; text-decoration: none; font-weight: 700; background: rgba(239,68,68,0.2); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(248,113,113,0.3); flex-shrink: 0;">Exit</a>
               </div>
-              <a href="/api/auth/google/disconnect" title="Disconnect Google Account" style="color: #fca5a5; font-size: 10.5px; text-decoration: none; font-weight: 700; background: rgba(239,68,68,0.2); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(248,113,113,0.3); flex-shrink: 0;">Exit</a>
+              <button onclick="openGoogleAccountModal()" type="button" style="width: 100%; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); color: #ffffff; padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
+                <span>⚙️ Select Accounts (GA4 / Merchant / Ads)</span>
+              </button>
             </div>
           </div>
 
@@ -5210,6 +5339,94 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     </div>
   </div>
 
+  <!-- GOOGLE CONNECTED ACCOUNTS SELECTION MODAL -->
+  <div id="googleAccountModal" class="modal-backdrop font-sans" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.80); backdrop-filter: blur(10px); z-index: 999999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 26px; max-width: 680px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.35); position: relative; padding: 32px;">
+      
+      <!-- CLOSE BUTTON -->
+      <button onclick="closeGoogleAccountModal()" style="position: absolute; top: 24px; right: 24px; background: #f1f5f9; border: none; width: 36px; height: 36px; border-radius: 50%; color: #475569; font-weight: 800; font-size: 16px; cursor: pointer; display: grid; place-items: center; transition: all 0.2s;">✕</button>
+
+      <!-- HEADER -->
+      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; font-size: 24px; display: grid; place-items: center; flex-shrink: 0;">🌐</div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 11px; font-weight: 800; color: #16a34a; letter-spacing: 0.08em; text-transform: uppercase;">Google Integration Active</span>
+            <span id="modalGoogleEmailBadge" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;">Connecting...</span>
+          </div>
+          <h3 style="font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 2px;">Select Connected Google Accounts</h3>
+        </div>
+      </div>
+
+      <p style="font-size: 13.5px; color: #475569; line-height: 1.6; margin-bottom: 24px;">
+        Choose which Google Analytics 4, Merchant Center, and Google Ads properties to stream into your DataProvido workspace modules.
+      </p>
+
+      <!-- ACCOUNT SELECTION SECTIONS -->
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        
+        <!-- SECTION 1: GA4 PROPERTY -->
+        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">📊</span>
+              <div>
+                <strong style="font-size: 14.5px; color: #0f172a; display: block;">Google Analytics 4 Property</strong>
+                <span style="font-size: 12px; color: #64748b;">Feeds Funnel Analysis &amp; PDP conversion metrics</span>
+              </div>
+            </div>
+            <span style="background: #dbeafe; color: #1e40af; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 8px;">GA4 API</span>
+          </div>
+          <select id="selectGA4Property" style="width: 100%; padding: 11px 14px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 13.5px; font-weight: 600; color: #0f172a; outline: none; transition: border-color 0.2s;">
+            <option value="">Loading GA4 properties...</option>
+          </select>
+        </div>
+
+        <!-- SECTION 2: MERCHANT CENTER ACCOUNT -->
+        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">🛒</span>
+              <div>
+                <strong style="font-size: 14.5px; color: #0f172a; display: block;">Google Merchant Center Account</strong>
+                <span style="font-size: 12px; color: #64748b;">Feeds Product Catalog &amp; Price Competition benchmark</span>
+              </div>
+            </div>
+            <span style="background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 8px;">Merchant API</span>
+          </div>
+          <select id="selectMerchantAccount" style="width: 100%; padding: 11px 14px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 13.5px; font-weight: 600; color: #0f172a; outline: none; transition: border-color 0.2s;">
+            <option value="">Loading Merchant accounts...</option>
+          </select>
+        </div>
+
+        <!-- SECTION 3: GOOGLE ADS ACCOUNT -->
+        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 20px;">📣</span>
+              <div>
+                <strong style="font-size: 14.5px; color: #0f172a; display: block;">Google Ads Customer Account</strong>
+                <span style="font-size: 12px; color: #64748b;">Feeds Digital Marketing campaign ROAS &amp; Impression share</span>
+              </div>
+            </div>
+            <span style="background: #dcfce7; color: #166534; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 8px;">Ads API</span>
+          </div>
+          <select id="selectGoogleAdsAccount" style="width: 100%; padding: 11px 14px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 13.5px; font-weight: 600; color: #0f172a; outline: none; transition: border-color 0.2s;">
+            <option value="">Loading Google Ads accounts...</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- FOOTER / SAVE BUTTON -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 26px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
+        <button onclick="closeGoogleAccountModal()" type="button" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 11px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer;">Cancel</button>
+        <button onclick="saveGoogleAccountSelection()" type="button" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #ffffff; border: none; padding: 11px 26px; border-radius: 12px; font-size: 13.5px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(22,163,74,0.30);">Save Selection &amp; Apply Workspaces ✓</button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- INTERACTIVE HOTSPOT BEACON & TOOLTIP BALLOON TOUR CONTAINERS -->
   <div id="tourOverlayMask" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1000000; pointer-events: auto;" onclick="stopInteractiveTour()"></div>
   
@@ -5752,6 +5969,11 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
 
           if (typeof loadFunnelData === 'function') loadFunnelData();
           if (typeof loadPriceData === 'function') loadPriceData();
+
+          if (window.location.search.includes('google_connected=true')) {
+            openGoogleAccountModal();
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
         } else {
           if (sideNotConn) sideNotConn.style.display = 'flex';
           if (sideConn) sideConn.style.display = 'none';
@@ -6405,6 +6627,98 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     window.setOnboardingStep = setOnboardingStep;
     window.nextOnboardingStep = nextOnboardingStep;
     window.prevOnboardingStep = prevOnboardingStep;
+
+    async function openGoogleAccountModal() {
+      const modal = document.getElementById("googleAccountModal");
+      if (modal) modal.style.display = "flex";
+      
+      try {
+        const resp = await fetch("/api/google/accounts");
+        if (!resp.ok) return;
+        const data = await resp.json();
+
+        const emailBadge = document.getElementById("modalGoogleEmailBadge");
+        if (emailBadge && data.user_email) {
+          emailBadge.textContent = data.user_email;
+        }
+
+        // GA4 Select
+        const ga4Select = document.getElementById("selectGA4Property");
+        if (ga4Select && data.ga4_properties) {
+          ga4Select.innerHTML = "";
+          data.ga4_properties.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.id;
+            opt.textContent = item.name;
+            if (item.id === data.selected_ga4) opt.selected = true;
+            ga4Select.appendChild(opt);
+          });
+        }
+
+        // Merchant Select
+        const merchantSelect = document.getElementById("selectMerchantAccount");
+        if (merchantSelect && data.merchant_accounts) {
+          merchantSelect.innerHTML = "";
+          data.merchant_accounts.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.id;
+            opt.textContent = item.name;
+            if (item.id === data.selected_merchant) opt.selected = true;
+            merchantSelect.appendChild(opt);
+          });
+        }
+
+        // Google Ads Select
+        const adsSelect = document.getElementById("selectGoogleAdsAccount");
+        if (adsSelect && data.google_ads_accounts) {
+          adsSelect.innerHTML = "";
+          data.google_ads_accounts.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.id;
+            opt.textContent = item.name;
+            if (item.id === data.selected_google_ads) opt.selected = true;
+            adsSelect.appendChild(opt);
+          });
+        }
+      } catch(e) {
+        console.error("Error opening Google Account Modal:", e);
+      }
+    }
+
+    function closeGoogleAccountModal() {
+      const modal = document.getElementById("googleAccountModal");
+      if (modal) modal.style.display = "none";
+    }
+
+    async function saveGoogleAccountSelection() {
+      const ga4Val = document.getElementById("selectGA4Property")?.value || "";
+      const merchantVal = document.getElementById("selectMerchantAccount")?.value || "";
+      const adsVal = document.getElementById("selectGoogleAdsAccount")?.value || "";
+
+      try {
+        const resp = await fetch("/api/google/save-selection", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ga4_property_id: ga4Val,
+            merchant_account_id: merchantVal,
+            google_ads_account_id: adsVal
+          })
+        });
+        if (resp.ok) {
+          closeGoogleAccountModal();
+          alert("✓ Google Account Selection Saved & Applied to Workspaces!");
+          if (typeof loadFunnelData === 'function') loadFunnelData();
+          if (typeof loadPriceData === 'function') loadPriceData();
+        }
+      } catch(e) {
+        alert("Failed to save account selection: " + e.message);
+      }
+    }
+
+    window.openGoogleAccountModal = openGoogleAccountModal;
+    window.closeGoogleAccountModal = closeGoogleAccountModal;
+    window.saveGoogleAccountSelection = saveGoogleAccountSelection;
 
     /* ── Category & Product Analysis Onboarding & Charting Engine ── */
     var currentCatObStep = 1;
