@@ -2983,6 +2983,131 @@ async def save_google_account_selection(request: Request):
     )
     return response
 
+@app.get("/api/ga4/category-report")
+async def ga4_category_report(request: Request, property_id: str = "", days: int = 30):
+    """Fetch GA4 category-level e-commerce metrics in real-time. Zero storage."""
+    tokens = _get_google_tokens(request)
+    if not tokens or not tokens.get("access_token"):
+        return JSONResponse({"error": "Not authenticated with Google", "source": "error"}, status_code=401)
+    
+    if not property_id:
+        return JSONResponse({"error": "No property_id provided", "source": "error"}, status_code=400)
+    
+    access_token = tokens["access_token"]
+    headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
+    
+    try:
+        # Current period request
+        current_body = {
+            "dateRanges": [{"startDate": f"{days}daysAgo", "endDate": "yesterday"}],
+            "dimensions": [{"name": "itemCategory"}],
+            "metrics": [
+                {"name": "itemsViewed"},
+                {"name": "itemsAddedToCart"},
+                {"name": "itemsPurchased"},
+                {"name": "cartToViewRate"},
+                {"name": "purchaseToViewRate"}
+            ],
+            "orderBys": [{"metric": {"metricName": "itemsViewed"}, "desc": True}],
+            "limit": 50
+        }
+        
+        current_resp = requests.post(
+            f"https://analyticsdata.googleapis.com/v1beta/properties/{property_id}:runReport",
+            headers=headers,
+            json=current_body,
+            timeout=10
+        )
+        
+        if current_resp.status_code != 200:
+            err_detail = current_resp.text[:300]
+            return JSONResponse({
+                "source": "error",
+                "error": f"GA4 API error (status {current_resp.status_code}): {err_detail}"
+            })
+        
+        current_data = current_resp.json()
+        
+        # Previous period request for % change calculation
+        prev_body = {
+            "dateRanges": [{"startDate": f"{days * 2}daysAgo", "endDate": f"{days + 1}daysAgo"}],
+            "dimensions": [{"name": "itemCategory"}],
+            "metrics": [
+                {"name": "itemsViewed"},
+                {"name": "itemsAddedToCart"},
+                {"name": "itemsPurchased"},
+                {"name": "cartToViewRate"},
+                {"name": "purchaseToViewRate"}
+            ],
+            "limit": 50
+        }
+        
+        prev_data = {}
+        try:
+            prev_resp = requests.post(
+                f"https://analyticsdata.googleapis.com/v1beta/properties/{property_id}:runReport",
+                headers=headers,
+                json=prev_body,
+                timeout=10
+            )
+            if prev_resp.status_code == 200:
+                for row in prev_resp.json().get("rows", []):
+                    cat_name = row["dimensionValues"][0]["value"]
+                    prev_data[cat_name] = {
+                        "pdp": float(row["metricValues"][0]["value"] or 0),
+                        "a2c": float(row["metricValues"][1]["value"] or 0),
+                        "trans": float(row["metricValues"][2]["value"] or 0),
+                        "c2d": float(row["metricValues"][3]["value"] or 0),
+                        "b2d": float(row["metricValues"][4]["value"] or 0)
+                    }
+        except Exception:
+            pass  # Previous period comparison is optional
+        
+        # Build result rows
+        categories = []
+        for row in current_data.get("rows", []):
+            cat_name = row["dimensionValues"][0]["value"]
+            pdp = float(row["metricValues"][0]["value"] or 0)
+            a2c = float(row["metricValues"][1]["value"] or 0)
+            trans = float(row["metricValues"][2]["value"] or 0)
+            c2d = float(row["metricValues"][3]["value"] or 0)
+            b2d = float(row["metricValues"][4]["value"] or 0)
+            
+            prev = prev_data.get(cat_name, {})
+            
+            def pct_change(curr, prev_val):
+                if prev_val and prev_val > 0:
+                    return round(((curr - prev_val) / prev_val) * 100, 1)
+                return None
+            
+            categories.append({
+                "category": cat_name,
+                "pdp": int(pdp),
+                "pdp_change": pct_change(pdp, prev.get("pdp")),
+                "a2c": int(a2c),
+                "a2c_change": pct_change(a2c, prev.get("a2c")),
+                "trans": int(trans),
+                "trans_change": pct_change(trans, prev.get("trans")),
+                "c2d": round(c2d * 100, 2) if c2d < 1 else round(c2d, 2),
+                "c2d_change": pct_change(c2d, prev.get("c2d")),
+                "b2d": round(b2d * 100, 2) if b2d < 1 else round(b2d, 2),
+                "b2d_change": pct_change(b2d, prev.get("b2d"))
+            })
+        
+        return JSONResponse({
+            "source": "live",
+            "property_id": property_id,
+            "period": f"Last {days} days",
+            "categories": categories,
+            "total": len(categories)
+        })
+        
+    except Exception as e:
+        return JSONResponse({
+            "source": "error",
+            "error": str(e)
+        })
+
 @app.get("/api/funnel/report")
 async def funnel_report(request: Request, days: int = 30):
     """Fetch GA4 funnel report data in real-time. Zero storage."""
@@ -4414,54 +4539,85 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           <!-- CATEGORY & PRODUCT ANALYSIS INTERACTIVE WORKSPACE CONTAINER -->
           <div id="categoryWorkspaceContainer" style="display: none; margin-bottom: 22px; flex-direction: column; gap: 18px;">
             
-            <!-- PIPELINE STATUS & SETUP CONTROL STRIP -->
-            <div style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1.5px solid #bfdbfe; border-radius: 16px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; box-shadow: 0 2px 8px rgba(37,99,235,0.06);">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="font-size: 22px;">🏷️</span>
-                <div>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <strong style="font-size: 14px; color: #0f172a;">Category Data Pipeline:</strong>
-                    <span id="catPipelineBadge" style="background: #dbeafe; color: #1d4ed8; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 11px;">⚡ Always-On Automated Pipeline Active</span>
+            <!-- GA4 PROPERTY SELECTOR & CATEGORY DATA TABLE -->
+            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 22px 24px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span style="font-size: 20px;">📊</span>
+                  <div>
+                    <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 0;">Category Performance Table</h4>
+                    <span style="font-size: 12px; color: #64748b;" id="ga4CategorySourceLabel">Select a GA4 property to load real-time data</span>
                   </div>
-                  <span style="font-size: 12px; color: #64748b;" id="catPipelineDesc">Live category, brand, and SKU datasets are ready for graphical visualization &amp; executive analysis.</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <select id="ga4PropertySelect" onchange="loadGA4CategoryData()" style="padding: 7px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 12px; font-weight: 700; color: #475569; background: #f8fafc; cursor: pointer; min-width: 200px;">
+                    <option value="">— Select GA4 Property —</option>
+                  </select>
+                  <select id="ga4CategoryDays" onchange="loadGA4CategoryData()" style="padding: 7px 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 12px; font-weight: 700; color: #475569; background: #f8fafc; cursor: pointer;">
+                    <option value="7">Last 7 Days</option>
+                    <option value="30" selected>Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                  </select>
+                  <span id="ga4CategoryBadge" style="background: #f1f5f9; color: #64748b; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800;">⏳ Waiting</span>
                 </div>
               </div>
 
-              <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                <button onclick="openCategoryOnboardingModal()" type="button" style="background: #ffffff; border: 1.5px solid #93c5fd; color: #1d4ed8; padding: 7px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,99,235,0.08);">
-                  🚀 <span>Setup &amp; Journey Guide</span>
-                </button>
-                <a href="/api/templates/category-product" download style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 7px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                  📥 <span>Download Template</span>
-                </a>
+              <!-- SCROLLABLE DATA TABLE -->
+              <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px;">
+                <table id="ga4CategoryTable" style="width: 100%; border-collapse: collapse; font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif;">
+                  <thead>
+                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                      <th style="text-align: left; padding: 10px 14px; font-weight: 800; color: #0f172a; font-size: 12px; white-space: nowrap;">Criteria</th>
+                      <th style="text-align: right; padding: 10px 12px; font-weight: 800; color: #2563eb; font-size: 12px; white-space: nowrap; cursor: pointer;" onclick="sortGA4Table('pdp')">Pdp ▼</th>
+                      <th style="text-align: right; padding: 10px 12px; font-weight: 800; color: #64748b; font-size: 12px; white-space: nowrap;">% Δ</th>
+                      <th style="text-align: right; padding: 10px 12px; font-weight: 800; color: #2563eb; font-size: 12px; white-space: nowrap;">A2C</th>
+                      <th style="text-align: right; padding: 10px 12px; font-weight: 800; color: #64748b; font-size: 12px; white-space: nowrap;">% Δ</th>
+                      <th style="text-align: right; padding: 10px 12px; font-weight: 800; color: #2563eb; font-size: 12px; white-space: nowrap;">Trans</th>
+                      <th style="text-align: right; padding: 10px 12px; font-weight: 800; color: #64748b; font-size: 12px; white-space: nowrap;">% Δ</th>
+                      <th style="text-align: right; padding: 10px 12px; font-weight: 800; color: #2563eb; font-size: 12px; white-space: nowrap;">C2D</th>
+                      <th style="text-align: right; padding: 10px 12px; font-weight: 800; color: #64748b; font-size: 12px; white-space: nowrap;">% Δ</th>
+                      <th style="text-align: right; padding: 10px 12px; font-weight: 800; color: #2563eb; font-size: 12px; white-space: nowrap;">B2D</th>
+                      <th style="text-align: right; padding: 10px 12px; font-weight: 800; color: #64748b; font-size: 12px; white-space: nowrap;">% Δ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ga4CategoryTableBody">
+                    <tr><td colspan="11" style="text-align: center; padding: 30px; color: #94a3b8; font-size: 13px;">Select a GA4 property above to load category data</td></tr>
+                  </tbody>
+                  <tfoot id="ga4CategoryTableFoot" style="display: none;">
+                  </tfoot>
+                </table>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                <span style="font-size: 11px; color: #94a3b8;">🔒 Data is processed in real-time and never stored on our servers.</span>
+                <span id="ga4CategoryRowCount" style="font-size: 11px; color: #94a3b8;"></span>
               </div>
             </div>
 
             <!-- INTERACTIVE CHARTING DASHBOARD GRID -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
               
-              <!-- CHART 1: CATEGORY & BRAND SHARE (BAR CHART) -->
+              <!-- CHART 1: PDP Views (Bar) + Transactions (Line) COMBO -->
               <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
                   <div>
-                    <span style="font-size: 10.5px; font-weight: 800; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Visual Analytics · Revenue &amp; Share</span>
-                    <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px;">Category Revenue &amp; Market Share</h4>
+                    <span style="font-size: 10.5px; font-weight: 800; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Category Performance · PDP vs Transactions</span>
+                    <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px;">PDP Views &amp; Transaction Count</h4>
                   </div>
-                  <span style="font-size: 11px; background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 6px; font-weight: 700;">Bar Chart</span>
+                  <span style="font-size: 11px; background: #eff6ff; color: #2563eb; padding: 3px 8px; border-radius: 6px; font-weight: 700;">Combo Chart</span>
                 </div>
                 <div style="height: 240px; position: relative;">
                   <canvas id="categoryShareChartCanvas"></canvas>
                 </div>
               </div>
 
-              <!-- CHART 2: CONVERSION & PDP MATRIX (SCATTER PLOT) -->
+              <!-- CHART 2: A2C (Bar) + Transactions (Line) COMBO -->
               <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
                   <div>
-                    <span style="font-size: 10.5px; font-weight: 800; color: #059669; letter-spacing: 0.08em; text-transform: uppercase;">Performance Matrix · PDP vs Conversion</span>
-                    <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px;">Category C2D &amp; B2D Conversion Rates</h4>
+                    <span style="font-size: 10.5px; font-weight: 800; color: #059669; letter-spacing: 0.08em; text-transform: uppercase;">Category Performance · A2C vs Transactions</span>
+                    <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px;">Add to Cart &amp; Transaction Count</h4>
                   </div>
-                  <span style="font-size: 11px; background: #ecfdf5; color: #047857; padding: 3px 8px; border-radius: 6px; font-weight: 700;">Matrix View</span>
+                  <span style="font-size: 11px; background: #ecfdf5; color: #047857; padding: 3px 8px; border-radius: 6px; font-weight: 700;">Combo Chart</span>
                 </div>
                 <div style="height: 240px; position: relative;">
                   <canvas id="categoryConversionChartCanvas"></canvas>
@@ -5798,6 +5954,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
             selectCategoryPipelineMode(savedMode);
           } catch(e) {}
           setTimeout(() => { renderCategoryCharts(); }, 150);
+          setTimeout(() => { loadGA4Properties(); }, 300);
         } else {
           catWorkspace.style.display = "none";
         }
@@ -6633,8 +6790,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         const emailBadge = document.getElementById("modalGoogleEmailBadge");
         if (emailBadge && data.user_email) {
           emailBadge.textContent = data.user_email;
-        }
-
         // GA4 Select
         const ga4Select = document.getElementById("selectGA4Property");
         if (ga4Select && data.ga4_properties) {
@@ -6717,6 +6872,348 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     var currentCatObStep = 1;
     var categoryShareChart = null;
     var categoryConversionChart = null;
+    /* ── GA4 Category Data Integration ── */
+    var ga4CategoryDataCache = [];
+    var ga4SortField = 'pdp';
+    var ga4SortDesc = true;
+
+    async function loadGA4Properties() {
+      try {
+        const resp = await fetch('/api/google/accounts');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const sel = document.getElementById('ga4PropertySelect');
+        if (!sel || !data.ga4_properties) return;
+        
+        // Clear existing options except the default
+        sel.innerHTML = '<option value="">— Select GA4 Property —</option>';
+        data.ga4_properties.forEach(prop => {
+          const opt = document.createElement('option');
+          opt.value = prop.id;
+          opt.textContent = prop.name;
+          sel.appendChild(opt);
+        });
+
+        // Auto-select first property and load data
+        if (data.ga4_properties.length > 0) {
+          sel.value = data.ga4_properties[0].id;
+          loadGA4CategoryData();
+        }
+      } catch(e) {
+        console.log('GA4 properties load error:', e);
+      }
+    }
+
+    async function loadGA4CategoryData() {
+      const propSel = document.getElementById('ga4PropertySelect');
+      const daysSel = document.getElementById('ga4CategoryDays');
+      const badge = document.getElementById('ga4CategoryBadge');
+      const srcLabel = document.getElementById('ga4CategorySourceLabel');
+      const tbody = document.getElementById('ga4CategoryTableBody');
+      
+      if (!propSel || !propSel.value) return;
+      
+      badge.style.background = '#fef3c7';
+      badge.style.color = '#92400e';
+      badge.textContent = '⏳ Loading...';
+      
+      try {
+        const days = daysSel ? daysSel.value : '30';
+        const resp = await fetch(`/api/ga4/category-report?property_id=${propSel.value}&days=${days}`);
+        const data = await resp.json();
+        
+        if (data.source === 'error' || data.error) {
+          badge.style.background = '#fef2f2';
+          badge.style.color = '#991b1b';
+          badge.textContent = '❌ Error';
+          srcLabel.textContent = data.error || 'Failed to load data';
+          tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:#ef4444;">Error: ' + (data.error || 'Unknown error') + '</td></tr>';
+          return;
+        }
+        
+        ga4CategoryDataCache = data.categories || [];
+        badge.style.background = '#dcfce7';
+        badge.style.color = '#166534';
+        badge.textContent = '🟢 Live Data';
+        srcLabel.textContent = `${data.period} · Property: ${propSel.value} · ${data.total} categories`;
+        
+        renderGA4CategoryTable();
+        
+        // Also update the combo charts with real GA4 data
+        renderCategoryCharts({ ga4Categories: ga4CategoryDataCache });
+        
+      } catch(e) {
+        badge.style.background = '#fef2f2';
+        badge.style.color = '#991b1b';
+        badge.textContent = '❌ Error';
+        srcLabel.textContent = 'Network error: ' + e.message;
+      }
+    }
+
+    function sortGA4Table(field) {
+      if (ga4SortField === field) {
+        ga4SortDesc = !ga4SortDesc;
+      } else {
+        ga4SortField = field;
+        ga4SortDesc = true;
+      }
+      renderGA4CategoryTable();
+    }
+
+    function renderGA4CategoryTable() {
+      const tbody = document.getElementById('ga4CategoryTableBody');
+      const tfoot = document.getElementById('ga4CategoryTableFoot');
+      const rowCount = document.getElementById('ga4CategoryRowCount');
+      if (!tbody) return;
+      
+      const sorted = [...ga4CategoryDataCache].sort((a, b) => {
+        const va = a[ga4SortField] || 0;
+        const vb = b[ga4SortField] || 0;
+        return ga4SortDesc ? vb - va : va - vb;
+      });
+      
+      function fmtChange(val) {
+        if (val === null || val === undefined) return '<span style="color:#94a3b8;">—</span>';
+        const color = val > 0 ? '#16a34a' : val < 0 ? '#dc2626' : '#64748b';
+        const icon = val > 0 ? '▲' : val < 0 ? '▼' : '–';
+        return `<span style="color:${color};font-weight:700;font-size:11.5px;">${icon} ${Math.abs(val)}%</span>`;
+      }
+      
+      function fmtNum(n) {
+        return n != null ? n.toLocaleString('tr-TR') : '—';
+      }
+      
+      function fmtRate(n) {
+        return n != null ? n.toFixed(2) + '%' : '—';
+      }
+      
+      let html = '';
+      sorted.forEach((row, i) => {
+        const bgColor = i % 2 === 0 ? '#ffffff' : '#fafbfc';
+        html += `<tr style="border-bottom: 1px solid #f1f5f9; background: ${bgColor}; transition: background 0.15s;">
+          <td style="padding: 9px 14px; font-weight: 700; color: #0f172a; white-space: nowrap; font-size: 12.5px;">${row.category}</td>
+          <td style="text-align: right; padding: 9px 12px; font-weight: 700; color: #1e40af; font-size: 12.5px;">${fmtNum(row.pdp)}</td>
+          <td style="text-align: right; padding: 9px 12px;">${fmtChange(row.pdp_change)}</td>
+          <td style="text-align: right; padding: 9px 12px; font-weight: 700; color: #1e40af; font-size: 12.5px;">${fmtNum(row.a2c)}</td>
+          <td style="text-align: right; padding: 9px 12px;">${fmtChange(row.a2c_change)}</td>
+          <td style="text-align: right; padding: 9px 12px; font-weight: 700; color: #1e40af; font-size: 12.5px;">${fmtNum(row.trans)}</td>
+          <td style="text-align: right; padding: 9px 12px;">${fmtChange(row.trans_change)}</td>
+          <td style="text-align: right; padding: 9px 12px; font-weight: 700; color: #7c3aed; font-size: 12.5px;">${fmtRate(row.c2d)}</td>
+          <td style="text-align: right; padding: 9px 12px;">${fmtChange(row.c2d_change)}</td>
+          <td style="text-align: right; padding: 9px 12px; font-weight: 700; color: #7c3aed; font-size: 12.5px;">${fmtRate(row.b2d)}</td>
+          <td style="text-align: right; padding: 9px 12px;">${fmtChange(row.b2d_change)}</td>
+        </tr>`;
+      });
+      
+      if (sorted.length === 0) {
+        html = '<tr><td colspan="11" style="text-align:center;padding:30px;color:#94a3b8;">No category data found for this property. Make sure e-commerce events are configured.</td></tr>';
+      }
+      
+      tbody.innerHTML = html;
+      if (rowCount) rowCount.textContent = `${sorted.length} categories`;
+      
+      // Show totals footer
+      if (sorted.length > 0 && tfoot) {
+        const totPdp = sorted.reduce((s, r) => s + (r.pdp || 0), 0);
+        const totA2c = sorted.reduce((s, r) => s + (r.a2c || 0), 0);
+        const totTrans = sorted.reduce((s, r) => s + (r.trans || 0), 0);
+        const avgC2d = sorted.reduce((s, r) => s + (r.c2d || 0), 0) / sorted.length;
+        const avgB2d = sorted.reduce((s, r) => s + (r.b2d || 0), 0) / sorted.length;
+        tfoot.style.display = '';
+        tfoot.innerHTML = `<tr style="background: #f1f5f9; border-top: 2px solid #e2e8f0;">
+          <td style="padding: 10px 14px; font-weight: 800; color: #0f172a; font-size: 12px;">TOTAL</td>
+          <td style="text-align:right;padding:10px 12px;font-weight:800;color:#1e40af;font-size:12px;">${fmtNum(totPdp)}</td>
+          <td></td>
+          <td style="text-align:right;padding:10px 12px;font-weight:800;color:#1e40af;font-size:12px;">${fmtNum(totA2c)}</td>
+          <td></td>
+          <td style="text-align:right;padding:10px 12px;font-weight:800;color:#1e40af;font-size:12px;">${fmtNum(totTrans)}</td>
+          <td></td>
+          <td style="text-align:right;padding:10px 12px;font-weight:800;color:#7c3aed;font-size:12px;">${avgC2d.toFixed(2)}%</td>
+          <td></td>
+          <td style="text-align:right;padding:10px 12px;font-weight:800;color:#7c3aed;font-size:12px;">${avgB2d.toFixed(2)}%</td>
+          <td></td>
+        </tr>`;
+      }
+    }
+
+    function renderCategoryCharts(data) {
+      if (typeof Chart === 'undefined') return;
+
+      const shareCanvas = document.getElementById("categoryShareChartCanvas");
+      const convCanvas = document.getElementById("categoryConversionChartCanvas");
+
+      if (!shareCanvas || !convCanvas) return;
+
+      // Default demo data
+      let labels = ["Tüketici Elektroniği", "Bilgisayar & Tablet", "Küçük Ev Aletleri", "Akıllı Ev & Ses", "Aksesuar"];
+      let pdpData = [4820, 2600, 1850, 1240, 820];
+      let a2cData = [1240, 780, 520, 310, 190];
+      let transData = [320, 195, 138, 82, 45];
+
+      // Use real GA4 data if available
+      if (data && data.ga4Categories && data.ga4Categories.length > 0) {
+        const cats = data.ga4Categories.slice(0, 8);
+        labels = cats.map(c => c.category || "Unknown");
+        pdpData = cats.map(c => c.pdp || 0);
+        a2cData = cats.map(c => c.a2c || 0);
+        transData = cats.map(c => c.trans || 0);
+      } else if (data && data.winning_categories && data.winning_categories.length > 0) {
+        labels = data.winning_categories.map(c => c.category || c.cat1 || c.brand || "Cat");
+        pdpData = data.winning_categories.map(c => Math.round(c.pdp || c.views || 1000));
+        a2cData = data.winning_categories.map(c => Math.round(c.a2c || c.add_to_cart || 300));
+        transData = data.winning_categories.map(c => Math.round(c.trans || c.purchases || 50));
+      }
+
+      if (categoryShareChart) categoryShareChart.destroy();
+      if (categoryConversionChart) categoryConversionChart.destroy();
+
+      // CHART 1: PDP Views (Bar) + Transactions (Line) - COMBO
+      categoryShareChart = new Chart(shareCanvas, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'PDP Views',
+              data: pdpData,
+              backgroundColor: 'rgba(37, 99, 235, 0.75)',
+              borderColor: '#1d4ed8',
+              borderWidth: 1.5,
+              borderRadius: 8,
+              order: 2,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Transactions',
+              data: transData,
+              type: 'line',
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.35,
+              pointBackgroundColor: '#f59e0b',
+              pointRadius: 5,
+              pointHoverRadius: 7,
+              order: 1,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, usePointStyle: true, pointStyle: 'circle' } },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleFont: { family: 'Plus Jakarta Sans', size: 12 },
+              bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
+              callbacks: {
+                label: function(ctx) {
+                  return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('tr-TR');
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { family: 'Plus Jakarta Sans', size: 10 }, maxRotation: 30 } },
+            y: {
+              position: 'left',
+              title: { display: true, text: 'PDP Views', font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, color: '#2563eb' },
+              grid: { color: '#f1f5f9' },
+              ticks: { font: { family: 'Plus Jakarta Sans', size: 10 } }
+            },
+            y1: {
+              position: 'right',
+              title: { display: true, text: 'Transactions', font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, color: '#f59e0b' },
+              grid: { drawOnChartArea: false },
+              ticks: { font: { family: 'Plus Jakarta Sans', size: 10 } }
+            }
+          }
+        }
+      });
+
+      // CHART 2: A2C (Bar) + Transactions (Line) - COMBO
+      categoryConversionChart = new Chart(convCanvas, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Add to Cart',
+              data: a2cData,
+              backgroundColor: 'rgba(16, 185, 129, 0.75)',
+              borderColor: '#059669',
+              borderWidth: 1.5,
+              borderRadius: 8,
+              order: 2,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Transactions',
+              data: transData,
+              type: 'line',
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.10)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.35,
+              pointBackgroundColor: '#ef4444',
+              pointRadius: 5,
+              pointHoverRadius: 7,
+              order: 1,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, usePointStyle: true, pointStyle: 'circle' } },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleFont: { family: 'Plus Jakarta Sans', size: 12 },
+              bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
+              callbacks: {
+                label: function(ctx) {
+                  return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('tr-TR');
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { family: 'Plus Jakarta Sans', size: 10 }, maxRotation: 30 } },
+            y: {
+              position: 'left',
+              title: { display: true, text: 'Add to Cart', font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, color: '#059669' },
+              grid: { color: '#f1f5f9' },
+              ticks: { font: { family: 'Plus Jakarta Sans', size: 10 } }
+            },
+            y1: {
+              position: 'right',
+              title: { display: true, text: 'Transactions', font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, color: '#ef4444' },
+              grid: { drawOnChartArea: false },
+              ticks: { font: { family: 'Plus Jakarta Sans', size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    window.openCategoryOnboardingModal = openCategoryOnboardingModal;
+    window.closeCategoryOnboardingModal = closeCategoryOnboardingModal;
+    window.setCategoryObStep = setCategoryObStep;
+    window.nextCategoryObStep = nextCategoryObStep;
+    window.prevCategoryObStep = prevCategoryObStep;
+    window.selectCategoryPipelineMode = selectCategoryPipelineMode;
+    window.renderCategoryCharts = renderCategoryCharts;
+    window.loadGA4Properties = loadGA4Properties;
+    window.loadGA4CategoryData = loadGA4CategoryData;
+    window.sortGA4Table = sortGA4Table;
 
     function openApiGuidelineModal() {
       const modal = document.getElementById("apiGuidelineModal");
@@ -7419,7 +7916,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       }
     }
 
-    renderModule("business_calculator");
+    renderModule("category_insights");
   </script>
 </body>
 </html>
