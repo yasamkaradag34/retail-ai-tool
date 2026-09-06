@@ -2699,10 +2699,10 @@ async def sst_event_collector(request: Request):
 # ─────────────────────────────────────────────────────────────
 import hashlib, hmac, base64, urllib.parse, time as _time
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback")
-COOKIE_SECRET = os.getenv("COOKIE_SECRET", "dataprovido-secret-key-change-in-prod")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback").strip()
+COOKIE_SECRET = os.getenv("COOKIE_SECRET", "dataprovido-secret-key-change-in-prod").strip()
 
 GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/analytics.readonly",
