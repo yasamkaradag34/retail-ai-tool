@@ -3403,6 +3403,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       padding-bottom: 22px;
       border-bottom: 1px solid rgba(255,255,255,0.20);
       margin-bottom: 20px;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .brand:hover {
+      opacity: 0.9;
     }
 
     .brand-icon {
@@ -4231,12 +4236,12 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
   <div class="app-shell">
     <aside class="sidebar">
       <div>
-        <div class="brand">
+        <a href="/" class="brand" title="Return to DataProvido Homepage">
           <img src="/logo.png" alt="DataProvido Logo" style="width: 42px; height: 42px; object-fit: contain; border-radius: 12px; background: #ffffff; padding: 3px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); flex-shrink: 0;" />
           <div>
             <h1>DataProvido</h1>
           </div>
-        </div>
+        </a>
         <div class="nav-label" id="navLabelCategories">CATEGORIES</div>
         <nav class="menu" id="menu">
           <button class="menu-btn active" data-key="category_insights" onclick="renderModule('category_insights')">
