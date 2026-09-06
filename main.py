@@ -7862,111 +7862,214 @@ def login_page():
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Log in – DataProvido</title>
+  <title>Log in – DataProvido Console</title>
   <link rel="icon" type="image/png" href="/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root {{
+    :root {
       --orange: #f26f26;
       --orange-dark: #d85c18;
-      --bg: #0f172a;
-    }}
-    * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }}
-    body {{
-      background: #0f172a;
+      --bg-dark: #090d16;
+      --card-bg: rgba(15, 23, 42, 0.85);
+      --input-bg: rgba(30, 41, 59, 0.7);
+      --border-color: rgba(255, 255, 255, 0.12);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 50% -20%, rgba(242, 111, 38, 0.25) 0%, rgba(9, 13, 22, 0) 60%),
+        radial-gradient(circle at 80% 80%, rgba(242, 111, 38, 0.12) 0%, rgba(9, 13, 22, 0) 50%);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 24px 16px;
+      color: var(--text-main);
       position: relative;
       overflow-x: hidden;
-    }}
-    .bg-gradient {{
+    }
+
+    /* Ambient Lighting Background Blobs */
+    .glow-orb {
       position: absolute;
-      width: 650px;
-      height: 650px;
-      background: radial-gradient(circle, rgba(242,111,38,0.20) 0%, rgba(15,23,42,0) 70%);
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      filter: blur(90px);
       pointer-events: none;
-    }}
-    .login-card {{
-      background: #ffffff;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 28px;
-      padding: 44px 40px;
+      z-index: 0;
+    }
+    .glow-orb-1 {
+      width: 450px;
+      height: 450px;
+      background: rgba(242, 111, 38, 0.18);
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .glow-orb-2 {
+      width: 350px;
+      height: 350px;
+      background: rgba(216, 92, 24, 0.12);
+      bottom: -50px;
+      right: 10%;
+    }
+
+    .top-nav {
+      position: absolute;
+      top: 24px;
+      left: 28px;
+      z-index: 10;
+    }
+    .back-home-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .back-home-link:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.18);
+      transform: translateX(-2px);
+    }
+
+    .login-container {
       width: 100%;
       max-width: 440px;
-      box-shadow: 0 30px 60px -12px rgba(0,0,0,0.55);
       position: relative;
       z-index: 2;
-    }}
-    .logo-badge {{
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-color);
+      border-radius: 28px;
+      padding: 40px 36px;
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.7),
+        0 0 40px rgba(242, 111, 38, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent 0%, var(--orange) 50%, transparent 100%);
+    }
+
+    .brand-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo-wrapper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(242, 111, 38, 0.3);
+      margin-bottom: 16px;
+      padding: 6px;
+    }
+    .logo-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .brand-name {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
-      text-decoration: none;
-    }}
-    .logo-badge img {{ width: 42px; height: 42px; border-radius: 10px; }}
-    .logo-badge span {{ font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }}
-    h1 {{ font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 8px; letter-spacing: -0.02em; }}
-    p.sub {{ font-size: 13.5px; color: #64748b; margin-bottom: 28px; line-height: 1.5; }}
-    .input-group {{ margin-bottom: 20px; text-align: left; }}
-    .input-group label {{ display: block; font-size: 12px; font-weight: 800; color: #334155; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }}
-    .input-group input {{
-      width: 100%;
-      padding: 13px 16px;
-      border: 1.5px solid #cbd5e1;
-      border-radius: 14px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #0f172a;
-      outline: none;
-      transition: all 0.2s;
-    }}
-    .input-group input:focus {{
-      border-color: #f26f26;
-      box-shadow: 0 0 0 4px rgba(242,111,38,0.12);
-    }}
-    .btn-login {{
-      width: 100%;
-      background: linear-gradient(135deg, #f26f26 0%, #d85c18 100%);
-      color: #ffffff;
-      border: none;
-      padding: 14px;
-      border-radius: 14px;
-      font-size: 14.5px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 4px 16px rgba(242,111,38,0.30);
-      transition: all 0.2s;
-      margin-top: 8px;
-    }}
-    .btn-login:hover {{ transform: translateY(-1px); box-shadow: 0 6px 20px rgba(242,111,38,0.40); }}
-    .divider {{
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin: 26px 0;
-      color: #94a3b8;
-      font-size: 11px;
+      gap: 6px;
+      font-size: 20px;
       font-weight: 800;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }}
-    .divider::before, .divider::after {{ content: ''; flex: 1; height: 1px; background: #e2e8f0; }}
-    .btn-google {{
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .brand-name-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--orange);
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .card-subtitle {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Alert Banners */
+    .alert-banner {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+    .alert-banner.success {
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+    .alert-banner.error {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    /* Google Button */
+    .btn-google {
       width: 100%;
       background: #ffffff;
-      border: 1.5px solid #cbd5e1;
+      border: none;
       color: #0f172a;
-      padding: 13px;
+      padding: 13.5px;
       border-radius: 14px;
       font-size: 14px;
       font-weight: 700;
@@ -7976,78 +8079,297 @@ def login_page():
       justify-content: center;
       gap: 10px;
       text-decoration: none;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-      transition: all 0.2s;
-    }}
-    .btn-google:hover {{ background: #f8fafc; border-color: #94a3b8; }}
-    .footer-note {{ margin-top: 24px; font-size: 12.5px; color: #64748b; text-align: center; }}
-    .footer-note a {{ color: #f26f26; text-decoration: none; font-weight: 700; }}
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+      transition: all 0.2s ease;
+    }
+    .btn-google:hover {
+      background: #f8fafc;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+    .btn-google:active {
+      transform: translateY(0);
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 24px 0;
+      color: var(--text-muted);
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
+
+    /* Form Elements */
+    .input-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+    .input-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .input-group label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .forgot-link {
+      font-size: 12px;
+      color: var(--orange);
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.15s ease;
+    }
+    .forgot-link:hover {
+      color: #ff8c42;
+      text-decoration: underline;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 13px 16px;
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .input-group input::placeholder {
+      color: #64748b;
+      font-weight: 500;
+    }
+    .input-group input:focus {
+      border-color: var(--orange);
+      background: rgba(30, 41, 59, 0.95);
+      box-shadow: 0 0 0 4px rgba(242, 111, 38, 0.2);
+    }
+
+    /* Primary Login Button */
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-dark) 100%);
+      color: #ffffff;
+      border: none;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: 14.5px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 18px rgba(242, 111, 38, 0.35);
+      transition: all 0.2s ease;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(242, 111, 38, 0.45);
+      background: linear-gradient(135deg, #ff7e38 0%, #e05e1a 100%);
+    }
+    .btn-login:active {
+      transform: translateY(0);
+    }
+
+    /* Reset Form Box */
+    .forgot-box {
+      display: none;
+      margin-top: 16px;
+      padding: 18px;
+      background: rgba(242, 111, 38, 0.08);
+      border: 1px solid rgba(242, 111, 38, 0.25);
+      border-radius: 16px;
+      text-align: left;
+    }
+    .forgot-box strong {
+      display: block;
+      font-size: 13.5px;
+      color: #ff8c42;
+      margin-bottom: 6px;
+    }
+    .forgot-box p {
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+    .forgot-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .btn-reset-submit {
+      background: var(--orange);
+      border: none;
+      color: #ffffff;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      flex: 1;
+    }
+    .btn-reset-submit:hover {
+      background: var(--orange-dark);
+    }
+
+    /* Footer Note */
+    .footer-note {
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .footer-note a {
+      color: var(--orange);
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.15s ease;
+    }
+    .footer-note a:hover {
+      color: #ff8c42;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
-  <div class="bg-gradient"></div>
-  <div class="login-card">
-    <a href="/" class="logo-badge">
-      <img src="/logo.png" alt="DataProvido">
-      <span>DataProvido</span>
+  <div class="glow-orb glow-orb-1"></div>
+  <div class="glow-orb glow-orb-2"></div>
+
+  <div class="top-nav">
+    <a href="/" class="back-home-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Home
     </a>
-    <h1>Log in to DataProvido</h1>
-    <p class="sub">Access your retail intelligence console, stock &amp; price insights, and Google integrations.</p>
-    
-    <form action="/api/auth/login" method="POST">
-      <div class="input-group">
-        <label>Email Address</label>
-        <input type="email" id="loginEmail" name="email" placeholder="name@company.com" required>
-      </div>
-      <div class="input-group">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <label style="margin-bottom: 0;">Password</label>
-          <a href="#" onclick="toggleForgotForm()" style="font-size: 11.5px; color: #f26f26; text-decoration: none; font-weight: 700;">Forgot?</a>
-        </div>
-        <input type="password" name="password" placeholder="••••••••" required>
-      </div>
+  </div>
+
+  <div class="login-container">
+    <div class="login-card">
       
-      <button type="submit" class="btn-login">Log In to Console &nbsp;→</button>
-    </form>
-
-    <!-- FORGOT PASSWORD FORM (Hidden by default) -->
-    <form id="forgotPasswordForm" action="/api/auth/forgot-password" method="POST" style="display: none; margin-top: 16px; padding: 16px; background: #fff7ed; border: 1.5px solid #ffedd5; border-radius: 16px;">
-      <strong style="display: block; font-size: 13px; color: #ea580c; margin-bottom: 6px;">Reset Your Password</strong>
-      <p style="font-size: 12px; color: #9a3412; margin-bottom: 12px; line-height: 1.4;">Enter your registered email address and we will send a password reset link to your inbox.</p>
-      <div class="input-group" style="margin-bottom: 12px;">
-        <input type="email" id="forgotEmail" name="email" placeholder="name@company.com" required style="padding: 10px 14px; font-size: 13px;">
+      <div class="brand-header">
+        <a href="/" class="logo-wrapper" title="DataProvido Home">
+          <img src="/logo.png" alt="DataProvido">
+        </a>
+        <div class="brand-name">
+          DataProvido <span class="brand-name-dot"></span>
+        </div>
+        <h1 class="card-title">Welcome Back</h1>
+        <p class="card-subtitle">Log in to your retail intelligence console</p>
       </div>
-      <div style="display: flex; gap: 8px;">
-        <button type="button" onclick="toggleForgotForm()" style="background: transparent; border: 1px solid #cbd5e1; color: #475569; padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;">Cancel</button>
-        <button type="submit" style="background: #ea580c; border: none; color: #ffffff; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; flex: 1;">Send Reset Link →</button>
+
+      <!-- Alert Banners -->
+      <div id="noticeBanner" class="alert-banner success">
+        ✓ Password reset link has been sent to your email inbox.
       </div>
-    </form>
+      <div id="errorBanner" class="alert-banner error">
+        ✕ Invalid email or password. Please try again.
+      </div>
 
-    <div class="divider">OR SIGN IN WITH GOOGLE</div>
+      <!-- Google Sign In Button -->
+      <a href="/api/auth/google" class="btn-google">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        <span>Continue with Google</span>
+      </a>
 
-    <a href="/api/auth/google" class="btn-google">
-      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-      <span>Continue with Google</span>
-    </a>
+      <div class="divider">or log in with email</div>
 
-    <div class="footer-note">
-      Don't have an account? <a href="/pricing">View Plans &amp; Subscribe →</a>
+      <!-- Email / Password Form -->
+      <form action="/api/auth/login" method="POST">
+        <div class="input-group">
+          <label for="loginEmail">Email Address</label>
+          <input type="email" id="loginEmail" name="email" placeholder="name@company.com" required autocomplete="email">
+        </div>
+        
+        <div class="input-group">
+          <div class="input-header">
+            <label for="loginPassword">Password</label>
+            <a href="javascript:void(0)" onclick="toggleForgotForm()" class="forgot-link">Forgot?</a>
+          </div>
+          <input type="password" id="loginPassword" name="password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        
+        <button type="submit" class="btn-login">
+          Log In to Console
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </form>
+
+      <!-- Forgot Password Form Box -->
+      <form id="forgotPasswordForm" class="forgot-box" action="/api/auth/forgot-password" method="POST">
+        <strong>Reset Password</strong>
+        <p>Enter your registered email address to receive a secure password reset link.</p>
+        <div class="input-group" style="margin-bottom: 12px;">
+          <input type="email" id="forgotEmail" name="email" placeholder="name@company.com" required style="padding: 10px 14px; font-size: 13px;">
+        </div>
+        <div class="forgot-actions">
+          <button type="button" class="btn-cancel" onclick="toggleForgotForm()">Cancel</button>
+          <button type="submit" class="btn-reset-submit">Send Reset Link →</button>
+        </div>
+      </form>
+
+      <div class="footer-note">
+        Don't have an account? <a href="/pricing">View Plans &amp; Subscribe →</a>
+      </div>
+
     </div>
   </div>
 
   <script>
+    // Handle URL parameters for notice/error banners
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('notice') === 'password_reset_sent') {
+      const banner = document.getElementById('noticeBanner');
+      if (banner) banner.style.display = 'block';
+    }
+    if (urlParams.get('error') === 'invalid_credentials') {
+      const banner = document.getElementById('errorBanner');
+      if (banner) banner.style.display = 'block';
+    }
+
     function toggleForgotForm() {
       const form = document.getElementById('forgotPasswordForm');
       if (form) {
-        if (form.style.display === 'none') {
+        if (form.style.display === 'block') {
+          form.style.display = 'none';
+        } else {
           form.style.display = 'block';
           const mainEmail = document.getElementById('loginEmail');
           const forgotEmail = document.getElementById('forgotEmail');
           if (mainEmail && forgotEmail && mainEmail.value) {
             forgotEmail.value = mainEmail.value;
           }
-        } else {
-          form.style.display = 'none';
         }
       }
     }
