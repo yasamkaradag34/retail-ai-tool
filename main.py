@@ -4377,7 +4377,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
       <div class="topbar" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 20px;">
         <div class="page-title" style="flex: 1; text-align: center; padding: 0 20px;">
-          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.01em; line-height: 1.3;" id="heroMainHeading">
+          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.01em; line-height: 1.3; display: none;" id="heroMainHeading">
             Excel Wizard allows you to perform your manual Excel tasks using your voice and text commands.
           </h2>
         </div>
@@ -5861,6 +5861,15 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           digitalWorkspace.classList.add("active");
         } else {
           digitalWorkspace.classList.remove("active");
+        }
+      }
+
+      const heroMainHeading = document.getElementById("heroMainHeading");
+      if (heroMainHeading) {
+        if (key === "business_calculator") {
+          heroMainHeading.style.display = "block";
+        } else {
+          heroMainHeading.style.display = "none";
         }
       }
 
