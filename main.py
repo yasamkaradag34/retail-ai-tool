@@ -5858,10 +5858,10 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       }
 
       if (inputArea) {
-        if (key === "funnel_analysis" || key === "stock_price_comp" || key === "digital_marketing") {
-          inputArea.style.display = "none";
-        } else {
+        if (key === "business_calculator") {
           inputArea.style.display = "block";
+        } else {
+          inputArea.style.display = "none";
         }
       }
 
