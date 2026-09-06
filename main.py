@@ -2708,9 +2708,9 @@ GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/analytics.readonly",
     "https://www.googleapis.com/auth/content",
     "https://www.googleapis.com/auth/adwords",
-    "openid",
-    "email",
-    "profile"
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile",
+    "openid"
 ]
 
 def _encrypt_token(token_json: str) -> str:
