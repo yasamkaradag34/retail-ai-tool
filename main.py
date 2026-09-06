@@ -7617,7 +7617,7 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
       <a href="/privacy" class="{nav_privacy_cls}">Privacy Policy</a>
     </div>
     <div style="display: flex; align-items: center; gap: 20px;">
-      <a href="/login" style="color: #0f172a; font-weight: 700; font-size: 14.5px; text-decoration: none; transition: opacity 0.2s;">Log in</a>
+      <a href="/login" style="color: #0f172a; font-weight: 700; font-size: 14.5px; text-decoration: none; transition: opacity 0.2s;">Log in / Sign in</a>
       <a href="{cta_url}" class="nav-cta">{cta_label}</a>
     </div>
   </nav>
@@ -9251,7 +9251,7 @@ def index():
     <a href="/privacy" class="nav-link">Privacy Policy</a>
   </div>
   <div style="display: flex; align-items: center; gap: 20px;">
-    <a href="/login" style="color: #0f172a; font-weight: 700; font-size: 14.5px; text-decoration: none; transition: opacity 0.2s;">Log in</a>
+    <a href="/login" style="color: #0f172a; font-weight: 700; font-size: 14.5px; text-decoration: none; transition: opacity 0.2s;">Log in / Sign in</a>
     <a href="/journey" class="nav-cta">Start Journey &nbsp;→</a>
   </div>
 </nav>
@@ -9263,11 +9263,9 @@ def index():
     <p class="hero-sub" style="max-width: 680px;">DataProvido doesn't just analyze your stock, funnel, and sales data locally — it revolutionizes your decision-making by delivering clear, prescriptive commercial actions your team can execute instantly with total data privacy.</p>
     <div class="hero-actions" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
       <a href="/journey" class="btn-primary">Start Your Journey &nbsp;→</a>
-      <a href="/login" class="btn-ghost" style="font-weight: 700;">Log In to Console</a>
+      <a href="/login" class="btn-ghost" style="font-weight: 700;">Log In / Sign In</a>
       <a href="/how-works" class="btn-ghost">See How It Works</a>
     </div>
-  </div>
-</section>
   </div>
 </section>
 
