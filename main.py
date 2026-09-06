@@ -7616,11 +7616,8 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
       <a href="/how-works" class="{nav_how_cls}">How Works?</a>
       <a href="/privacy" class="{nav_privacy_cls}">Privacy Policy</a>
     </div>
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <a href="/api/auth/google" style="background: #ffffff; color: #0f172a; border: 1.5px solid #cbd5e1; border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: all 0.2s;">
-        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-        <span>Sign in</span>
-      </a>
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <a href="/login" style="color: #0f172a; font-weight: 700; font-size: 14.5px; text-decoration: none; transition: opacity 0.2s;">Log in</a>
       <a href="{cta_url}" class="nav-cta">{cta_label}</a>
     </div>
   </nav>
@@ -7850,6 +7847,199 @@ def privacy():
         max_width="1040px"
     )
 
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page():
+    return HTMLResponse(content=f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log in – DataProvido</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {{
+      --orange: #f26f26;
+      --orange-dark: #d85c18;
+      --bg: #0f172a;
+    }}
+    * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }}
+    body {{
+      background: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      overflow-x: hidden;
+    }}
+    .bg-gradient {{
+      position: absolute;
+      width: 650px;
+      height: 650px;
+      background: radial-gradient(circle, rgba(242,111,38,0.20) 0%, rgba(15,23,42,0) 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }}
+    .login-card {{
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 28px;
+      padding: 44px 40px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 30px 60px -12px rgba(0,0,0,0.55);
+      position: relative;
+      z-index: 2;
+    }}
+    .logo-badge {{
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      text-decoration: none;
+    }}
+    .logo-badge img {{ width: 42px; height: 42px; border-radius: 10px; }}
+    .logo-badge span {{ font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }}
+    h1 {{ font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 8px; letter-spacing: -0.02em; }}
+    p.sub {{ font-size: 13.5px; color: #64748b; margin-bottom: 28px; line-height: 1.5; }}
+    .input-group {{ margin-bottom: 20px; text-align: left; }}
+    .input-group label {{ display: block; font-size: 12px; font-weight: 800; color: #334155; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }}
+    .input-group input {{
+      width: 100%;
+      padding: 13px 16px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #0f172a;
+      outline: none;
+      transition: all 0.2s;
+    }}
+    .input-group input:focus {{
+      border-color: #f26f26;
+      box-shadow: 0 0 0 4px rgba(242,111,38,0.12);
+    }}
+    .btn-login {{
+      width: 100%;
+      background: linear-gradient(135deg, #f26f26 0%, #d85c18 100%);
+      color: #ffffff;
+      border: none;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: 14.5px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(242,111,38,0.30);
+      transition: all 0.2s;
+      margin-top: 8px;
+    }}
+    .btn-login:hover {{ transform: translateY(-1px); box-shadow: 0 6px 20px rgba(242,111,38,0.40); }}
+    .divider {{
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 26px 0;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }}
+    .divider::before, .divider::after {{ content: ''; flex: 1; height: 1px; background: #e2e8f0; }}
+    .btn-google {{
+      width: 100%;
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      color: #0f172a;
+      padding: 13px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      transition: all 0.2s;
+    }}
+    .btn-google:hover {{ background: #f8fafc; border-color: #94a3b8; }}
+    .footer-note {{ margin-top: 24px; font-size: 12.5px; color: #64748b; text-align: center; }}
+    .footer-note a {{ color: #f26f26; text-decoration: none; font-weight: 700; }}
+  </style>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+  <div class="login-card">
+    <a href="/" class="logo-badge">
+      <img src="/logo.png" alt="DataProvido">
+      <span>DataProvido</span>
+    </a>
+    <h1>Log in to DataProvido</h1>
+    <p class="sub">Access your retail intelligence console, stock &amp; price insights, and Google integrations.</p>
+    
+    <form action="/api/auth/login" method="POST">
+      <div class="input-group">
+        <label>Email Address</label>
+        <input type="email" name="email" placeholder="name@company.com" required>
+      </div>
+      <div class="input-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="margin-bottom: 0;">Password</label>
+          <a href="#" style="font-size: 11.5px; color: #f26f26; text-decoration: none; font-weight: 700;">Forgot?</a>
+        </div>
+        <input type="password" name="password" placeholder="••••••••" required>
+      </div>
+      
+      <button type="submit" class="btn-login">Log In to Console &nbsp;→ flex</button>
+    </form>
+
+    <div class="divider">OR SIGN IN WITH GOOGLE</div>
+
+    <a href="/api/auth/google" class="btn-google">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+      <span>Continue with Google</span>
+    </a>
+
+    <div class="footer-note">
+      Don't have an account? <a href="/pricing">View Plans &amp; Subscribe →</a>
+    </div>
+  </div>
+</body>
+</html>""")
+
+@app.post("/api/auth/login")
+async def email_password_login(request: Request):
+    """Handle email & password login from /login page."""
+    form_data = await request.form()
+    email = form_data.get("email", "")
+    cookie_data = json.dumps({
+        "email": email,
+        "name": email.split("@")[0].title() if "@" in email else "User",
+        "login_type": "email"
+    })
+    encrypted = _encrypt_token(cookie_data)
+    from fastapi.responses import RedirectResponse
+    response = RedirectResponse(url="/journey?activated=true", status_code=303)
+    response.set_cookie(
+        key="gauth",
+        value=encrypted,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=30 * 24 * 3600,
+        path="/"
+    )
+    return response
 
 @app.get("/pricing", response_class=HTMLResponse)
 def pricing():
@@ -9060,11 +9250,8 @@ def index():
     <a href="/how-works" class="nav-link">How Works?</a>
     <a href="/privacy" class="nav-link">Privacy Policy</a>
   </div>
-  <div style="display: flex; align-items: center; gap: 10px;">
-    <a href="/api/auth/google" style="background: #ffffff; color: #0f172a; border: 1.5px solid #cbd5e1; border-radius: 999px; padding: 8px 18px; font-weight: 700; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); transition: all 0.2s;">
-      <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-      <span>Sign in with Google</span>
-    </a>
+  <div style="display: flex; align-items: center; gap: 20px;">
+    <a href="/login" style="color: #0f172a; font-weight: 700; font-size: 14.5px; text-decoration: none; transition: opacity 0.2s;">Log in</a>
     <a href="/journey" class="nav-cta">Start Journey &nbsp;→</a>
   </div>
 </nav>
@@ -9074,14 +9261,13 @@ def index():
     <div class="hero-badge">✦ Local Intelligence. Zero Compromise.</div>
     <h1>We read your data, spot the trends,<br><span>tell you what's next.</span></h1>
     <p class="hero-sub" style="max-width: 680px;">DataProvido doesn't just analyze your stock, funnel, and sales data locally — it revolutionizes your decision-making by delivering clear, prescriptive commercial actions your team can execute instantly with total data privacy.</p>
-    <div class="hero-actions" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    <div class="hero-actions" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
       <a href="/journey" class="btn-primary">Start Your Journey &nbsp;→</a>
-      <a href="/api/auth/google" style="background: #ffffff; color: #0f172a; border: 2px solid #cbd5e1; border-radius: 999px; padding: 12px 24px; font-weight: 700; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.06); transition: all 0.2s;">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-        <span>Sign in with Google</span>
-      </a>
+      <a href="/login" class="btn-ghost" style="font-weight: 700;">Log In to Console</a>
       <a href="/how-works" class="btn-ghost">See How It Works</a>
     </div>
+  </div>
+</section>
   </div>
 </section>
 
