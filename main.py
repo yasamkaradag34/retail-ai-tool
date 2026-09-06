@@ -5716,7 +5716,10 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         resultHeaderSub.textContent = "Executive summary and data table outputs are displayed here.";
         howToUseHeaderTitle.textContent = "How to Use Guide";
 
-        if (heroMainHeading) heroMainHeading.textContent = "Excel Wizard allows you to perform your manual Excel tasks using your voice and text commands.";
+        if (heroMainHeading) {
+          heroMainHeading.textContent = "Excel Wizard allows you to perform your manual Excel tasks using your voice and text commands.";
+          heroMainHeading.style.display = (typeof currentModule !== 'undefined' && currentModule === 'business_calculator') ? 'block' : 'none';
+        }
         if (heroSubHeading) heroSubHeading.textContent = "Execute Excel Wizard, category insights, price competition, and action plans in a single workspace; give voice or text Excel commands over your data.";
         if (homeLinkText) homeLinkText.textContent = "← Home Page";
         if (navLabelCategories) navLabelCategories.textContent = "CATEGORIES";
@@ -5759,7 +5762,10 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         resultHeaderSub.textContent = "Sonuç burada yönetici özeti formatında gösterilir.";
         howToUseHeaderTitle.textContent = "Nasıl Kullanılır? (How to Use Guide)";
 
-        if (heroMainHeading) heroMainHeading.textContent = "Excel Wizard, elinizle yaptığınız Excel işlemlerini sesiniz ve yazılı komutunuz ile yapmanızı sağlar.";
+        if (heroMainHeading) {
+          heroMainHeading.textContent = "Excel Wizard, elinizle yaptığınız Excel işlemlerini sesiniz ve yazılı komutunuz ile yapmanızı sağlar.";
+          heroMainHeading.style.display = (typeof currentModule !== 'undefined' && currentModule === 'business_calculator') ? 'block' : 'none';
+        }
         if (heroSubHeading) heroSubHeading.textContent = "Excel Wizard, kategori insight, fiyat rekabeti ve aksiyon planlarını tek bir çalışma alanında çalıştırın; verileriniz üzerinde sesli veya yazılı Excel komutları verin.";
         if (homeLinkText) homeLinkText.textContent = "← Ana Sayfa";
         if (navLabelCategories) navLabelCategories.textContent = "KATEGORİLER";
