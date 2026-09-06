@@ -4574,39 +4574,6 @@ print(res.json())
           <!-- FUNNEL & STOCK WORKSPACE CONTAINER -->
           <div id="funnelWorkspaceContainer" class="funnel-workspace">
 
-            <!-- 1. DATA SOURCE CONNECTION STRIP -->
-            <div class="funnel-connect-strip">
-              <div id="funnelConnectNotConnected">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                  <div>
-                    <span class="funnel-section-tag">🔗 Data Source Connection</span>
-                    <h4 style="font-size: 16px; font-weight: 800; color: #0f172a; margin-top: 4px;">Connect Google Analytics &amp; Merchant Center</h4>
-                    <p style="font-size: 13px; color: #64748b; margin-top: 4px; max-width: 520px;">One-click Google sign-in to pull your e-commerce funnel data from GA4 and price competitiveness + item availability from Merchant Center. Your data is never stored on our servers.</p>
-                  </div>
-                </div>
-                <a href="/api/auth/google" class="google-signin-btn" id="googleSignInBtn">
-                  <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                  <span>Sign in with Google</span>
-                </a>
-                <p style="font-size: 11px; color: #94a3b8; margin-top: 10px;">🔒 We only access read-only analytics data. Your data is processed in real-time and never stored.</p>
-              </div>
-
-              <div id="funnelConnectConnected" class="google-connected-strip" style="display: none;">
-                <img id="funnelUserAvatar" class="avatar" src="" alt="User">
-                <div style="flex: 1;">
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <strong style="font-size: 14px; color: #059669;" id="funnelUserName">Connected</strong>
-                    <span class="data-source-pill live">✓ Live</span>
-                  </div>
-                  <span style="font-size: 12px; color: #64748b;" id="funnelUserEmail">user@example.com</span>
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  <span style="font-size: 12px; color: #059669; font-weight: 700;">GA4 + Merchant Center</span>
-                  <a href="/api/auth/google/disconnect" style="font-size: 12px; color: #dc2626; font-weight: 700; text-decoration: none; padding: 6px 14px; border: 1px solid #fca5a5; border-radius: 8px; background: #fef2f2;">Disconnect</a>
-                </div>
-              </div>
-            </div>
-
             <!-- 2. FUNNEL CHART -->
             <div class="funnel-chart-card">
               <div class="funnel-section-header">
