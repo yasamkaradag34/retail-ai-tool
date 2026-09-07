@@ -4386,68 +4386,26 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           <span style="font-size: 12px; opacity: 0.8;">⚙️</span>
         </button>
 
-        <!-- BOTTOM PROFILE & PROPERTY FOOTER CARD (EXACT MATCH TO SCREENSHOT) -->
-        <div style="margin-top: auto; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.22); display: flex; flex-direction: column; gap: 10px;">
+        <!-- BOTTOM PROFILE & PROPERTY FOOTER CARD (CLEAN UNIFIED BEST PRACTICE) -->
+        <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.22); display: flex; flex-direction: column; gap: 8px;">
           
-          <!-- GOOGLE AUTH SIGN IN CARD (LEFT SIDEBAR BOTTOM) -->
-          <div id="sidebarGoogleAuthCard" style="background: rgba(255,255,255,0.08); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.18); border-radius: 14px; padding: 10px 12px; margin-bottom: 2px;">
-            <!-- NOT CONNECTED STATE -->
-            <div id="sidebarGoogleNotConnected" style="display: flex; flex-direction: column; gap: 6px;">
-              <a href="/api/auth/google" id="sidebarGoogleSignInBtn" class="google-signin-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #ffffff; color: #1e293b; font-weight: 700; font-size: 12.5px; padding: 9px 12px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all 0.2s ease;">
-                <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                <span>Sign in with Google</span>
-              </a>
-              <span style="font-size: 10px; color: rgba(255,255,255,0.75); text-align: center; font-weight: 500;">GA4 &amp; Merchant Integration</span>
-            </div>
-
-            <!-- CONNECTED STATE -->
-            <div id="sidebarGoogleConnected" style="display: none; flex-direction: column; gap: 8px;">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-                  <img id="sidebarGoogleAvatar" src="" style="width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid #10b981; object-fit: cover; flex-shrink: 0;" alt="Google Avatar">
-                  <div style="min-width: 0;">
-                    <strong id="sidebarGoogleName" style="display: block; font-size: 12px; color: #ffffff; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Connected</strong>
-                    <span id="sidebarGoogleEmail" style="display: block; font-size: 10px; color: rgba(255,255,255,0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Google Account</span>
-                  </div>
-                </div>
-                <a href="/api/auth/google/disconnect" title="Disconnect Google Account" style="color: #fca5a5; font-size: 10.5px; text-decoration: none; font-weight: 700; background: rgba(239,68,68,0.2); padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(248,113,113,0.3); flex-shrink: 0;">Exit</a>
-              </div>
-              <button onclick="openGoogleAccountModal()" type="button" style="width: 100%; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); color: #ffffff; padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s;">
-                <span>⚙️ Select Accounts (GA4 / Merchant / Ads)</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- CONNECTED PROPERTY BADGE -->
-          <div style="background: rgba(0,0,0,0.18); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.25); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s ease;" onclick="openUserProfileModal()">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(255,255,255,0.9); color: #d85c18; font-weight: 800; display: grid; place-items: center; font-size: 13px;">D</div>
-              <div>
-                <strong style="display: block; font-size: 12.5px; color: #ffffff; font-weight: 700;">dataprovido.com</strong>
-                <span style="font-size: 10.5px; color: rgba(255,255,255,0.75);">Connected property</span>
+          <!-- SINGLE CLEAN UNIFIED USER PROFILE & GOOGLE PROPERTY CARD -->
+          <div id="userProfileCard" style="background: rgba(0,0,0,0.20); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.28); border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; transition: all 0.22s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
+            <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+              <div style="width: 36px; height: 36px; border-radius: 50%; background: #fde68a; color: #78350f; font-weight: 800; font-size: 13px; display: grid; place-items: center; border: 1.5px solid #ffffff; flex-shrink: 0;" id="sidebarUserInitials">YK</div>
+              <div style="min-width: 0;">
+                <strong id="sidebarUserName" style="display: block; font-size: 13px; color: #ffffff; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Yasam Karadag</strong>
+                <span id="sidebarUserEmail" style="display: block; font-size: 10.5px; color: rgba(255,255,255,0.85); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">myasamkaradag@gmail.com</span>
               </div>
             </div>
-            <span style="color: rgba(255,255,255,0.8); font-size: 11px;">▼</span>
+            
+            <button onclick="openGoogleAccountModal()" type="button" title="Select Connected GA4, Merchant & Ads Properties" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30); color: #ffffff; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; cursor: pointer; display: grid; place-items: center; flex-shrink: 0; transition: all 0.2s;">
+              ⚙️
+            </button>
           </div>
 
-          <!-- SETTINGS & PRIVACY QUICK LINKS -->
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; font-size: 11.5px;">
-            <a href="javascript:void(0)" onclick="openUserProfileModal()" style="color: rgba(255,255,255,0.92); text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-              <span>⚙️</span> <span>Settings</span>
-            </a>
-            <a href="/privacy" style="color: rgba(255,255,255,0.75); text-decoration: none; font-size: 11px;">Privacy Policy</a>
-          </div>
-
-          <!-- USER PROFILE CARD -->
-          <div id="userProfileCard" onclick="openUserProfileModal()" style="background: rgba(0,0,0,0.25); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.30); border-radius: 16px; padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.22s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div style="width: 36px; height: 36px; border-radius: 50%; background: #fde68a; color: #78350f; font-weight: 800; font-size: 13px; display: grid; place-items: center; border: 1.5px solid #ffffff;">YK</div>
-              <div>
-                <strong style="display: block; font-size: 13px; color: #ffffff; font-weight: 700; letter-spacing: -0.01em;">Yasam Karadag</strong>
-                <span style="font-size: 11px; color: rgba(255,255,255,0.80); font-weight: 500;">owner · Founder plan</span>
-              </div>
-            </div>
-            <span style="color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 700;">↪</span>
+          <div style="display: flex; justify-content: flex-end; padding: 0 4px;">
+            <a href="/privacy" style="color: rgba(255,255,255,0.70); text-decoration: none; font-size: 10.5px;">Privacy Policy</a>
           </div>
 
         </div>
@@ -6054,24 +6012,17 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         const resp = await fetch('/api/auth/google/status');
         const data = await resp.json();
         
-        const sideNotConn = document.getElementById('sidebarGoogleNotConnected');
-        const sideConn = document.getElementById('sidebarGoogleConnected');
-        const funnelNotConn = document.getElementById('funnelConnectNotConnected');
-        const funnelConn = document.getElementById('funnelConnectConnected');
+        const nameEl = document.getElementById('sidebarUserName');
+        const emailEl = document.getElementById('sidebarUserEmail');
+        const initialsEl = document.getElementById('sidebarUserInitials');
 
         if (data.connected) {
-          if (sideNotConn) sideNotConn.style.display = 'none';
-          if (sideConn) {
-            sideConn.style.display = 'flex';
-            const avatar = document.getElementById('sidebarGoogleAvatar');
-            const name = document.getElementById('sidebarGoogleName');
-            const email = document.getElementById('sidebarGoogleEmail');
-            if (avatar && data.picture) avatar.src = data.picture;
-            if (name) name.textContent = data.name || 'Connected';
-            if (email) email.textContent = data.email || 'GA4 & Merchant Active';
+          if (nameEl) nameEl.textContent = data.name || 'Yasam Karadag';
+          if (emailEl) emailEl.textContent = data.email || 'Google Account Active';
+          if (initialsEl && data.name) {
+            const parts = data.name.trim().split(' ');
+            initialsEl.textContent = parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : parts[0][0].toUpperCase();
           }
-          if (funnelNotConn) funnelNotConn.style.display = 'none';
-          if (funnelConn) funnelConn.style.display = 'flex';
 
           if (typeof loadFunnelData === 'function') loadFunnelData();
           if (typeof loadPriceData === 'function') loadPriceData();
@@ -6081,10 +6032,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
             window.history.replaceState({}, document.title, window.location.pathname);
           }
         } else {
-          if (sideNotConn) sideNotConn.style.display = 'flex';
-          if (sideConn) sideConn.style.display = 'none';
-          if (funnelNotConn) funnelNotConn.style.display = 'block';
-          if (funnelConn) funnelConn.style.display = 'none';
+          if (emailEl) emailEl.textContent = 'Sign in with Google to Connect';
         }
       } catch(e) {
         console.log('Auth status check failed:', e);
