@@ -3141,6 +3141,97 @@ async def funnel_report(request: Request, days: int = 30):
             "period": f"Last {days} days"
         })
 
+@app.get("/api/ga4/category-report")
+async def ga4_category_report(request: Request, property_id: str = "", days: int = 30):
+    """Fetch real-time GA4 Category report breakdown with itemCategory, itemsViewed, itemsAddedToCart, itemsPurchased, cartToViewRate, purchaseToViewRate."""
+    tokens = _get_google_tokens(request)
+    
+    demo_categories = [
+        {"category": "Tüketici Elektroniği", "pdp": 4820, "pdp_change": 12.4, "a2c": 1240, "a2c_change": 8.1, "trans": 320, "trans_change": 15.2, "c2d": 25.72, "c2d_change": -1.2, "b2d": 6.64, "b2d_change": 2.4},
+        {"category": "Bilgisayar & Tablet", "pdp": 2600, "pdp_change": 5.8, "a2c": 780, "a2c_change": 3.4, "trans": 195, "trans_change": 4.1, "c2d": 30.00, "c2d_change": 0.5, "b2d": 7.50, "b2d_change": 1.1},
+        {"category": "Küçük Ev Aletleri", "pdp": 1850, "pdp_change": -3.2, "a2c": 520, "a2c_change": -1.8, "trans": 138, "trans_change": -2.5, "c2d": 28.11, "c2d_change": 1.4, "b2d": 7.46, "b2d_change": 0.8},
+        {"category": "Akıllı Ev & Ses", "pdp": 1240, "pdp_change": 18.9, "a2c": 310, "a2c_change": 14.2, "trans": 82, "trans_change": 22.0, "c2d": 25.00, "c2d_change": -3.1, "b2d": 6.61, "b2d_change": 1.8},
+        {"category": "Aksesuar & Kablo", "pdp": 820, "pdp_change": 2.1, "a2c": 190, "a2c_change": 0.5, "trans": 45, "trans_change": 1.2, "c2d": 23.17, "c2d_change": -0.8, "b2d": 5.49, "b2d_change": -0.4}
+    ]
+
+    if not tokens or not tokens.get("access_token"):
+        return JSONResponse({"source": "demo", "ga4Categories": demo_categories, "period": f"Last {days} days"})
+
+    try:
+        access_token = tokens["access_token"]
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        if not property_id:
+            admin_resp = requests.get("https://analyticsadmin.googleapis.com/v1beta/accountSummaries", headers=headers)
+            if admin_resp.status_code == 200:
+                accounts = admin_resp.json()
+                for acc in accounts.get("accountSummaries", []):
+                    for prop in acc.get("propertySummaries", []):
+                        property_id = prop.get("property", "").replace("properties/", "")
+                        if property_id:
+                            break
+                    if property_id:
+                        break
+
+        if not property_id:
+            return JSONResponse({"source": "demo", "ga4Categories": demo_categories, "error": "No GA4 property found."})
+
+        report_body = {
+            "dateRanges": [{"startDate": f"{days}daysAgo", "endDate": "yesterday"}],
+            "dimensions": [{"name": "itemCategory"}],
+            "metrics": [
+                {"name": "itemsViewed"},
+                {"name": "itemsAddedToCart"},
+                {"name": "itemsPurchased"},
+                {"name": "cartToViewRate"},
+                {"name": "purchaseToViewRate"}
+            ],
+            "limit": 20
+        }
+
+        report_resp = requests.post(
+            f"https://analyticsdata.googleapis.com/v1beta/properties/{property_id}:runReport",
+            headers={**headers, "Content-Type": "application/json"},
+            json=report_body
+        )
+
+        if report_resp.status_code == 200:
+            rep_data = report_resp.json()
+            rows = rep_data.get("rows", [])
+            categories = []
+            for r in rows:
+                cat_name = r["dimensionValues"][0]["value"]
+                if not cat_name or cat_name in ["(not set)", "(unset)"]:
+                    continue
+                mv = r["metricValues"]
+                pdp = int(float(mv[0]["value"])) if len(mv) > 0 else 0
+                a2c = int(float(mv[1]["value"])) if len(mv) > 1 else 0
+                trans = int(float(mv[2]["value"])) if len(mv) > 2 else 0
+                c2d = round(float(mv[3]["value"]) * 100, 2) if len(mv) > 3 else (round(a2c/pdp*100, 2) if pdp else 0)
+                b2d = round(float(mv[4]["value"]) * 100, 2) if len(mv) > 4 else (round(trans/pdp*100, 2) if pdp else 0)
+                
+                categories.append({
+                    "category": cat_name,
+                    "pdp": pdp,
+                    "pdp_change": 0.0,
+                    "a2c": a2c,
+                    "a2c_change": 0.0,
+                    "trans": trans,
+                    "trans_change": 0.0,
+                    "c2d": c2d,
+                    "c2d_change": 0.0,
+                    "b2d": b2d,
+                    "b2d_change": 0.0
+                })
+
+            if categories:
+                return JSONResponse({"source": "live", "property_id": property_id, "ga4Categories": categories, "period": f"Last {days} days"})
+
+        return JSONResponse({"source": "demo", "ga4Categories": demo_categories, "error": f"GA4 property {property_id} returned no ecommerce items."})
+
+    except Exception as e:
+        return JSONResponse({"source": "demo", "ga4Categories": demo_categories, "error": str(e)})
+
 @app.get("/api/merchant/price-competitiveness")
 async def merchant_price_competitiveness(request: Request):
     """Fetch Merchant Center price benchmark data. Zero storage."""
@@ -4414,26 +4505,51 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           <!-- CATEGORY & PRODUCT ANALYSIS INTERACTIVE WORKSPACE CONTAINER -->
           <div id="categoryWorkspaceContainer" style="display: none; margin-bottom: 22px; flex-direction: column; gap: 18px;">
             
-            <!-- PIPELINE STATUS & SETUP CONTROL STRIP -->
-            <div style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border: 1.5px solid #bfdbfe; border-radius: 16px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; box-shadow: 0 2px 8px rgba(37,99,235,0.06);">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="font-size: 22px;">🏷️</span>
-                <div>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <strong style="font-size: 14px; color: #0f172a;">Category Data Pipeline:</strong>
-                    <span id="catPipelineBadge" style="background: #dbeafe; color: #1d4ed8; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 11px;">⚡ Always-On Automated Pipeline Active</span>
+            <!-- GA4 PROPERTY SELECTOR & CATEGORY DATA TABLE -->
+            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 22px 24px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span style="font-size: 20px;">📊</span>
+                  <div>
+                    <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 0;">Category Performance Table</h4>
+                    <span style="font-size: 12px; color: #64748b;" id="ga4CategorySourceLabel">Select a GA4 property to load real-time data</span>
                   </div>
-                  <span style="font-size: 12px; color: #64748b;" id="catPipelineDesc">Live category, brand, and SKU datasets are ready for graphical visualization &amp; executive analysis.</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span class="data-source-pill demo" id="ga4CategoryBadge">📋 Demo Data</span>
+                  <select id="ga4PropertySelect" onchange="loadGA4CategoryData()" style="padding: 7px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 12px; font-weight: 700; color: #0f172a; background: #ffffff; cursor: pointer; max-width: 260px;">
+                    <option value="">— Select GA4 Property —</option>
+                  </select>
+                  <select id="ga4CategoryDays" onchange="loadGA4CategoryData()" style="padding: 7px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 12px; font-weight: 700; color: #0f172a; background: #ffffff; cursor: pointer;">
+                    <option value="7">Last 7 Days</option>
+                    <option value="30" selected>Last 30 Days</option>
+                    <option value="90">Last 90 Days</option>
+                  </select>
                 </div>
               </div>
 
-              <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                <button onclick="openCategoryOnboardingModal()" type="button" style="background: #ffffff; border: 1.5px solid #93c5fd; color: #1d4ed8; padding: 7px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(37,99,235,0.08);">
-                  🚀 <span>Setup &amp; Journey Guide</span>
-                </button>
-                <a href="/api/templates/category-product" download style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 7px 14px; border-radius: 10px; font-size: 12px; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                  📥 <span>Download Template</span>
-                </a>
+              <!-- REALTIME GA4 CATEGORY TABLE -->
+              <div style="overflow-x: auto; max-height: 380px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                <table class="insights-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                  <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 2;">
+                    <tr style="border-bottom: 2px solid #e2e8f0; text-align: left;">
+                      <th style="padding: 10px 12px; font-weight: 800; color: #475569; cursor: pointer;" onclick="sortGA4Table('category')">Item Category ↕</th>
+                      <th style="padding: 10px 12px; font-weight: 800; color: #2563eb; text-align: right; cursor: pointer;" onclick="sortGA4Table('pdp')">PDP Views (Viewed) ↕</th>
+                      <th style="padding: 10px 12px; font-weight: 700; color: #64748b; text-align: right;">%Δ</th>
+                      <th style="padding: 10px 12px; font-weight: 800; color: #059669; text-align: right; cursor: pointer;" onclick="sortGA4Table('a2c')">Add to Cart (A2C) ↕</th>
+                      <th style="padding: 10px 12px; font-weight: 700; color: #64748b; text-align: right;">%Δ</th>
+                      <th style="padding: 10px 12px; font-weight: 800; color: #d97706; text-align: right; cursor: pointer;" onclick="sortGA4Table('trans')">Transactions (Purchased) ↕</th>
+                      <th style="padding: 10px 12px; font-weight: 700; color: #64748b; text-align: right;">%Δ</th>
+                      <th style="padding: 10px 12px; font-weight: 800; color: #7c3aed; text-align: right; cursor: pointer;" onclick="sortGA4Table('c2d')">Cart to Detail (C2D%) ↕</th>
+                      <th style="padding: 10px 12px; font-weight: 700; color: #64748b; text-align: right;">%Δ</th>
+                      <th style="padding: 10px 12px; font-weight: 800; color: #7c3aed; text-align: right; cursor: pointer;" onclick="sortGA4Table('b2d')">Buy to Detail (B2D%) ↕</th>
+                      <th style="padding: 10px 12px; font-weight: 700; color: #64748b; text-align: right;">%Δ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ga4CategoryTableBody">
+                    <!-- Loaded dynamically via JS -->
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -5798,6 +5914,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
             selectCategoryPipelineMode(savedMode);
           } catch(e) {}
           setTimeout(() => { renderCategoryCharts(); }, 150);
+          setTimeout(() => { loadGA4Properties(); }, 300);
         } else {
           catWorkspace.style.display = "none";
         }
@@ -5805,7 +5922,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
 
       // Handle Funnel Workspace
       const funnelWorkspace = document.getElementById("funnelWorkspaceContainer");
-      const stockWorkspace = document.getElementById("stockPriceWorkspaceContainer");
+      const stockWorkspace = document.getElementById("stockWorkspaceContainer");
       const digitalWorkspace = document.getElementById("digitalMarketingWorkspaceContainer");
       const inputArea = document.querySelector(".input-area");
 
@@ -6700,7 +6817,11 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         });
         if (resp.ok) {
           closeGoogleAccountModal();
-          alert("✓ Google Account Selection Saved & Applied to Workspaces!");
+          const ga4PropSel = document.getElementById("ga4PropertySelect");
+          if (ga4PropSel && ga4Val) {
+            ga4PropSel.value = ga4Val;
+          }
+          if (typeof loadGA4CategoryData === 'function') loadGA4CategoryData();
           if (typeof loadFunnelData === 'function') loadFunnelData();
           if (typeof loadPriceData === 'function') loadPriceData();
         }
@@ -6861,98 +6982,332 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
 
       if (!shareCanvas || !convCanvas) return;
 
+      // Default demo data
       let labels = ["Tüketici Elektroniği", "Bilgisayar & Tablet", "Küçük Ev Aletleri", "Akıllı Ev & Ses", "Aksesuar"];
-      let revenueData = [62.3, 26.0, 18.5, 12.4, 8.2];
-      let marketShareData = [34.2, 28.5, 19.8, 15.4, 11.0];
+      let pdpData = [4820, 2600, 1850, 1240, 820];
+      let a2cData = [1240, 780, 520, 310, 190];
+      let transData = [320, 195, 138, 82, 45];
 
-      let c2dRates = [11.4, 10.7, 13.1, 6.1, 11.6];
-
-      if (data && data.winning_categories && data.winning_categories.length > 0) {
+      // Use real GA4 data if available
+      if (data && data.ga4Categories && data.ga4Categories.length > 0) {
+        const cats = data.ga4Categories.slice(0, 8);
+        labels = cats.map(c => c.category || "Unknown");
+        pdpData = cats.map(c => c.pdp || 0);
+        a2cData = cats.map(c => c.a2c || 0);
+        transData = cats.map(c => c.trans || 0);
+      } else if (data && data.winning_categories && data.winning_categories.length > 0) {
         labels = data.winning_categories.map(c => c.category || c.cat1 || c.brand || "Cat");
-        revenueData = data.winning_categories.map(c => Math.round((c.revenue || c.total_revenue || 1000000) / 1000000 * 10) / 10);
-        marketShareData = data.winning_categories.map(c => Math.round((c.market_share || c.c2d_pct || 15) * 10) / 10);
-      } else if (currentSpreadsheetData && currentSpreadsheetData.length > 0) {
-        const catMap = {};
-        currentSpreadsheetData.forEach(r => {
-          const cat = r.Category_L1 || r.cat1 || r.Category || "Genel";
-          const rev = parseFloat(r.Revenue || r.revenue || r.Price || 0);
-          catMap[cat] = (catMap[cat] || 0) + rev;
-        });
-        if (Object.keys(catMap).length > 0) {
-          labels = Object.keys(catMap).slice(0, 6);
-          revenueData = Object.values(catMap).slice(0, 6).map(v => Math.round(v / 1000000 * 10) / 10 || 5.0);
-        }
+        pdpData = data.winning_categories.map(c => Math.round(c.pdp || c.views || 1000));
+        a2cData = data.winning_categories.map(c => Math.round(c.a2c || c.add_to_cart || 300));
+        transData = data.winning_categories.map(c => Math.round(c.trans || c.purchases || 50));
       }
 
       if (categoryShareChart) categoryShareChart.destroy();
       if (categoryConversionChart) categoryConversionChart.destroy();
 
+      // CHART 1: PDP Views (Bar) + Transactions (Line) - COMBO
       categoryShareChart = new Chart(shareCanvas, {
         type: 'bar',
         data: {
           labels: labels,
           datasets: [
             {
-              label: 'Revenue (M ₺)',
-              data: revenueData,
-              backgroundColor: 'rgba(37, 99, 235, 0.85)',
+              label: 'PDP Views',
+              data: pdpData,
+              backgroundColor: 'rgba(37, 99, 235, 0.75)',
               borderColor: '#1d4ed8',
               borderWidth: 1.5,
-              borderRadius: 8
+              borderRadius: 8,
+              order: 2,
+              yAxisID: 'y'
             },
             {
-              label: 'Market Share (%)',
-              data: marketShareData,
-              backgroundColor: 'rgba(242, 111, 38, 0.85)',
-              borderColor: '#d85c18',
-              borderWidth: 1.5,
-              borderRadius: 8
+              label: 'Transactions',
+              data: transData,
+              type: 'line',
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.12)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.35,
+              pointBackgroundColor: '#f59e0b',
+              pointRadius: 5,
+              pointHoverRadius: 7,
+              order: 1,
+              yAxisID: 'y1'
             }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { position: 'top', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' } } }
+            legend: { position: 'top', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, usePointStyle: true, pointStyle: 'circle' } },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleFont: { family: 'Plus Jakarta Sans', size: 12 },
+              bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
+              callbacks: {
+                label: function(ctx) {
+                  return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('tr-TR');
+                }
+              }
+            }
           },
           scales: {
-            x: { grid: { display: false }, ticks: { font: { family: 'Plus Jakarta Sans', size: 10.5 } } },
-            y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Plus Jakarta Sans', size: 10.5 } } }
+            x: { grid: { display: false }, ticks: { font: { family: 'Plus Jakarta Sans', size: 10 }, maxRotation: 30 } },
+            y: {
+              position: 'left',
+              title: { display: true, text: 'PDP Views', font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, color: '#2563eb' },
+              grid: { color: '#f1f5f9' },
+              ticks: { font: { family: 'Plus Jakarta Sans', size: 10 } }
+            },
+            y1: {
+              position: 'right',
+              title: { display: true, text: 'Transactions', font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, color: '#f59e0b' },
+              grid: { drawOnChartArea: false },
+              ticks: { font: { family: 'Plus Jakarta Sans', size: 10 } }
+            }
           }
         }
       });
 
+      // CHART 2: A2C (Bar) + Transactions (Line) - COMBO
       categoryConversionChart = new Chart(convCanvas, {
-        type: 'line',
+        type: 'bar',
         data: {
           labels: labels,
           datasets: [
             {
-              label: 'C2D Conversion Rate (%)',
-              data: c2dRates,
+              label: 'Add to Cart',
+              data: a2cData,
+              backgroundColor: 'rgba(16, 185, 129, 0.75)',
               borderColor: '#059669',
-              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+              borderWidth: 1.5,
+              borderRadius: 8,
+              order: 2,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Transactions',
+              data: transData,
+              type: 'line',
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.10)',
               borderWidth: 2.5,
               fill: true,
               tension: 0.35,
-              pointBackgroundColor: '#059669',
-              pointRadius: 5
+              pointBackgroundColor: '#ef4444',
+              pointRadius: 5,
+              pointHoverRadius: 7,
+              order: 1,
+              yAxisID: 'y1'
             }
           ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { position: 'top', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' } } }
+            legend: { position: 'top', labels: { font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, usePointStyle: true, pointStyle: 'circle' } },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleFont: { family: 'Plus Jakarta Sans', size: 12 },
+              bodyFont: { family: 'Plus Jakarta Sans', size: 11 },
+              callbacks: {
+                label: function(ctx) {
+                  return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('tr-TR');
+                }
+              }
+            }
           },
           scales: {
-            x: { grid: { display: false }, ticks: { font: { family: 'Plus Jakarta Sans', size: 10.5 } } },
-            y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Plus Jakarta Sans', size: 10.5 } } }
+            x: { grid: { display: false }, ticks: { font: { family: 'Plus Jakarta Sans', size: 10 }, maxRotation: 30 } },
+            y: {
+              position: 'left',
+              title: { display: true, text: 'Add to Cart', font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, color: '#059669' },
+              grid: { color: '#f1f5f9' },
+              ticks: { font: { family: 'Plus Jakarta Sans', size: 10 } }
+            },
+            y1: {
+              position: 'right',
+              title: { display: true, text: 'Transactions', font: { family: 'Plus Jakarta Sans', size: 11, weight: '700' }, color: '#ef4444' },
+              grid: { drawOnChartArea: false },
+              ticks: { font: { family: 'Plus Jakarta Sans', size: 10 } }
+            }
           }
         }
       });
+    }
+
+    /* ── GA4 Category Data Integration ── */
+    var ga4CategoryDataCache = [];
+    var ga4SortField = 'pdp';
+    var ga4SortDesc = true;
+
+    async function loadGA4Properties() {
+      try {
+        const resp = await fetch('/api/google/accounts');
+        if (!resp.ok) {
+          loadGA4CategoryData();
+          return;
+        }
+        const data = await resp.json();
+        const sel = document.getElementById('ga4PropertySelect');
+        if (!sel || !data.ga4_properties) {
+          loadGA4CategoryData();
+          return;
+        }
+        
+        sel.innerHTML = '<option value="">— Select GA4 Property —</option>';
+        data.ga4_properties.forEach(prop => {
+          const opt = document.createElement('option');
+          opt.value = prop.id;
+          opt.textContent = prop.name;
+          if (data.selected_ga4 && prop.id === data.selected_ga4) {
+            opt.selected = true;
+          }
+          sel.appendChild(opt);
+        });
+
+        if (data.selected_ga4) {
+          sel.value = data.selected_ga4;
+        } else if (data.ga4_properties.length > 0) {
+          sel.value = data.ga4_properties[0].id;
+        }
+        loadGA4CategoryData();
+      } catch(e) {
+        console.log('GA4 properties load error:', e);
+        loadGA4CategoryData();
+      }
+    }
+
+    async function loadGA4CategoryData() {
+      const propSel = document.getElementById('ga4PropertySelect');
+      const daysSel = document.getElementById('ga4CategoryDays');
+      const badge = document.getElementById('ga4CategoryBadge');
+      const srcLabel = document.getElementById('ga4CategorySourceLabel');
+      
+      const propVal = propSel ? propSel.value : '';
+      
+      if (badge) {
+        badge.style.background = '#fef3c7';
+        badge.style.color = '#92400e';
+        badge.textContent = '⏳ Loading...';
+      }
+      
+      try {
+        const days = daysSel ? daysSel.value : '30';
+        const endpoint = propVal 
+          ? `/api/ga4/category-report?property_id=${propVal}&days=${days}`
+          : `/api/ga4/category-report?days=${days}`;
+        const resp = await fetch(endpoint);
+        const data = await resp.json();
+        
+        if (data.source === 'live') {
+          if (badge) {
+            badge.style.background = '#ecfdf5';
+            badge.style.color = '#047857';
+            badge.textContent = '🟢 GA4 Live Data';
+          }
+          if (srcLabel) srcLabel.textContent = `Live data loaded from property (${data.period || 'Last 30 Days'})`;
+        } else {
+          if (badge) {
+            badge.style.background = '#fff7ed';
+            badge.style.color = '#c2410c';
+            badge.textContent = '📋 Demo Data';
+          }
+          if (srcLabel) srcLabel.textContent = data.error ? `${data.error} (showing demo data)` : 'Demo E-Commerce Data';
+        }
+        
+        renderGA4CategoryTable(data.ga4Categories || []);
+        renderCategoryCharts(data);
+      } catch(e) {
+        console.log('Error loading GA4 category data:', e);
+      }
+    }
+
+    function renderGA4CategoryTable(cats) {
+      ga4CategoryDataCache = cats;
+      const tbody = document.getElementById('ga4CategoryTableBody');
+      if (!tbody) return;
+
+      if (!cats || cats.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:24px;color:#94a3b8;">No category data found.</td></tr>';
+        return;
+      }
+
+      cats.sort((a, b) => {
+        let valA = a[ga4SortField];
+        let valB = b[ga4SortField];
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        if (valA < valB) return ga4SortDesc ? 1 : -1;
+        if (valA > valB) return ga4SortDesc ? -1 : 1;
+        return 0;
+      });
+
+      let html = '';
+      let sumPdp = 0, sumA2c = 0, sumTrans = 0;
+
+      cats.forEach((c, idx) => {
+        sumPdp += (c.pdp || 0);
+        sumA2c += (c.a2c || 0);
+        sumTrans += (c.trans || 0);
+
+        const pdpChg = c.pdp_change ? (c.pdp_change > 0 ? `<span style="color:#059669;">+${c.pdp_change}%</span>` : `<span style="color:#dc2626;">${c.pdp_change}%</span>`) : `<span style="color:#94a3b8;">-</span>`;
+        const a2cChg = c.a2c_change ? (c.a2c_change > 0 ? `<span style="color:#059669;">+${c.a2c_change}%</span>` : `<span style="color:#dc2626;">${c.a2c_change}%</span>`) : `<span style="color:#94a3b8;">-</span>`;
+        const transChg = c.trans_change ? (c.trans_change > 0 ? `<span style="color:#059669;">+${c.trans_change}%</span>` : `<span style="color:#dc2626;">${c.trans_change}%</span>`) : `<span style="color:#94a3b8;">-</span>`;
+        const c2dChg = c.c2d_change ? (c.c2d_change > 0 ? `<span style="color:#059669;">+${c.c2d_change}%</span>` : `<span style="color:#dc2626;">${c.c2d_change}%</span>`) : `<span style="color:#94a3b8;">-</span>`;
+        const b2dChg = c.b2d_change ? (c.b2d_change > 0 ? `<span style="color:#059669;">+${c.b2d_change}%</span>` : `<span style="color:#dc2626;">${c.b2d_change}%</span>`) : `<span style="color:#94a3b8;">-</span>`;
+
+        html += `
+        <tr style="border-bottom: 1px solid #f1f5f9; ${idx % 2 === 1 ? 'background:#f8fafc;' : ''}">
+          <td style="padding:10px 12px;font-weight:700;color:#0f172a;">${c.category}</td>
+          <td style="text-align:right;padding:10px 12px;font-weight:700;color:#2563eb;">${(c.pdp || 0).toLocaleString('tr-TR')}</td>
+          <td style="text-align:right;padding:10px 12px;font-size:11px;">${pdpChg}</td>
+          <td style="text-align:right;padding:10px 12px;font-weight:700;color:#059669;">${(c.a2c || 0).toLocaleString('tr-TR')}</td>
+          <td style="text-align:right;padding:10px 12px;font-size:11px;">${a2cChg}</td>
+          <td style="text-align:right;padding:10px 12px;font-weight:700;color:#d97706;">${(c.trans || 0).toLocaleString('tr-TR')}</td>
+          <td style="text-align:right;padding:10px 12px;font-size:11px;">${transChg}</td>
+          <td style="text-align:right;padding:10px 12px;font-weight:700;color:#7c3aed;">${(c.c2d || 0).toFixed(2)}%</td>
+          <td style="text-align:right;padding:10px 12px;font-size:11px;">${c2dChg}</td>
+          <td style="text-align:right;padding:10px 12px;font-weight:700;color:#7c3aed;">${(c.b2d || 0).toFixed(2)}%</td>
+          <td style="text-align:right;padding:10px 12px;font-size:11px;">${b2dChg}</td>
+        </tr>`;
+      });
+
+      const avgC2d = sumPdp > 0 ? (sumA2c / sumPdp * 100) : 0;
+      const avgB2d = sumPdp > 0 ? (sumTrans / sumPdp * 100) : 0;
+
+      html += `
+      <tr style="background:#eff6ff;font-weight:800;border-top:2px solid #93c5fd;">
+        <td style="padding:10px 12px;color:#1d4ed8;">Toplam / Ortalama</td>
+        <td style="text-align:right;padding:10px 12px;color:#1d4ed8;">${sumPdp.toLocaleString('tr-TR')}</td>
+        <td></td>
+        <td style="text-align:right;padding:10px 12px;color:#047857;">${sumA2c.toLocaleString('tr-TR')}</td>
+        <td></td>
+        <td style="text-align:right;padding:10px 12px;color:#b45309;">${sumTrans.toLocaleString('tr-TR')}</td>
+        <td></td>
+        <td style="text-align:right;padding:10px 12px;color:#6d28d9;">${avgC2d.toFixed(2)}%</td>
+        <td></td>
+        <td style="text-align:right;padding:10px 12px;color:#6d28d9;">${avgB2d.toFixed(2)}%</td>
+        <td></td>
+      </tr>`;
+
+      tbody.innerHTML = html;
+    }
+
+    function sortGA4Table(field) {
+      if (ga4SortField === field) {
+        ga4SortDesc = !ga4SortDesc;
+      } else {
+        ga4SortField = field;
+        ga4SortDesc = true;
+      }
+      renderGA4CategoryTable(ga4CategoryDataCache);
     }
 
     window.openCategoryOnboardingModal = openCategoryOnboardingModal;
@@ -6962,6 +7317,9 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     window.prevCategoryObStep = prevCategoryObStep;
     window.selectCategoryPipelineMode = selectCategoryPipelineMode;
     window.renderCategoryCharts = renderCategoryCharts;
+    window.loadGA4Properties = loadGA4Properties;
+    window.loadGA4CategoryData = loadGA4CategoryData;
+    window.sortGA4Table = sortGA4Table;
 
     /* ── Interactive Pulsing Hotspot Beacon & Tooltip Tour Engine ── */
     var tourCurrentIndex = 0;
@@ -7419,7 +7777,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       }
     }
 
-    renderModule("business_calculator");
+    renderModule("category_insights");
   </script>
 </body>
 </html>
