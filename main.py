@@ -3416,6 +3416,26 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     return """<!DOCTYPE html>
 <html lang="tr">
 <head>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'consent_default',
+      'consent_default_ad_storage': 'denied',
+      'consent_default_analytics': 'denied'
+    });
+
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied',
+      'functionality_storage': 'denied',
+      'personalization_storage': 'denied',
+      'security_storage': 'granted',
+      'wait_for_update': 1000
+    });
+  </script>
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
   new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -7744,6 +7764,26 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({{
+      'event': 'consent_default',
+      'consent_default_ad_storage': 'denied',
+      'consent_default_analytics': 'denied'
+    }});
+
+    function gtag(){{dataLayer.push(arguments);}}
+    gtag('consent', 'default', {{
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied',
+      'functionality_storage': 'denied',
+      'personalization_storage': 'denied',
+      'security_storage': 'granted',
+      'wait_for_update': 1000
+    }});
+  </script>
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){{w[l]=w[l]||[];w[l].push({{'gtm.start':
   new Date().getTime(),event:'gtm.js'}});var f=d.getElementsByTagName(s)[0],
@@ -8144,6 +8184,26 @@ def login_page():
     return HTMLResponse(content="""<!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'consent_default',
+      'consent_default_ad_storage': 'denied',
+      'consent_default_analytics': 'denied'
+    });
+
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied',
+      'functionality_storage': 'denied',
+      'personalization_storage': 'denied',
+      'security_storage': 'granted',
+      'wait_for_update': 1000
+    });
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Log in – DataProvido Console</title>
@@ -9155,6 +9215,26 @@ def checkout_success(plan: str = "standard", session_id: str = ""):
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({{
+      'event': 'consent_default',
+      'consent_default_ad_storage': 'denied',
+      'consent_default_analytics': 'denied'
+    }});
+
+    function gtag(){{dataLayer.push(arguments);}}
+    gtag('consent', 'default', {{
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied',
+      'functionality_storage': 'denied',
+      'personalization_storage': 'denied',
+      'security_storage': 'granted',
+      'wait_for_update': 1000
+    }});
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payment Successful – DataProvido</title>
@@ -9701,6 +9781,26 @@ def index():
     return """<!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'consent_default',
+      'consent_default_ad_storage': 'denied',
+      'consent_default_analytics': 'denied'
+    });
+
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied',
+      'functionality_storage': 'denied',
+      'personalization_storage': 'denied',
+      'security_storage': 'granted',
+      'wait_for_update': 1000
+    });
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DataProvido – Analyze your e-commerce data locally—no need to share it with anyone!</title>
