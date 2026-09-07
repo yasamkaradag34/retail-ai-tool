@@ -4397,6 +4397,18 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         <!-- BOTTOM PROFILE & PROPERTY FOOTER CARD (PINNED TO VERY BOTTOM OF SIDEBAR) -->
         <div style="margin-top: auto; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.22); display: flex; flex-direction: column; gap: 8px;">
           
+          <!-- CONNECT TO DATA SOURCES API GUIDELINE MODAL BUTTON -->
+          <button type="button" onclick="openApiGuidelineModal()" style="width: 100%; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.14); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: #ffffff; text-align: left; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 16px;">🔌</span>
+              <div>
+                <strong style="display: block; font-size: 12px; color: #ffffff; font-weight: 700; letter-spacing: -0.01em;">Connect to Data Sources</strong>
+                <span style="font-size: 10.5px; color: rgba(255,255,255,0.80);">API Guideline &amp; Docs ↗</span>
+              </div>
+            </div>
+            <span style="font-size: 12px; opacity: 0.85;">⚙️</span>
+          </button>
+
           <!-- SINGLE CLEAN UNIFIED USER PROFILE & GOOGLE PROPERTY CARD -->
           <div id="userProfileCard" onclick="openGoogleAccountModal()" style="background: rgba(0,0,0,0.20); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.28); border-radius: 16px; padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.22s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
             <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
@@ -4411,18 +4423,6 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               ⚙️
             </button>
           </div>
-
-          <!-- CONNECT TO DATA SOURCES API GUIDELINE MODAL BUTTON (UNDER YK) -->
-          <button type="button" onclick="openApiGuidelineModal()" style="width: 100%; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.14); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: #ffffff; text-align: left; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 16px;">🔌</span>
-              <div>
-                <strong style="display: block; font-size: 12px; color: #ffffff; font-weight: 700; letter-spacing: -0.01em;">Connect to Data Sources</strong>
-                <span style="font-size: 10.5px; color: rgba(255,255,255,0.80);">API Guideline &amp; Docs ↗</span>
-              </div>
-            </div>
-            <span style="font-size: 12px; opacity: 0.85;">⚙️</span>
-          </button>
 
           <div style="display: flex; justify-content: flex-end; padding: 0 4px;">
             <a href="/privacy" style="color: rgba(255,255,255,0.70); text-decoration: none; font-size: 10.5px;">Privacy Policy</a>
