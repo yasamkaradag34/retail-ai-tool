@@ -2862,99 +2862,99 @@ async def google_disconnect():
 @app.get("/api/google/accounts")
 async def google_get_accounts(request: Request):
     """Fetch accessible GA4 properties, Merchant Center accounts, and Google Ads Customer IDs for connected user."""
-    tokens = _get_google_tokens(request)
-    if not tokens or not tokens.get("access_token"):
-        return JSONResponse({"error": "Not authenticated with Google"}, status_code=401)
-    
-    access_token = tokens["access_token"]
-    headers = {"Authorization": f"Bearer {access_token}"}
+    tokens = _get_google_tokens(request) or {}
+    is_authenticated = bool(tokens and tokens.get("access_token"))
     
     ga4_properties = []
     merchant_accounts = []
     google_ads_accounts = []
     
-    # 1. GA4 Admin API - Account Summaries
-    try:
-        ga_resp = requests.get(
-            "https://analyticsadmin.googleapis.com/v1beta/accountSummaries",
-            headers=headers,
-            timeout=4
-        )
-        if ga_resp.status_code == 200:
-            for acc in ga_resp.json().get("accountSummaries", []):
-                acc_name = acc.get("displayName", "Analytics Account")
-                for prop in acc.get("propertySummaries", []):
-                    pid = prop.get("property", "").replace("properties/", "")
-                    pname = prop.get("displayName", "Property")
-                    ga4_properties.append({
-                        "id": pid,
-                        "name": f"{acc_name} — {pname} (ID: {pid})"
-                    })
-    except Exception as e:
-        print("Error fetching GA4 accounts:", e)
+    if is_authenticated:
+        access_token = tokens["access_token"]
+        headers = {"Authorization": f"Bearer {access_token}"}
+        
+        # 1. GA4 Admin API - Account Summaries
+        try:
+            ga_resp = requests.get(
+                "https://analyticsadmin.googleapis.com/v1beta/accountSummaries",
+                headers=headers,
+                timeout=4
+            )
+            if ga_resp.status_code == 200:
+                for acc in ga_resp.json().get("accountSummaries", []):
+                    acc_name = acc.get("displayName", "Analytics Account")
+                    for prop in acc.get("propertySummaries", []):
+                        pid = prop.get("property", "").replace("properties/", "")
+                        pname = prop.get("displayName", "Property")
+                        ga4_properties.append({
+                            "id": pid,
+                            "name": f"{acc_name} — {pname} (ID: {pid})"
+                        })
+        except Exception as e:
+            print("Error fetching GA4 accounts:", e)
 
-    # Fallback/Default for GA4 if empty
+        # 2. Content API for Shopping (Merchant Center)
+        try:
+            mc_resp = requests.get(
+                "https://shoppingcontent.googleapis.com/content/v2.1/accounts/authinfo",
+                headers=headers,
+                timeout=4
+            )
+            if mc_resp.status_code == 200:
+                for acc_info in mc_resp.json().get("accountIdentifiers", []):
+                    mid = acc_info.get("merchantId") or acc_info.get("aggregatorId")
+                    if mid:
+                        merchant_accounts.append({
+                            "id": str(mid),
+                            "name": f"Google Merchant Center Account (ID: {mid})"
+                        })
+        except Exception as e:
+            print("Error fetching Merchant accounts:", e)
+
+        # 3. Google Ads Accessible Customers
+        try:
+            ads_resp = requests.get(
+                "https://googleads.googleapis.com/v18/customers:listAccessibleCustomers",
+                headers=headers,
+                timeout=4
+            )
+            if ads_resp.status_code == 200:
+                for c_name in ads_resp.json().get("resourceNames", []):
+                    cid = c_name.replace("customers/", "")
+                    google_ads_accounts.append({
+                        "id": cid,
+                        "name": f"Google Ads Account (ID: {cid})"
+                    })
+        except Exception as e:
+            print("Error fetching Ads accounts:", e)
+
+    # Provide selectable fallback/default choices if empty or demo
     if not ga4_properties:
-        ga4_properties.append({
-            "id": "310492815",
-            "name": "DataProvido Main Property (ID: 310492815)"
-        })
+        ga4_properties = [
+            {"id": "310492815", "name": "DataProvido E-Commerce GA4 Property (ID: 310492815)"},
+            {"id": "981240121", "name": "Retail Web Store — Main Property (ID: 981240121)"},
+            {"id": "841029411", "name": "Retail Mobile App — iOS & Android (ID: 841029411)"}
+        ]
 
-    # 2. Content API for Shopping (Merchant Center)
-    try:
-        mc_resp = requests.get(
-            "https://shoppingcontent.googleapis.com/content/v2.1/accounts/authinfo",
-            headers=headers,
-            timeout=4
-        )
-        if mc_resp.status_code == 200:
-            for acc_info in mc_resp.json().get("accountIdentifiers", []):
-                mid = acc_info.get("merchantId") or acc_info.get("aggregatorId")
-                if mid:
-                    merchant_accounts.append({
-                        "id": str(mid),
-                        "name": f"Google Merchant Center Account (ID: {mid})"
-                    })
-    except Exception as e:
-        print("Error fetching Merchant accounts:", e)
-
-    # Fallback/Default for Merchant if empty
     if not merchant_accounts:
-        merchant_accounts.append({
-            "id": "109823412",
-            "name": "DataProvido Retail Merchant Store (ID: 109823412)"
-        })
+        merchant_accounts = [
+            {"id": "109823412", "name": "DataProvido Retail Merchant Store (ID: 109823412)"},
+            {"id": "204819201", "name": "Google Shopping EU Merchant Feed (ID: 204819201)"}
+        ]
 
-    # 3. Google Ads Accessible Customers
-    try:
-        ads_resp = requests.get(
-            "https://googleads.googleapis.com/v18/customers:listAccessibleCustomers",
-            headers=headers,
-            timeout=4
-        )
-        if ads_resp.status_code == 200:
-            for c_name in ads_resp.json().get("resourceNames", []):
-                cid = c_name.replace("customers/", "")
-                google_ads_accounts.append({
-                    "id": cid,
-                    "name": f"Google Ads Account (ID: {cid})"
-                })
-    except Exception as e:
-        print("Error fetching Ads accounts:", e)
-
-    # Fallback/Default for Google Ads if empty
     if not google_ads_accounts:
-        google_ads_accounts.append({
-            "id": "481-902-1142",
-            "name": "DataProvido Digital Performance Ads (ID: 481-902-1142)"
-        })
+        google_ads_accounts = [
+            {"id": "481-902-1142", "name": "DataProvido Digital Performance Ads (ID: 481-902-1142)"},
+            {"id": "912-304-5819", "name": "Google Search & Performance Max (ID: 912-304-5819)"}
+        ]
 
     return JSONResponse({
-        "user_email": tokens.get("email", ""),
-        "user_name": tokens.get("name", ""),
-        "selected_ga4": tokens.get("selected_ga4", ga4_properties[0]["id"] if ga4_properties else ""),
-        "selected_merchant": tokens.get("selected_merchant", merchant_accounts[0]["id"] if merchant_accounts else ""),
-        "selected_google_ads": tokens.get("selected_google_ads", google_ads_accounts[0]["id"] if google_ads_accounts else ""),
+        "authenticated": is_authenticated,
+        "user_email": tokens.get("email", "myasamkaradag@gmail.com"),
+        "user_name": tokens.get("name", "Yasam Karadag"),
+        "selected_ga4": tokens.get("selected_ga4", ga4_properties[0]["id"]),
+        "selected_merchant": tokens.get("selected_merchant", merchant_accounts[0]["id"]),
+        "selected_google_ads": tokens.get("selected_google_ads", google_ads_accounts[0]["id"]),
         "ga4_properties": ga4_properties,
         "merchant_accounts": merchant_accounts,
         "google_ads_accounts": google_ads_accounts
@@ -4374,23 +4374,23 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           </button>
         </nav>
 
-        <!-- CONNECT TO DATA SOURCES API GUIDELINE MODAL BUTTON -->
-        <button type="button" onclick="openApiGuidelineModal()" style="margin-top: 12px; width: 100%; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.10); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: #ffffff; text-align: left; transition: all 0.2s ease;">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 16px;">🔌</span>
-            <div>
-              <strong style="display: block; font-size: 12px; color: #ffffff; font-weight: 700;">Connect to Data Sources</strong>
-              <span style="font-size: 10.5px; color: rgba(255,255,255,0.75);">API Guideline &amp; Docs ↗</span>
-            </div>
-          </div>
-          <span style="font-size: 12px; opacity: 0.8;">⚙️</span>
-        </button>
-
-        <!-- BOTTOM PROFILE & PROPERTY FOOTER CARD (CLEAN UNIFIED BEST PRACTICE) -->
-        <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.22); display: flex; flex-direction: column; gap: 8px;">
+        <!-- BOTTOM PROFILE & PROPERTY FOOTER CARD (PINNED TO VERY BOTTOM OF SIDEBAR) -->
+        <div style="margin-top: auto; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.22); display: flex; flex-direction: column; gap: 8px;">
           
+          <!-- CONNECT TO DATA SOURCES API GUIDELINE MODAL BUTTON -->
+          <button type="button" onclick="openApiGuidelineModal()" style="width: 100%; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.12); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: #ffffff; text-align: left; transition: all 0.2s ease;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 16px;">🔌</span>
+              <div>
+                <strong style="display: block; font-size: 12px; color: #ffffff; font-weight: 700;">Connect to Data Sources</strong>
+                <span style="font-size: 10.5px; color: rgba(255,255,255,0.75);">API Guideline &amp; Docs ↗</span>
+              </div>
+            </div>
+            <span style="font-size: 12px; opacity: 0.8;">⚙️</span>
+          </button>
+
           <!-- SINGLE CLEAN UNIFIED USER PROFILE & GOOGLE PROPERTY CARD -->
-          <div id="userProfileCard" style="background: rgba(0,0,0,0.20); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.28); border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; transition: all 0.22s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
+          <div id="userProfileCard" onclick="openGoogleAccountModal()" style="background: rgba(0,0,0,0.20); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.28); border-radius: 16px; padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.22s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
             <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
               <div style="width: 36px; height: 36px; border-radius: 50%; background: #fde68a; color: #78350f; font-weight: 800; font-size: 13px; display: grid; place-items: center; border: 1.5px solid #ffffff; flex-shrink: 0;" id="sidebarUserInitials">YK</div>
               <div style="min-width: 0;">
@@ -4399,7 +4399,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
               </div>
             </div>
             
-            <button onclick="openGoogleAccountModal()" type="button" title="Select Connected GA4, Merchant & Ads Properties" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30); color: #ffffff; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; cursor: pointer; display: grid; place-items: center; flex-shrink: 0; transition: all 0.2s;">
+            <button onclick="event.stopPropagation(); openGoogleAccountModal();" type="button" title="Select Connected GA4, Merchant & Ads Properties" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30); color: #ffffff; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; cursor: pointer; display: grid; place-items: center; flex-shrink: 0; transition: all 0.2s;">
               ⚙️
             </button>
           </div>
@@ -6688,16 +6688,12 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       
       try {
         const resp = await fetch("/api/google/accounts");
-        if (resp.status === 401) {
-          window.location.href = "/api/auth/google";
-          return;
-        }
         if (!resp.ok) return;
         const data = await resp.json();
 
         const emailBadge = document.getElementById("modalGoogleEmailBadge");
-        if (emailBadge && data.user_email) {
-          emailBadge.textContent = data.user_email;
+        if (emailBadge) {
+          emailBadge.textContent = data.authenticated ? (data.user_email || "Google Account Active") : "📋 Select Property (Demo / Connected)";
         }
 
         // GA4 Select
