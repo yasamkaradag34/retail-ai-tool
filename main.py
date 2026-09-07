@@ -4348,7 +4348,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
   <div class="app-shell">
     <aside class="sidebar">
-      <div>
+      <div style="display: flex; flex-direction: column; flex: 1; min-height: 100%;">
         <a href="/" class="brand" title="Return to DataProvido Homepage">
           <img src="/logo.png" alt="DataProvido Logo" style="width: 42px; height: 42px; object-fit: contain; border-radius: 12px; background: #ffffff; padding: 3px; box-shadow: 0 4px 14px rgba(0,0,0,0.15); flex-shrink: 0;" />
           <div>
