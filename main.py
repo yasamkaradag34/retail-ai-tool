@@ -2732,6 +2732,7 @@ def _decrypt_token(signed: str) -> Optional[str]:
     except Exception:
         return None
 
+@app.get("/login/google")
 @app.get("/api/auth/google")
 def google_auth_redirect():
     """Redirect user to Google OAuth consent screen."""
@@ -6795,13 +6796,26 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         ga4Selects.forEach(sel => {
           if (sel && data.ga4_properties) {
             sel.innerHTML = "";
+            if (!data.authenticated) {
+              const authOpt = document.createElement("option");
+              authOpt.value = "__SIGN_IN_GOOGLE__";
+              authOpt.textContent = "🔑 Sign in with Google (Connect myasamkaradag@gmail.com properties)...";
+              authOpt.style.fontWeight = "bold";
+              authOpt.style.color = "#2563eb";
+              sel.appendChild(authOpt);
+            }
             data.ga4_properties.forEach(item => {
               const opt = document.createElement("option");
               opt.value = item.id;
-              opt.textContent = item.name;
-              if (item.id === data.selected_ga4) opt.selected = true;
+              opt.textContent = data.authenticated ? item.name : ("[DEMO PREVIEW] " + item.name);
+              if (item.id === data.selected_ga4 && data.authenticated) opt.selected = true;
               sel.appendChild(opt);
             });
+            sel.onchange = function() {
+              if (this.value === '__SIGN_IN_GOOGLE__') {
+                window.location.href = '/api/auth/google';
+              }
+            };
           }
         });
 
@@ -6813,13 +6827,26 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         merchantSelects.forEach(sel => {
           if (sel && data.merchant_accounts) {
             sel.innerHTML = "";
+            if (!data.authenticated) {
+              const authOpt = document.createElement("option");
+              authOpt.value = "__SIGN_IN_GOOGLE__";
+              authOpt.textContent = "🔑 Sign in with Google (Connect Merchant Center)...";
+              authOpt.style.fontWeight = "bold";
+              authOpt.style.color = "#2563eb";
+              sel.appendChild(authOpt);
+            }
             data.merchant_accounts.forEach(item => {
               const opt = document.createElement("option");
               opt.value = item.id;
-              opt.textContent = item.name;
-              if (item.id === data.selected_merchant) opt.selected = true;
+              opt.textContent = data.authenticated ? item.name : ("[DEMO PREVIEW] " + item.name);
+              if (item.id === data.selected_merchant && data.authenticated) opt.selected = true;
               sel.appendChild(opt);
             });
+            sel.onchange = function() {
+              if (this.value === '__SIGN_IN_GOOGLE__') {
+                window.location.href = '/api/auth/google';
+              }
+            };
           }
         });
 
@@ -6831,13 +6858,26 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         adsSelects.forEach(sel => {
           if (sel && data.google_ads_accounts) {
             sel.innerHTML = "";
+            if (!data.authenticated) {
+              const authOpt = document.createElement("option");
+              authOpt.value = "__SIGN_IN_GOOGLE__";
+              authOpt.textContent = "🔑 Sign in with Google (Connect Google Ads)...";
+              authOpt.style.fontWeight = "bold";
+              authOpt.style.color = "#2563eb";
+              sel.appendChild(authOpt);
+            }
             data.google_ads_accounts.forEach(item => {
               const opt = document.createElement("option");
               opt.value = item.id;
-              opt.textContent = item.name;
-              if (item.id === data.selected_google_ads) opt.selected = true;
+              opt.textContent = data.authenticated ? item.name : ("[DEMO PREVIEW] " + item.name);
+              if (item.id === data.selected_google_ads && data.authenticated) opt.selected = true;
               sel.appendChild(opt);
             });
+            sel.onchange = function() {
+              if (this.value === '__SIGN_IN_GOOGLE__') {
+                window.location.href = '/api/auth/google';
+              }
+            };
           }
         });
 
@@ -7267,18 +7307,29 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           return;
         }
         
-        sel.innerHTML = '<option value="">— Select GA4 Property —</option>';
+        sel.innerHTML = '';
+        if (!data.authenticated) {
+          const authOpt = document.createElement('option');
+          authOpt.value = '__SIGN_IN_GOOGLE__';
+          authOpt.textContent = '🔑 Sign in with Google (Connect myasamkaradag@gmail.com)...';
+          authOpt.style.fontWeight = 'bold';
+          authOpt.style.color = '#2563eb';
+          sel.appendChild(authOpt);
+        } else {
+          sel.innerHTML = '<option value="">— Select GA4 Property —</option>';
+        }
+
         data.ga4_properties.forEach(prop => {
           const opt = document.createElement('option');
           opt.value = prop.id;
-          opt.textContent = prop.name;
+          opt.textContent = data.authenticated ? prop.name : ('[DEMO PREVIEW] ' + prop.name);
           if (data.selected_ga4 && prop.id === data.selected_ga4) {
             opt.selected = true;
           }
           sel.appendChild(opt);
         });
 
-        if (data.selected_ga4) {
+        if (data.selected_ga4 && data.authenticated) {
           sel.value = data.selected_ga4;
         } else if (data.ga4_properties.length > 0) {
           sel.value = data.ga4_properties[0].id;
@@ -7297,6 +7348,10 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       const srcLabel = document.getElementById('ga4CategorySourceLabel');
       
       const propVal = propSel ? propSel.value : '';
+      if (propVal === '__SIGN_IN_GOOGLE__') {
+        window.location.href = '/api/auth/google';
+        return;
+      }
       
       if (badge) {
         badge.style.background = '#fef3c7';
