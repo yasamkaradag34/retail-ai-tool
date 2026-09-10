@@ -1811,8 +1811,9 @@ print(res.json())
                   <div>
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                       <span style="font-size: 11px; font-weight: 800; color: #fb923c; letter-spacing: 0.08em; text-transform: uppercase;">Enterprise Behavioral Intelligence</span>
-                      <span style="background: rgba(37,99,235,0.25); border: 1px solid #3b82f6; color: #93c5fd; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">⚡ Open-Source Core (rrweb + clarity-js)</span>
-                      <span style="background: rgba(16,185,129,0.20); border: 1px solid #10b981; color: #6ee7b7; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">🔒 Zero-PII / KVKK Uyumlu</span>
+                      <span style="background: rgba(16,185,129,0.25); border: 1px solid #10b981; color: #6ee7b7; font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">🟢 Injector Marketing (ID: 418920145)</span>
+                      <span style="background: rgba(37,99,235,0.25); border: 1px solid #3b82f6; color: #93c5fd; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">⚡ Clarity ID: m8q2k4p9</span>
+                      <span style="background: rgba(245,158,11,0.20); border: 1px solid #f59e0b; color: #fcd34d; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">🏪 Merchant: 509182341</span>
                     </div>
                     <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; color: #ffffff; margin: 4px 0 0;">DataProvido UX Sense™ &amp; E-Commerce Revenue Heatmap</h3>
                   </div>
@@ -1827,20 +1828,34 @@ print(res.json())
                 </div>
               </div>
               <p style="font-size: 13px; color: #94a3b8; margin: 12px 0 0; line-height: 1.5; max-width: 950px;">
-                Microsoft Clarity'nin ötesinde e-ticaret finansal çıktısı sunan açık kaynak temelli analiz motoru: Hangi butonun kaç ₺ kazandırdığını, tüketicilerin nerede öfkelenip sepeti bıraktığını ve Core Web Vitals gecikmelerinin satışa etkisini keşfedin.
+                Injector Marketing verileriyle Microsoft Clarity'nin ötesinde e-ticaret finansal çıktısı sunan açık kaynak temelli analiz motoru: Hangi butonun kaç ₺ kazandırdığını, tüketicilerin nerede öfkelenip sepeti bıraktığını ve Core Web Vitals gecikmelerinin satışa etkisini keşfedin.
               </p>
             </div>
 
-            <!-- 2. GLOBAL CONTROLS BAR: CUSTOM DATE RANGE PICKER & FILTERS -->
+            <!-- 2. GLOBAL CONTROLS BAR: CUSTOM DATE RANGE PICKER, MULTI-PAGE & AUDIENCE SEGMENTS -->
             <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
               
-              <!-- PAGE SELECTOR -->
+              <!-- PAGE SELECTOR (PDP, PLP, CART, CHECKOUT, HOME) -->
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase;">Sayfa:</span>
                 <select id="hmPageSelect" onchange="switchHeatmapPage(this.value)" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 9px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; color: #0f172a; cursor: pointer; outline: none;">
-                  <option value="pdp" selected>🛍️ Ürün Detay Sayfası (PDP)</option>
+                  <option value="pdp" selected>🛍️ Ürün Detay Sayfası (PDP - Bosch Enjektör)</option>
+                  <option value="plp">📑 Kategori &amp; Listeleme (PLP - Filtreler)</option>
                   <option value="home">🏠 Mağaza Anasayfası (/)</option>
-                  <option value="cart">🛒 Sepet &amp; Ödeme Adımı (/cart)</option>
+                  <option value="cart">🛒 Sepet &amp; Kupon Adımı (/cart)</option>
+                  <option value="checkout">💳 1-Adımlı Ödeme &amp; Checkout (/checkout)</option>
+                </select>
+              </div>
+
+              <!-- AUDIENCE SEGMENTATION DROPDOWN -->
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase;">Segment:</span>
+                <select id="hmSegmentSelect" onchange="switchHeatmapSegment(this.value)" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 9px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; color: #0f172a; cursor: pointer; outline: none;">
+                  <option value="all" selected>👥 Tüm Ziyaretçiler (Tüm Oturumlar)</option>
+                  <option value="converters">🟢 Satın Alanlar (Converters · CVR %100)</option>
+                  <option value="abandoners">🔴 Sepeti Terk Edenler (Abandoners)</option>
+                  <option value="paid">📢 Ücretli Reklam Trafiği (Google Ads PMax)</option>
+                  <option value="returning">🔁 Geri Dönen Sadık Müşteriler</option>
                 </select>
               </div>
 
@@ -1875,18 +1890,24 @@ print(res.json())
 
             </div>
 
-            <!-- 3. SUB-TABS NAVIGATION (4 TICARI MODUL SEKMESI) -->
+            <!-- 3. SUB-TABS NAVIGATION (6 TICARI E-TICARET MODUL SEKMESI) -->
             <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; overflow-x: auto;">
-              <button type="button" id="subTabBtnCanvas" onclick="switchHmSubTab('canvas')" style="background: #2563eb; color: #ffffff; border: none; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37,99,235,0.25); transition: all 0.2s;">
+              <button type="button" id="subTabBtnCanvas" onclick="switchHmSubTab('canvas')" style="background: #2563eb; color: #ffffff; border: none; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37,99,235,0.25); transition: all 0.2s; white-space: nowrap;">
                 🔥 <span>Isı Haritası &amp; Finansal Katman</span>
               </button>
-              <button type="button" id="subTabBtnReplay" onclick="switchHmSubTab('replay')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+              <button type="button" id="subTabBtnAB" onclick="switchHmSubTab('ab')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap;">
+                🧪 <span>A/B Test &amp; Gelir Simülatörü</span>
+              </button>
+              <button type="button" id="subTabBtnForms" onclick="switchHmSubTab('forms')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap;">
+                📝 <span>Form &amp; Checkout Sürtünme Analizi</span>
+              </button>
+              <button type="button" id="subTabBtnReplay" onclick="switchHmSubTab('replay')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap;">
                 🎥 <span>Oturum Kaydı Oynatıcı (Session Replay · rrweb)</span>
               </button>
-              <button type="button" id="subTabBtnVitals" onclick="switchHmSubTab('vitals')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+              <button type="button" id="subTabBtnVitals" onclick="switchHmSubTab('vitals')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap;">
                 ⚡ <span>Sayfa Hızı &amp; Sürtünme (Core Web Vitals)</span>
               </button>
-              <button type="button" id="subTabBtnCRO" onclick="switchHmSubTab('cro')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+              <button type="button" id="subTabBtnCRO" onclick="switchHmSubTab('cro')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap;">
                 📋 <span>Yapay Zeka CRO Yol Haritası</span>
               </button>
             </div>
@@ -1992,84 +2013,300 @@ print(res.json())
                     
                     <!-- STATIC PROMO BANNER STRIP -->
                     <div style="background: #fef3c7; border-bottom: 1px solid #fde68a; padding: 8px 16px; text-align: center; font-size: 12px; font-weight: 800; color: #92400e; position: relative;">
-                      ⚡ HAFTA SONU %20 SEPET İNDİRİMİ · TÜM KULAKLIKLARDA GEÇERLİ! (Link Tanımlanmamış - Ölü Tıklama Riski)
+                      ⚡ INJECTOR MARKETING · TÜM BOSCH VE DELPHI ENJEKTÖRLERDE PEŞİN FİYATINA 3 TAKSİT! (Link Tanımlanmamış - Ölü Tıklama Riski)
                     </div>
 
-                    <!-- SIMULATED E-COMMERCE PDP CONTENT -->
-                    <div style="padding: 24px 32px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px;" id="hmPdpGrid">
+                    <!-- 1. SIMULATED PDP: BOSCH COMMON RAIL ENJEKTÖR (PDP) -->
+                    <div id="hmCanvasView_pdp" style="display: block;">
+                      <div style="padding: 24px 32px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px;" id="hmPdpGrid">
+                        <!-- LEFT COLUMN: PRODUCT IMAGE GALLERY -->
+                        <div>
+                          <div style="width: 100%; aspect-ratio: 1/1; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-radius: 16px; border: 1px solid #cbd5e1; display: grid; place-items: center; position: relative; overflow: hidden;">
+                            <div style="font-size: 72px;">⚙️</div>
+                            <span style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: #ffffff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">🔍 360° Nozzle Zoom</span>
+                          </div>
+                          <div style="display: flex; gap: 10px; margin-top: 12px;">
+                            <div style="width: 60px; height: 60px; background: #f1f5f9; border-radius: 8px; border: 2px solid #2563eb; display: grid; place-items: center; font-size: 24px;">⚙️</div>
+                            <div style="width: 60px; height: 60px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: grid; place-items: center; font-size: 24px;">🔩</div>
+                            <div style="width: 60px; height: 60px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: grid; place-items: center; font-size: 24px;">📦</div>
+                          </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN: PRODUCT DETAILS & BUY BOX -->
+                        <div>
+                          <div style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase; letter-spacing: 0.05em;">Injector Marketing · Orijinal Bosch OEM · Stokta Var</div>
+                          <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 4px 0 8px; line-height: 1.3;">Bosch Common Rail Enjektör (0445110 Serisi)</h2>
+                          
+                          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+                            <span style="color: #f59e0b; font-size: 14px;">★★★★★</span>
+                            <span style="font-size: 12px; font-weight: 700; color: #0f172a;">4.9</span>
+                            <span style="font-size: 12px; color: #64748b;">(420 Yetkili Servis Değerlendirmesi)</span>
+                          </div>
+
+                          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;">
+                            <div style="display: flex; align-items: baseline; gap: 10px;">
+                              <span style="font-size: 28px; font-weight: 800; color: #0f172a;">₺8,450</span>
+                              <span style="font-size: 16px; color: #94a3b8; text-decoration: line-through;">₺9,800</span>
+                              <span style="background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px;">%14 İndirim</span>
+                            </div>
+                            <div style="font-size: 12px; color: #059669; font-weight: 700; margin-top: 4px;">💳 Peşin fiyatına 3 taksit imkanı (3 x ₺2,816)</div>
+                          </div>
+
+                          <!-- VEHICLE COMPATIBILITY & OEM CHECKER -->
+                          <div style="margin-bottom: 18px; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 10px 14px;">
+                            <div style="font-size: 12px; font-weight: 800; color: #1e40af; margin-bottom: 6px;">🚗 OEM Parça Numarası &amp; Araç Doğrulama:</div>
+                            <div style="display: flex; gap: 8px;">
+                              <input type="text" value="0445110273 / 55197824" readonly style="flex: 1; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; font-size: 12px; font-weight: 700; color: #0f172a;" />
+                              <button type="button" style="background: #2563eb; color: #ffffff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 800; cursor: pointer;">Uyumluluğu Kontrol Et</button>
+                            </div>
+                            <div style="font-size: 11px; color: #dc2626; font-weight: 700; margin-top: 4px;">⚠️ 420 kullanıcı bu alanda tereddüt yaşayıp öfke tıklaması yaptı.</div>
+                          </div>
+
+                          <!-- CTA BUTTONS -->
+                          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                            <button type="button" id="mockBtnAddToCart" style="flex: 1.4; background: linear-gradient(135deg, #f26f26 0%, #d85c18 100%); color: #ffffff; border: none; padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(242,111,38,0.30); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                              🛒 Sepete Ekle
+                            </button>
+                            <button type="button" id="mockBtnBuyNow" style="flex: 1; background: #0f172a; color: #ffffff; border: none; padding: 14px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                              ⚡ 1-Tıkla Hemen Sipariş Ver
+                            </button>
+                          </div>
+
+                          <!-- SHIPPING ACCORDION -->
+                          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 12px; color: #475569; display: flex; justify-content: space-between; align-items: center;">
+                            <span>🚚 <strong>Aynı Gün Kargo:</strong> Saat 16:00'ya kadar siparişlerde anında sevk</span>
+                            <span style="font-weight: 800; color: #2563eb;">Detay &darr;</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- PDP REVIEWS & SPECS -->
+                      <div style="padding: 20px 32px; border-top: 1px solid #e2e8f0; background: #fafafa;">
+                        <div style="display: flex; gap: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 16px;">
+                          <span style="font-weight: 800; color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: -12px; cursor: pointer;">Teknik Özellikler &amp; Basınç (bar)</span>
+                          <span style="font-weight: 700; color: #64748b; cursor: pointer;">Uygun Araç Listesi (Fiat, Opel, Ford)</span>
+                          <span style="font-weight: 700; color: #64748b; cursor: pointer;">Test Raporu &amp; Garanti Belgesi</span>
+                        </div>
+                        <p style="font-size: 12.5px; color: #64748b; line-height: 1.6;">
+                          1600 bar püskürtme basıncı, 7 delikli mikro nozül, Euro 4 / Euro 5 uyumlu Common Rail dizel enjektör. %100 orijinal fabrikasyon test raporlu ve 12 ay garantilidir.
+                        </p>
+                      </div>
+                    </div>
+
+                    <!-- 2. SIMULATED PLP: KATEGORİ & LİSTELEME SAYFASI (/kategori/enjektorler) -->
+                    <div id="hmCanvasView_plp" style="display: none; padding: 24px 32px;">
+                      <div style="display: grid; grid-template-columns: 240px 1fr; gap: 24px;">
+                        <!-- LEFT FILTERS -->
+                        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 16px;">
+                          <h4 style="margin: 0 0 12px; font-size: 14px; font-weight: 800; color: #0f172a;">🔍 Kategori Filtreleri</h4>
+                          <div style="margin-bottom: 14px;">
+                            <label style="font-size: 11.5px; font-weight: 800; color: #475569; display: block; margin-bottom: 4px;">Araç Markası:</label>
+                            <select style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                              <option>Tüm Markalar (Fiat, Ford, Opel...)</option>
+                            </select>
+                          </div>
+                          <div style="margin-bottom: 14px;">
+                            <label style="font-size: 11.5px; font-weight: 800; color: #475569; display: block; margin-bottom: 4px;">Enjektör Üreticisi:</label>
+                            <div style="font-size: 12px; display: flex; flex-direction: column; gap: 6px; color: #334155;">
+                              <label><input type="checkbox" checked /> Bosch (%68 talep)</label>
+                              <label><input type="checkbox" checked /> Delphi (%22 talep)</label>
+                              <label><input type="checkbox" /> Denso / VDO</label>
+                            </div>
+                          </div>
+                          <div>
+                            <label style="font-size: 11.5px; font-weight: 800; color: #475569; display: block; margin-bottom: 4px;">Fiyat Aralığı:</label>
+                            <input type="range" style="width: 100%; accent-color: #2563eb;" />
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 4px;">
+                              <span>₺3,000</span>
+                              <span>₺15,000</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- RIGHT PRODUCT GRID -->
+                        <div>
+                          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; background: #f8fafc; padding: 10px 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <span style="font-size: 12.5px; font-weight: 700; color: #334155;">Toplam 142 Enjektör &amp; Pompa Modeli Listeleniyor</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                              <span style="font-size: 12px; color: #64748b;">Sırala:</span>
+                              <select style="font-size: 12px; font-weight: 700; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                                <option>En Çok Satanlar (Önerilen)</option>
+                                <option>Fiyat: Düşükten Yükseğe</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                            <div style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px; background: #fff; display: flex; gap: 14px; align-items: center;">
+                              <div style="width: 80px; height: 80px; background: #f1f5f9; border-radius: 8px; display: grid; place-items: center; font-size: 36px;">⚙️</div>
+                              <div style="flex: 1;">
+                                <span style="font-size: 10.5px; font-weight: 800; color: #2563eb;">OEM: 0445110273</span>
+                                <h5 style="margin: 2px 0 4px; font-size: 13.5px; color: #0f172a;">Bosch Common Rail Enjektör 1.3 MultiJet</h5>
+                                <div style="font-size: 16px; font-weight: 800; color: #0f172a;">₺8,450</div>
+                                <button type="button" style="margin-top: 6px; background: #2563eb; color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer;">Hızlı İncele &amp; Sepete At</button>
+                              </div>
+                            </div>
+
+                            <div style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px; background: #fff; display: flex; gap: 14px; align-items: center;">
+                              <div style="width: 80px; height: 80px; background: #f1f5f9; border-radius: 8px; display: grid; place-items: center; font-size: 36px;">🔩</div>
+                              <div style="flex: 1;">
+                                <span style="font-size: 10.5px; font-weight: 800; color: #2563eb;">OEM: EJBR03301D</span>
+                                <h5 style="margin: 2px 0 4px; font-size: 13.5px; color: #0f172a;">Delphi Euro 4 Dizel Enjektör 1.5 dCi</h5>
+                                <div style="font-size: 16px; font-weight: 800; color: #0f172a;">₺6,950</div>
+                                <button type="button" style="margin-top: 6px; background: #2563eb; color: #fff; border: none; padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer;">Hızlı İncele &amp; Sepete At</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- 3. SIMULATED CART: SEPET SAYFASI (/cart) -->
+                    <div id="hmCanvasView_cart" style="display: none; padding: 24px 32px;">
+                      <div style="background: #ecfdf5; border: 1.5px solid #a7f3d0; border-radius: 12px; padding: 10px 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 12.5px; font-weight: 700; color: #065f46;">🎉 Tebrikler! ₺5,000 üzeri siparişiniz için <strong>Kargo Ücretsiz</strong>.</span>
+                        <span style="background: #059669; color: #fff; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">Kazanılan Avantaj</span>
+                      </div>
                       
-                      <!-- LEFT COLUMN: PRODUCT IMAGE GALLERY -->
-                      <div>
-                        <div style="width: 100%; aspect-ratio: 1/1; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-radius: 16px; border: 1px solid #cbd5e1; display: grid; place-items: center; position: relative; overflow: hidden;">
-                          <div style="font-size: 72px;">🎧</div>
-                          <span style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: #ffffff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">🔍 360° Zoom Görünümü</span>
-                        </div>
-                        <div style="display: flex; gap: 10px; margin-top: 12px;">
-                          <div style="width: 60px; height: 60px; background: #f1f5f9; border-radius: 8px; border: 2px solid #2563eb; display: grid; place-items: center; font-size: 24px;">🎧</div>
-                          <div style="width: 60px; height: 60px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: grid; place-items: center; font-size: 24px;">🔌</div>
-                          <div style="width: 60px; height: 60px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: grid; place-items: center; font-size: 24px;">📦</div>
-                        </div>
-                      </div>
-
-                      <!-- RIGHT COLUMN: PRODUCT DETAILS & BUY BOX -->
-                      <div>
-                        <div style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase; letter-spacing: 0.05em;">Sony Official Store · Stokta Var</div>
-                        <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 4px 0 8px; line-height: 1.3;">Sony WH-1000XM5 Kablosuz ANC Kulaklık</h2>
-                        
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
-                          <span style="color: #f59e0b; font-size: 14px;">★★★★★</span>
-                          <span style="font-size: 12px; font-weight: 700; color: #0f172a;">4.8</span>
-                          <span style="font-size: 12px; color: #64748b;">(840 Müşteri Yorumu &amp; Değerlendirme)</span>
-                        </div>
-
-                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;">
-                          <div style="display: flex; align-items: baseline; gap: 10px;">
-                            <span style="font-size: 28px; font-weight: 800; color: #0f172a;">₺11,499</span>
-                            <span style="font-size: 16px; color: #94a3b8; text-decoration: line-through;">₺13,299</span>
-                            <span style="background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px;">%14 İndirim</span>
-                          </div>
-                          <div style="font-size: 12px; color: #059669; font-weight: 700; margin-top: 4px;">💳 Peşin fiyatına 3 taksit imkanı (3 x ₺3,833)</div>
-                        </div>
-
-                        <!-- VARIANT SELECTOR -->
-                        <div style="margin-bottom: 18px;">
-                          <div style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 8px;">Renk / Beden Seçimi:</div>
-                          <div style="display: flex; gap: 8px;">
-                            <button type="button" style="background: #0f172a; color: #ffffff; border: 2px solid #0f172a; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">Siyah (Mat)</button>
-                            <button type="button" style="background: #ffffff; color: #334155; border: 1.5px solid #cbd5e1; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">Gümüş Gri</button>
-                            <button type="button" style="background: #ffffff; color: #ef4444; border: 1.5px dashed #f87171; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">Gece Mavisi (Stoksuz!)</button>
+                      <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px;">
+                        <div style="border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 16px; background: #fff;">
+                          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 14px;">
+                            <div style="display: flex; gap: 14px; align-items: center;">
+                              <div style="width: 60px; height: 60px; background: #f1f5f9; border-radius: 8px; display: grid; place-items: center; font-size: 28px;">⚙️</div>
+                              <div>
+                                <h5 style="margin: 0 0 4px; font-size: 14px; color: #0f172a;">Bosch Common Rail Enjektör (0445110273)</h5>
+                                <span style="font-size: 11.5px; color: #64748b;">Orijinal Fabrikasyon Test Raporlu</span>
+                              </div>
+                            </div>
+                            <div style="text-align: right;">
+                              <div style="font-size: 16px; font-weight: 800; color: #0f172a;">₺8,450</div>
+                              <span style="font-size: 11px; color: #059669; font-weight: 700;">Adet: 1</span>
+                            </div>
                           </div>
                         </div>
 
-                        <!-- CTA BUTTONS -->
-                        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-                          <button type="button" id="mockBtnAddToCart" style="flex: 1.4; background: linear-gradient(135deg, #f26f26 0%, #d85c18 100%); color: #ffffff; border: none; padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(242,111,38,0.30); display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            🛒 Sepete Ekle
-                          </button>
-                          <button type="button" id="mockBtnBuyNow" style="flex: 1; background: #0f172a; color: #ffffff; border: none; padding: 14px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                            ⚡ 1-Tıkla Hemen Al
+                        <!-- CART SUMMARY BOX -->
+                        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 20px;">
+                          <h4 style="margin: 0 0 14px; font-size: 15px; font-weight: 800; color: #0f172a;">Sipariş Özeti</h4>
+                          <div style="display: flex; justify-content: space-between; font-size: 13px; color: #475569; margin-bottom: 8px;">
+                            <span>Ara Toplam:</span>
+                            <strong>₺8,450</strong>
+                          </div>
+                          <div style="display: flex; justify-content: space-between; font-size: 13px; color: #059669; margin-bottom: 14px;">
+                            <span>Kargo:</span>
+                            <strong>Ücretsiz</strong>
+                          </div>
+
+                          <!-- COUPON INPUT -->
+                          <div style="margin-bottom: 16px;">
+                            <div style="display: flex; gap: 6px;">
+                              <input type="text" placeholder="İndirim Kuponu Kodu" style="flex: 1; padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;" />
+                              <button type="button" style="background: #0f172a; color: #fff; border: none; padding: 7px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer;">Uygula</button>
+                            </div>
+                          </div>
+
+                          <div style="border-top: 1.5px dashed #cbd5e1; padding-top: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: baseline;">
+                            <span style="font-size: 14px; font-weight: 800; color: #0f172a;">Genel Toplam:</span>
+                            <span style="font-size: 22px; font-weight: 800; color: #0f172a;">₺8,450</span>
+                          </div>
+
+                          <button type="button" style="width: 100%; background: linear-gradient(135deg, #f26f26 0%, #ea580c 100%); color: #fff; border: none; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(242,111,38,0.35);">
+                            🔒 Güvenle Ödemeye Geç →
                           </button>
                         </div>
-
-                        <!-- SHIPPING ACCORDION -->
-                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 12px; color: #475569; display: flex; justify-content: space-between; align-items: center;">
-                          <span>🚚 <strong>Ücretsiz Kargo:</strong> Yarın kapınızda · Kolay 14 gün iade</span>
-                          <span style="font-weight: 800; color: #2563eb;">Detay &darr;</span>
-                        </div>
-
                       </div>
                     </div>
 
-                    <!-- SPECIFICATIONS & REVIEWS TABS (LOWER SECTION) -->
-                    <div style="padding: 20px 32px; border-top: 1px solid #e2e8f0; background: #fafafa;">
-                      <div style="display: flex; gap: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 16px;">
-                        <span style="font-weight: 800; color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: -12px; cursor: pointer;">Ürün Özellikleri</span>
-                        <span style="font-weight: 700; color: #64748b; cursor: pointer;">Kullanıcı Yorumları (840)</span>
-                        <span style="font-weight: 700; color: #64748b; cursor: pointer;">Taksit ve Ödeme Seçenekleri</span>
+                    <!-- 4. SIMULATED CHECKOUT: 1-ADIMLI ÖDEME SAYFASI (/checkout) -->
+                    <div id="hmCanvasView_checkout" style="display: none; padding: 24px 32px;">
+                      <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px;">
+                        <div>
+                          <div style="background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 18px; margin-bottom: 16px;">
+                            <h4 style="margin: 0 0 12px; font-size: 14px; font-weight: 800; color: #0f172a;">1. Teslimat &amp; Kurumsal Fatura Adresi</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                              <input type="text" value="Ahmet Yılmaz (Oto Servis)" style="padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                              <input type="text" value="0532 555 12 34" style="padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                            </div>
+                            <input type="text" value="İkitelli OSB Demirciler Sitesi B-Blok No: 42 Başakşehir / İstanbul" style="width: 100%; padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; margin-bottom: 10px;" />
+                            
+                            <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 10px;">
+                              <label style="font-size: 12px; font-weight: 700; color: #1e40af;"><input type="checkbox" checked /> Kurumsal Fatura İstiyorum (Vergi Kimlik No)</label>
+                              <div style="margin-top: 6px; display: flex; gap: 8px;">
+                                <input type="text" value="VKN: 4189201458 (Doğrulanıyor...)" style="flex: 1; padding: 6px 10px; font-size: 11.5px; border: 1px solid #93c5fd; border-radius: 6px; background: #eff6ff;" />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style="background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 18px;">
+                            <h4 style="margin: 0 0 12px; font-size: 14px; font-weight: 800; color: #0f172a;">2. Güvenli Kart İle Ödeme</h4>
+                            <div style="margin-bottom: 10px;">
+                              <input type="text" placeholder="Kart Numarası (Mastercard / Visa / Troy)" style="width: 100%; padding: 8px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;" />
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                              <input type="text" placeholder="AA / YY" style="padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                              <input type="text" placeholder="CVC" style="padding: 7px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- CHECKOUT RIGHT: 3D SECURE & PLACE ORDER -->
+                        <div>
+                          <div style="background: #0f172a; color: #fff; border-radius: 16px; padding: 22px; box-shadow: 0 8px 24px rgba(15,23,42,0.2);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                              <span style="font-size: 12px; font-weight: 800; color: #38bdf8;">3D SECURE DOĞRULAMA</span>
+                              <span style="font-size: 11px; background: rgba(56,189,248,0.2); padding: 2px 8px; border-radius: 4px;">256-bit SSL</span>
+                            </div>
+                            <div style="font-size: 26px; font-weight: 800; margin-bottom: 6px;">₺8,450</div>
+                            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 18px;">Vade Farksız 3 Taksit x ₺2,816.66</div>
+                            
+                            <button type="button" style="width: 100%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none; padding: 14px; border-radius: 10px; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,0.4);">
+                              ✅ Siparişi Onayla &amp; Güvenle Öde
+                            </button>
+                            <div style="font-size: 11px; color: #64748b; text-align: center; margin-top: 10px;">
+                              Mesafeli satış sözleşmesini ve ön bilgilendirme formunu onaylıyorum.
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <p style="font-size: 12.5px; color: #64748b; line-height: 1.6;">
-                        Endüstri lideri gürültü engelleme (Noise Canceling), Auto NC Optimizer, 30 saat pil ömrü, Speak-to-Chat ve olağanüstü ses netliği için iki işlemci ve sekiz mikrofon.
-                      </p>
+                    </div>
+
+                    <!-- 5. SIMULATED HOME: MAĞAZA ANASAYFASI (/) -->
+                    <div id="hmCanvasView_home" style="display: none; padding: 24px 32px;">
+                      <!-- HERO BANNER -->
+                      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 16px; padding: 32px; color: #fff; margin-bottom: 24px; position: relative;">
+                        <span style="background: rgba(242,111,38,0.25); border: 1px solid #f26f26; color: #fb923c; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 999px;">OEM DİZEL ENJEKTÖR VE YEDEK PARÇA UZMANI</span>
+                        <h2 style="font-size: 26px; font-weight: 800; margin: 10px 0;">Aracınıza %100 Uyumlu Orijinal Enjektörler</h2>
+                        <p style="font-size: 13px; color: #94a3b8; max-width: 500px; margin-bottom: 18px;">Aynı gün kargo, peşin fiyatına 3 taksit ve 12 ay garantili Bosch, Delphi, Denso dizel sistemleri.</p>
+                        
+                        <!-- VEHICLE SELECTOR WIDGET -->
+                        <div style="background: #ffffff; border-radius: 12px; padding: 12px; display: flex; gap: 10px; max-width: 650px;">
+                          <input type="text" placeholder="🚗 Araç Marka/Model veya OEM Kod Girin..." style="flex: 1; border: none; font-size: 12.5px; outline: none; padding: 6px; color: #0f172a;" />
+                          <button type="button" style="background: #f26f26; color: #fff; border: none; padding: 8px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 800; cursor: pointer;">Uygun Parçayı Bul</button>
+                        </div>
+                      </div>
+
+                      <!-- BESTSELLER SHOWCASE -->
+                      <h4 style="margin: 0 0 14px; font-size: 16px; font-weight: 800; color: #0f172a;">🔥 Çok Satan Enjektör Modelleri</h4>
+                      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                        <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; background: #fff; text-align: center;">
+                          <div style="font-size: 40px; margin-bottom: 6px;">⚙️</div>
+                          <strong style="font-size: 13px; color: #0f172a; display: block;">Bosch Common Rail 0445</strong>
+                          <span style="font-size: 11px; color: #2563eb; font-weight: 700;">Fiat / Opel 1.3 CDTi</span>
+                          <div style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 4px;">₺8,450</div>
+                        </div>
+                        <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; background: #fff; text-align: center;">
+                          <div style="font-size: 40px; margin-bottom: 6px;">🔩</div>
+                          <strong style="font-size: 13px; color: #0f172a; display: block;">Delphi Euro 4 Enjektör</strong>
+                          <span style="font-size: 11px; color: #2563eb; font-weight: 700;">Renault 1.5 dCi</span>
+                          <div style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 4px;">₺6,950</div>
+                        </div>
+                        <div style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; background: #fff; text-align: center;">
+                          <div style="font-size: 40px; margin-bottom: 6px;">📦</div>
+                          <strong style="font-size: 13px; color: #0f172a; display: block;">Denso Yüksek Basınç Pompası</strong>
+                          <span style="font-size: 11px; color: #2563eb; font-weight: 700;">Toyota 1.4 D-4D</span>
+                          <div style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 4px;">₺12,400</div>
+                        </div>
+                      </div>
                     </div>
 
                     <!-- INTERACTIVE OVERLAY LAYER FOR HOTSPOTS -->
@@ -2347,6 +2584,70 @@ print(res.json())
 
               </div>
 
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════
+                 TAB 5: A/B TESTING & REVENUE SIMULATOR (CRO EXPERIMENTS)
+            ══════════════════════════════════════════════════════ -->
+            <div id="hmTabSection_ab" style="display: none;">
+              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <span class="funnel-section-tag">🧪 Data-Driven CRO Experiments</span>
+                    <h4 class="funnel-section-title">Hipotez Odaklı E-Ticaret A/B Test &amp; Ciro Simülatörü</h4>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="data-source-pill demo" id="hmAbTotalRevenueBadge">💰 Toplam Tahmini Katkı: +₺860,000 / ay</span>
+                    <button type="button" onclick="launchAllAbTestsModal()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+                      🚀 Tüm Testleri Optimize'a Gönder
+                    </button>
+                  </div>
+                </div>
+                <p style="font-size: 13px; color: #64748b; margin: 0 0 20px; line-height: 1.5;">
+                  Isı haritası ve oturum kayıtlarında tespit edilen darboğazlar için oluşturulmuş istatistiksel A/B test senaryoları. Trafik bölünmesi, güvenilirlik düzeyi (p &lt; 0.05) ve öngörülen aylık finansal ciro artışı.
+                </p>
+
+                <div id="hmAbCardsContainer" style="display: grid; grid-template-columns: 1fr; gap: 18px;">
+                  <!-- Dynamic A/B Test Cards populated via loadAbTestsData() -->
+                </div>
+              </div>
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════
+                 TAB 6: FORM & CHECKOUT FRICTION ANALYTICS
+            ══════════════════════════════════════════════════════ -->
+            <div id="hmTabSection_forms" style="display: none;">
+              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <span class="funnel-section-tag">📝 Form &amp; Input Hesitation Metrics</span>
+                    <h4 class="funnel-section-title">Checkout &amp; Sipariş Form Alanı Sürtünme Analizi</h4>
+                  </div>
+                  <span class="data-source-pill live">⚡ Gerçek Zamanlı Form Telemetrisi</span>
+                </div>
+                <p style="font-size: 13px; color: #64748b; margin: 0 0 20px; line-height: 1.5;">
+                  Kullanıcıların satın alma ve fatura formlarında nerede duraksadığını (Hesitation Time), hangi alanların sepeti bırakmaya yol açtığını ve form doğrulama hatalarını tespit edin.
+                </p>
+
+                <div style="overflow-x: auto;">
+                  <table class="funnel-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                      <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; text-align: left;">
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Form Alanı</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Ortalama Duraksama (Hesitation)</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Form Terk Oranı</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Tekrar Doldurma (Refill)</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Öfke Tıklaması</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Durum</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Önerilen UX Düzeltmesi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="hmFormsTbody">
+                      <!-- Dynamic Rows populated via loadFormAnalyticsData() -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -4460,10 +4761,13 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     let currentHmDevice = 'desktop';
     let currentHmMode = 'click';
     let currentHmSubTab = 'canvas';
+    let currentHmSegment = 'all';
     let hmElementsCache = [];
     let hmHotspotsCache = [];
     let hmScrollLevelsCache = [];
     let hmReplaysCache = [];
+    let hmAbTestsCache = [];
+    let hmFormsCache = [];
     let activeReplaySession = null;
     let replayTimerInterval = null;
     let replayProgressPct = 25;
@@ -4475,6 +4779,8 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       loadHeatmapInsights();
       loadSessionReplays();
       loadWebVitalsData();
+      loadAbTestsData();
+      loadFormAnalyticsData();
     }
 
     async function loadHeatmapData() {
@@ -4485,7 +4791,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         const end = mEnd || (document.getElementById('hmEndDate') ? document.getElementById('hmEndDate').value : '');
         const period = document.getElementById('hmPeriodSelect') ? document.getElementById('hmPeriodSelect').value : '30d';
         
-        let url = '/api/heatmap/data?page=' + currentHmPage + '&device=' + currentHmDevice + '&period=' + period;
+        let url = '/api/heatmap/data?page=' + currentHmPage + '&device=' + currentHmDevice + '&period=' + period + '&segment=' + currentHmSegment;
         if (start && end) {
           url += '&start_date=' + encodeURIComponent(start) + '&end_date=' + encodeURIComponent(end);
         }
@@ -4537,10 +4843,17 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
 
     function switchHmSubTab(tabKey) {
       currentHmSubTab = tabKey;
-      const tabs = ['canvas', 'replay', 'vitals', 'cro'];
+      const tabs = ['canvas', 'ab', 'forms', 'replay', 'vitals', 'cro'];
       
       tabs.forEach(t => {
-        const btn = document.getElementById('subTabBtn' + (t === 'canvas' ? 'Canvas' : t === 'replay' ? 'Replay' : t === 'vitals' ? 'Vitals' : 'CRO'));
+        const btnId = 'subTabBtn' + (
+          t === 'canvas' ? 'Canvas' :
+          t === 'ab' ? 'AB' :
+          t === 'forms' ? 'Forms' :
+          t === 'replay' ? 'Replay' :
+          t === 'vitals' ? 'Vitals' : 'CRO'
+        );
+        const btn = document.getElementById(btnId);
         const section = document.getElementById('hmTabSection_' + t);
         if (t === tabKey) {
           if (btn) {
@@ -4561,7 +4874,11 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         }
       });
 
-      if (tabKey === 'replay' && (!hmReplaysCache || hmReplaysCache.length === 0)) {
+      if (tabKey === 'ab') {
+        loadAbTestsData();
+      } else if (tabKey === 'forms') {
+        loadFormAnalyticsData();
+      } else if (tabKey === 'replay' && (!hmReplaysCache || hmReplaysCache.length === 0)) {
         loadSessionReplays();
       } else if (tabKey === 'vitals') {
         loadWebVitalsData();
@@ -4698,10 +5015,21 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       currentHmPage = page;
       const urlEl = document.getElementById('hmSimulatedUrl');
       if (urlEl) {
-        if (page === 'pdp') urlEl.textContent = 'https://store.dataprovido.com/product/sony-wh-1000xm5';
-        else if (page === 'home') urlEl.textContent = 'https://store.dataprovido.com/';
-        else if (page === 'cart') urlEl.textContent = 'https://store.dataprovido.com/cart';
+        if (page === 'pdp') urlEl.textContent = 'https://injectormarketing.com/product/bosch-common-rail-0445110';
+        else if (page === 'plp') urlEl.textContent = 'https://injectormarketing.com/kategori/dizel-enjektorler';
+        else if (page === 'home') urlEl.textContent = 'https://injectormarketing.com/';
+        else if (page === 'cart') urlEl.textContent = 'https://injectormarketing.com/cart';
+        else if (page === 'checkout') urlEl.textContent = 'https://injectormarketing.com/checkout';
       }
+      ['pdp', 'plp', 'cart', 'checkout', 'home'].forEach(p => {
+        const view = document.getElementById('hmCanvasView_' + p);
+        if (view) view.style.display = (p === page) ? 'block' : 'none';
+      });
+      loadHeatmapData();
+    }
+
+    function switchHeatmapSegment(seg) {
+      currentHmSegment = seg;
       loadHeatmapData();
     }
 
@@ -5112,6 +5440,147 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       }
     }
 
+    /* ── TAB 5: A/B TESTING ENGINE & REVENUE SIMULATOR ── */
+    async function loadAbTestsData() {
+      try {
+        const resp = await fetch('/api/heatmap/ab-tests');
+        const data = await resp.json();
+        hmAbTestsCache = data.tests || [];
+        const container = document.getElementById('hmAbCardsContainer');
+        const badge = document.getElementById('hmAbTotalRevenueBadge');
+        if (badge && data.total_predicted_revenue) {
+          badge.textContent = '💰 Toplam Tahmini Katkı: ' + data.total_predicted_revenue;
+        }
+        if (!container || hmAbTestsCache.length === 0) return;
+
+        container.innerHTML = hmAbTestsCache.map(test => {
+          const isRunning = test.status === 'running';
+          const statusBadge = isRunning 
+            ? `<span style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 8px; font-size: 11.5px; font-weight: 800;">${test.status_label}</span>`
+            : `<span style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 8px; font-size: 11.5px; font-weight: 800;">${test.status_label}</span>`;
+
+          return `
+            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 22px; box-shadow: 0 4px 14px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    ${statusBadge}
+                    <span style="font-size: 11.5px; font-weight: 700; color: #64748b;">🎯 ${test.page_label}</span>
+                    <span style="font-size: 11.5px; font-weight: 700; color: #64748b;">⏱️ Süre: ${test.duration_days} Gün</span>
+                  </div>
+                  <h4 style="margin: 0; font-size: 17px; font-weight: 800; color: #0f172a;">${test.title}</h4>
+                </div>
+                <div style="text-align: right; background: #ecfdf5; border: 1.5px solid #a7f3d0; padding: 8px 16px; border-radius: 12px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #065f46; text-transform: uppercase;">Tahmini Net Ek Ciro</span>
+                  <div style="font-size: 20px; font-weight: 800; color: #059669;">${test.predicted_revenue}</div>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;">
+                <div>
+                  <strong style="font-size: 12px; color: #dc2626; display: block; margin-bottom: 3px;">⚠️ Tespit Edilen Sürtünme / Problem:</strong>
+                  <p style="margin: 0; font-size: 12.5px; color: #475569; line-height: 1.4;">${test.problem}</p>
+                </div>
+                <div>
+                  <strong style="font-size: 12px; color: #059669; display: block; margin-bottom: 3px;">💡 Test Hipotezi (Çözüm):</strong>
+                  <p style="margin: 0; font-size: 12.5px; color: #334155; line-height: 1.4;">${test.hypothesis}</p>
+                </div>
+              </div>
+
+              <!-- STATISTICAL METRICS BAR -->
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px;">
+                <div>
+                  <span style="font-size: 11px; color: #64748b; display: block;">Trafik Dağılımı</span>
+                  <strong style="font-size: 12.5px; color: #0f172a;">${test.traffic_split}</strong>
+                </div>
+                <div>
+                  <span style="font-size: 11px; color: #64748b; display: block;">Gerekli Örneklem</span>
+                  <strong style="font-size: 12.5px; color: #0f172a;">${test.sample_size}</strong>
+                </div>
+                <div>
+                  <span style="font-size: 11px; color: #64748b; display: block;">Beklenen CVR Artışı</span>
+                  <strong style="font-size: 12.5px; color: #059669;">${test.control_cvr} → ${test.variant_cvr} (${test.relative_lift})</strong>
+                </div>
+                <div>
+                  <span style="font-size: 11px; color: #64748b; display: block;">İstatistiksel Güven</span>
+                  <strong style="font-size: 12.5px; color: #2563eb;">${test.confidence}</strong>
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+                <div style="font-size: 12px; color: #64748b;">
+                  🔧 <strong>Geliştirme Eforu:</strong> ${test.effort}
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button type="button" onclick="launchSingleAbTest('${test.id}', '${test.title}')" style="background: #2563eb; color: #ffffff; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(37,99,235,0.25);">
+                    🚀 <span>${isRunning ? 'Canlı Test Verilerini İncele' : 'Testi Başlat &amp; Varyantı Dağıt'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('Failed to load A/B tests data:', e);
+      }
+    }
+
+    /* ── TAB 6: FORM & CHECKOUT FRICTION ANALYTICS ── */
+    async function loadFormAnalyticsData() {
+      try {
+        const resp = await fetch('/api/heatmap/form-analytics');
+        const data = await resp.json();
+        hmFormsCache = data.fields || [];
+        const tbody = document.getElementById('hmFormsTbody');
+        if (!tbody || hmFormsCache.length === 0) return;
+
+        tbody.innerHTML = hmFormsCache.map(f => {
+          const isCritical = f.status === 'critical';
+          const badgeBg = isCritical ? '#fef2f2' : '#f0fdf4';
+          const badgeColor = isCritical ? '#dc2626' : '#16a34a';
+
+          return `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 14px;">
+                <strong style="color: #0f172a; font-size: 13px; display: block;">${f.field_name}</strong>
+                <code style="background: #f1f5f9; color: #64748b; padding: 1px 5px; border-radius: 4px; font-size: 11px;">${f.field_id}</code>
+              </td>
+              <td style="padding: 14px;">
+                <span style="font-size: 13px; font-weight: 800; color: #0f172a;">${f.avg_hesitation_sec}</span>
+              </td>
+              <td style="padding: 14px; text-align: right; font-weight: 800; color: ${isCritical ? '#dc2626' : '#059669'};">
+                ${f.drop_off_rate}
+              </td>
+              <td style="padding: 14px; text-align: right; font-weight: 700; color: #475569;">
+                ${f.refill_rate}
+              </td>
+              <td style="padding: 14px; text-align: right; font-weight: 800; color: #dc2626;">
+                ${f.rage_clicks > 100 ? '🔴 ' + f.rage_clicks : '✓ ' + f.rage_clicks}
+              </td>
+              <td style="padding: 14px;">
+                <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">
+                  ${f.status_badge}
+                </span>
+              </td>
+              <td style="padding: 14px; font-size: 12px; color: #0f172a; background: #fafafa; border-left: 3px solid #2563eb;">
+                💡 ${f.recommendation}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('Failed to load form analytics data:', e);
+      }
+    }
+
+    function launchSingleAbTest(testId, title) {
+      alert('✓ A/B Test Başlatıldı: "' + title + '" senaryosu Google Optimize / Edge Worker dağıtımına alındı. Trafik %50-%50 oranında bölünmeye başladı.');
+    }
+
+    function launchAllAbTestsModal() {
+      alert('✓ Toplam 4 A/B test hipotezi başarıyla onaylandı. Beklenen ciro artışı: +₺860,000 / ay. Deneyler Injector Marketing mağazanızda canlıda!');
+    }
+
     window.initHeatmapWorkspace = initHeatmapWorkspace;
     window.loadHeatmapData = loadHeatmapData;
     window.applyCustomDateRange = applyCustomDateRange;
@@ -5121,8 +5590,13 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     window.renderHeatmapElementsTable = renderHeatmapElementsTable;
     window.switchHeatmapDevice = switchHeatmapDevice;
     window.switchHeatmapPage = switchHeatmapPage;
+    window.switchHeatmapSegment = switchHeatmapSegment;
     window.switchHeatmapMode = switchHeatmapMode;
     window.filterHeatmapElements = filterHeatmapElements;
+    window.loadAbTestsData = loadAbTestsData;
+    window.loadFormAnalyticsData = loadFormAnalyticsData;
+    window.launchSingleAbTest = launchSingleAbTest;
+    window.launchAllAbTestsModal = launchAllAbTestsModal;
     window.loadSessionReplays = loadSessionReplays;
     window.selectReplaySession = selectReplaySession;
     window.toggleReplayPlay = toggleReplayPlay;
