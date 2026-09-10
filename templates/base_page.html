@@ -58,7 +58,7 @@
       --radius:       20px;
       --nav-h:        72px;
     }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; overflow-x: hidden; max-width: 100vw; width: 100%; }
     body {
       background: linear-gradient(160deg, #fff8f4 0%, #ffffff 45%, #f0f7ff 100%);
       color: var(--text-900);
@@ -66,6 +66,10 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow-x: hidden;
+      max-width: 100vw;
+      width: 100%;
+      -webkit-text-size-adjust: 100%;
     }
 
     /* NAV */
@@ -162,10 +166,16 @@
     .footer-link:hover { color: var(--orange); }
 
     @media (max-width: 860px) {
-      .nav { padding: 0 20px; }
+      .nav { padding: 0 16px; width: 100%; max-width: 100vw; }
       .nav-links { display: none; }
-      .page-card { padding: 28px 20px; }
-      .site-footer { flex-direction: column; gap: 12px; text-align: center; }
+      .page-wrapper { padding: 0 14px; margin-top: calc(var(--nav-h) + 16px); margin-bottom: 32px; width: 100%; }
+      .page-card { padding: 24px 16px; border-radius: 18px; width: 100%; }
+      h1 { font-size: 26px; }
+      .page-subhead { font-size: 14px; }
+      .page-actions { flex-direction: column; gap: 12px; align-items: stretch; text-align: center; }
+      .page-actions .btn-primary { justify-content: center; width: 100%; }
+      .site-footer { flex-direction: column; gap: 12px; text-align: center; padding: 20px 16px; width: 100%; }
+      .footer-links { flex-wrap: wrap; justify-content: center; gap: 10px; }
     }
   </style>
 </head>
