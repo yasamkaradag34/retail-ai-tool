@@ -621,6 +621,90 @@
       border-color: #cbd5e1;
     }
 
+    /* ── HEATMAP SUBTABS RESPONSIVE GRID ── */
+    .hm-subtabs-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 12px;
+      width: 100%;
+    }
+
+    .hm-subtab-btn {
+      width: 100%;
+      background: #ffffff;
+      color: #475569;
+      border: 1.5px solid #cbd5e1;
+      padding: 10px 8px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      text-align: center;
+      white-space: nowrap;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .hm-subtab-btn:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+
+    .hm-subtab-btn.active {
+      background: #2563eb !important;
+      color: #ffffff !important;
+      border: none !important;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.25) !important;
+    }
+
+    @media (max-width: 1100px) {
+      .hm-subtabs-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .hm-subtab-btn {
+        padding: 9px 8px;
+        font-size: 12px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .hm-subtabs-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+      .hm-subtab-btn {
+        padding: 8px 4px;
+        font-size: 11px;
+        border-radius: 8px;
+      }
+      .hm-controls-wrapper {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .hm-subtabs-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+      }
+      .hm-subtab-btn {
+        padding: 9px 6px;
+        font-size: 11.5px;
+      }
+    }
+
     .cmd-action-right {
       display: flex;
       align-items: center;
@@ -1833,82 +1917,87 @@ print(res.json())
             </div>
 
             <!-- 2. GLOBAL CONTROLS BAR: CUSTOM DATE RANGE PICKER, MULTI-PAGE & AUDIENCE SEGMENTS -->
-            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+            <div class="hm-controls-wrapper" style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 14px 18px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
               
-              <!-- PAGE SELECTOR (PDP, PLP, CART, CHECKOUT, HOME) -->
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase;">Sayfa:</span>
-                <select id="hmPageSelect" onchange="switchHeatmapPage(this.value)" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 9px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; color: #0f172a; cursor: pointer; outline: none;">
-                  <option value="pdp" selected>🛍️ Ürün Detay Sayfası (PDP - Bosch Enjektör)</option>
-                  <option value="plp">📑 Kategori &amp; Listeleme (PLP - Filtreler)</option>
-                  <option value="home">🏠 Mağaza Anasayfası (/)</option>
-                  <option value="cart">🛒 Sepet &amp; Kupon Adımı (/cart)</option>
-                  <option value="checkout">💳 1-Adımlı Ödeme &amp; Checkout (/checkout)</option>
-                </select>
+              <!-- LEFT GROUP: PAGE & AUDIENCE SEGMENTS -->
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <!-- PAGE SELECTOR (PDP, PLP, CART, CHECKOUT, HOME) -->
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 11.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Sayfa:</span>
+                  <select id="hmPageSelect" onchange="switchHeatmapPage(this.value)" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 9px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: #0f172a; cursor: pointer; outline: none;">
+                    <option value="pdp" selected>🛍️ Ürün Detay (PDP)</option>
+                    <option value="plp">📑 Kategori (PLP)</option>
+                    <option value="home">🏠 Anasayfa (/)</option>
+                    <option value="cart">🛒 Sepet (/cart)</option>
+                    <option value="checkout">💳 Ödeme (/checkout)</option>
+                  </select>
+                </div>
+
+                <!-- AUDIENCE SEGMENTATION DROPDOWN -->
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 11.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Segment:</span>
+                  <select id="hmSegmentSelect" onchange="switchHeatmapSegment(this.value)" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 9px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: #0f172a; cursor: pointer; outline: none;">
+                    <option value="all" selected>👥 Tüm Ziyaretçiler</option>
+                    <option value="converters">🟢 Satın Alanlar (%100)</option>
+                    <option value="abandoners">🔴 Sepeti Terk Edenler</option>
+                    <option value="paid">📢 Reklam Trafiği (PMax)</option>
+                    <option value="returning">🔁 Sadık Müşteriler</option>
+                  </select>
+                </div>
               </div>
 
-              <!-- AUDIENCE SEGMENTATION DROPDOWN -->
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase;">Segment:</span>
-                <select id="hmSegmentSelect" onchange="switchHeatmapSegment(this.value)" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 9px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; color: #0f172a; cursor: pointer; outline: none;">
-                  <option value="all" selected>👥 Tüm Ziyaretçiler (Tüm Oturumlar)</option>
-                  <option value="converters">🟢 Satın Alanlar (Converters · CVR %100)</option>
-                  <option value="abandoners">🔴 Sepeti Terk Edenler (Abandoners)</option>
-                  <option value="paid">📢 Ücretli Reklam Trafiği (Google Ads PMax)</option>
-                  <option value="returning">🔁 Geri Dönen Sadık Müşteriler</option>
-                </select>
-              </div>
+              <!-- RIGHT GROUP: VIEWPORT & DATE RANGE -->
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <!-- DEVICE VIEWPORT TOGGLE -->
+                <div style="display: flex; align-items: center; gap: 2px; background: #f1f5f9; padding: 3px; border-radius: 8px;">
+                  <button type="button" id="hmBtnDesktop" onclick="switchHeatmapDevice('desktop')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; padding: 5px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    💻 <span>Masaüstü</span>
+                  </button>
+                  <button type="button" id="hmBtnMobile" onclick="switchHeatmapDevice('mobile')" style="background: transparent; border: 1px solid transparent; color: #64748b; padding: 5px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    📱 <span>Mobil</span>
+                  </button>
+                </div>
 
-              <!-- DEVICE VIEWPORT TOGGLE -->
-              <div style="display: flex; align-items: center; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 10px;">
-                <button type="button" id="hmBtnDesktop" onclick="switchHeatmapDevice('desktop')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                  💻 <span>Masaüstü (1440px)</span>
-                </button>
-                <button type="button" id="hmBtnMobile" onclick="switchHeatmapDevice('mobile')" style="background: transparent; border: 1px solid transparent; color: #64748b; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                  📱 <span>Mobil (390px)</span>
-                </button>
-              </div>
+                <!-- MANUEL ÖZEL TARİH SEÇİCİ -->
+                <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 4px 8px; border-radius: 10px;">
+                  <span style="font-size: 11.5px; font-weight: 800; color: #2563eb;">📅</span>
+                  <input type="date" id="hmStartDate" value="2026-08-11" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-weight: 700; color: #0f172a; outline: none;" />
+                  <span style="color: #94a3b8; font-weight: 800; font-size: 10px;">→</span>
+                  <input type="date" id="hmEndDate" value="2026-09-10" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-weight: 700; color: #0f172a; outline: none;" />
+                  <button type="button" id="hmApplyDateBtn" onclick="applyCustomDateRange()" style="background: #2563eb; color: #ffffff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer;">
+                    Uygula
+                  </button>
+                </div>
 
-              <!-- MANUEL ÖZEL TARİH SEÇİCİ (CUSTOM DATE RANGE PICKER) -->
-              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 5px 12px; border-radius: 12px;">
-                <span style="font-size: 12px; font-weight: 800; color: #2563eb; display: flex; align-items: center; gap: 4px;">📅 Tarih Aralığı:</span>
-                <input type="date" id="hmStartDate" value="2026-08-11" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: #0f172a; outline: none;" />
-                <span style="color: #94a3b8; font-weight: 800;">→</span>
-                <input type="date" id="hmEndDate" value="2026-09-10" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: #0f172a; outline: none;" />
-                <button type="button" id="hmApplyDateBtn" onclick="applyCustomDateRange()" style="background: #2563eb; color: #ffffff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
-                  Uygula
-                </button>
-              </div>
-
-              <!-- HIZLI TARİH PRESETLERİ -->
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <button type="button" onclick="setQuickDateRange('7d')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 5px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer;">Son 7G</button>
-                <button type="button" onclick="setQuickDateRange('30d')" style="background: #eff6ff; border: 1px solid #3b82f6; color: #1d4ed8; padding: 5px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 800; cursor: pointer;">Son 30G</button>
-                <button type="button" onclick="setQuickDateRange('this_month')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 5px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer;">Bu Ay</button>
-                <button type="button" onclick="setQuickDateRange('last_month')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 5px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer;">Geçen Ay</button>
+                <!-- HIZLI TARİH PRESETLERİ -->
+                <div style="display: flex; align-items: center; gap: 3px;">
+                  <button type="button" onclick="setQuickDateRange('7d')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">7G</button>
+                  <button type="button" onclick="setQuickDateRange('30d')" style="background: #eff6ff; border: 1px solid #3b82f6; color: #1d4ed8; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer;">30G</button>
+                  <button type="button" onclick="setQuickDateRange('this_month')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Bu Ay</button>
+                </div>
               </div>
 
             </div>
 
-            <!-- 3. SUB-TABS NAVIGATION (6 TICARI E-TICARET MODUL SEKMESI) -->
-            <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; overflow-x: auto;">
-              <button type="button" id="subTabBtnCanvas" onclick="switchHmSubTab('canvas')" style="background: #2563eb; color: #ffffff; border: none; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37,99,235,0.25); transition: all 0.2s; white-space: nowrap;">
-                🔥 <span>Isı Haritası &amp; Finansal Katman</span>
+            <!-- 3. SUB-TABS NAVIGATION (6 TICARI E-TICARET MODUL SEKMESI - COMPACT & RESPONSIVE GRID) -->
+            <div class="hm-subtabs-grid">
+              <button type="button" id="subTabBtnCanvas" onclick="switchHmSubTab('canvas')" class="hm-subtab-btn active">
+                🔥 <span>Isı Haritası</span>
               </button>
-              <button type="button" id="subTabBtnAB" onclick="switchHmSubTab('ab')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap;">
-                🧪 <span>A/B Test &amp; Gelir Simülatörü</span>
+              <button type="button" id="subTabBtnAB" onclick="switchHmSubTab('ab')" class="hm-subtab-btn">
+                🧪 <span>A/B Testleri</span>
               </button>
-              <button type="button" id="subTabBtnForms" onclick="switchHmSubTab('forms')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap;">
-                📝 <span>Form &amp; Checkout Sürtünme Analizi</span>
+              <button type="button" id="subTabBtnForms" onclick="switchHmSubTab('forms')" class="hm-subtab-btn">
+                📝 <span>Form Analizi</span>
               </button>
-              <button type="button" id="subTabBtnReplay" onclick="switchHmSubTab('replay')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap;">
-                🎥 <span>Oturum Kaydı Oynatıcı (Session Replay · rrweb)</span>
+              <button type="button" id="subTabBtnReplay" onclick="switchHmSubTab('replay')" class="hm-subtab-btn">
+                🎥 <span>Oturum Kaydı</span>
               </button>
-              <button type="button" id="subTabBtnVitals" onclick="switchHmSubTab('vitals')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap;">
-                ⚡ <span>Sayfa Hızı &amp; Sürtünme (Core Web Vitals)</span>
+              <button type="button" id="subTabBtnVitals" onclick="switchHmSubTab('vitals')" class="hm-subtab-btn">
+                ⚡ <span>Sayfa Hızı</span>
               </button>
-              <button type="button" id="subTabBtnCRO" onclick="switchHmSubTab('cro')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap;">
-                📋 <span>Yapay Zeka CRO Yol Haritası</span>
+              <button type="button" id="subTabBtnCRO" onclick="switchHmSubTab('cro')" class="hm-subtab-btn">
+                📋 <span>CRO Planı</span>
               </button>
             </div>
 
@@ -4857,6 +4946,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         const section = document.getElementById('hmTabSection_' + t);
         if (t === tabKey) {
           if (btn) {
+            btn.classList.add('active');
             btn.style.background = '#2563eb';
             btn.style.color = '#ffffff';
             btn.style.border = 'none';
@@ -4865,6 +4955,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           if (section) section.style.display = 'block';
         } else {
           if (btn) {
+            btn.classList.remove('active');
             btn.style.background = '#ffffff';
             btn.style.color = '#475569';
             btn.style.border = '1.5px solid #cbd5e1';
