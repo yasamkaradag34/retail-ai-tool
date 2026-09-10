@@ -2985,13 +2985,14 @@ async def save_google_account_selection(request: Request):
     return response
 
 def _get_demo_funnel_payload(days: int = 30, source: str = "demo"):
-    mult = 1.0 if days == 30 else (0.25 if days == 7 else 2.8)
+    mult = round(days / 30.0, 2) if days else 1.0
+    mult = max(0.05, mult)
     sessions = int(125000 * mult)
     views = int(48200 * mult)
     atc = int(12400 * mult)
     checkout = int(5800 * mult)
     purchase = int(3200 * mult)
-    rev = f"₺{round(4.82 * mult, 2)}M" if mult >= 0.5 else f"₺{int(1200 * mult)}K"
+    rev = f"₺{round(4.82 * mult, 2)}M" if mult >= 0.5 else f"₺{int(4820 * mult)}K"
 
     return {
         "source": source,
@@ -3030,8 +3031,16 @@ def _get_demo_funnel_payload(days: int = 30, source: str = "demo"):
     }
 
 @app.get("/api/funnel/report")
-async def funnel_report(request: Request, days: int = 30):
-    """Fetch GA4 funnel report data in real-time. Zero storage."""
+async def funnel_report(request: Request, days: int = 30, start_date: str = None, end_date: str = None):
+    """Fetch GA4 funnel report data in real-time with custom date range support. Zero storage."""
+    if start_date and end_date:
+        try:
+            d1 = datetime.strptime(start_date, "%Y-%m-%d")
+            d2 = datetime.strptime(end_date, "%Y-%m-%d")
+            days = max(1, (d2 - d1).days + 1)
+        except Exception:
+            pass
+
     tokens = _get_google_tokens(request)
     if not tokens or not tokens.get("access_token"):
         # Return enriched demo data when not connected
@@ -3177,20 +3186,30 @@ async def funnel_report(request: Request, days: int = 30):
         })
 
 @app.get("/api/ga4/category-report")
-async def ga4_category_report(request: Request, property_id: str = "", days: int = 30):
-    """Fetch real-time GA4 Category report breakdown with itemCategory, itemsViewed, itemsAddedToCart, itemsPurchased, cartToViewRate, purchaseToViewRate."""
+async def ga4_category_report(request: Request, property_id: str = "", days: int = 30, start_date: str = None, end_date: str = None):
+    """Fetch real-time GA4 Category report breakdown with custom date range support."""
+    scale = 1.0
+    if start_date and end_date:
+        try:
+            d1 = datetime.strptime(start_date, "%Y-%m-%d")
+            d2 = datetime.strptime(end_date, "%Y-%m-%d")
+            days = max(1, (d2 - d1).days + 1)
+            scale = days / 30.0
+        except Exception:
+            pass
+
     tokens = _get_google_tokens(request)
     
     demo_categories = [
-        {"category": "Tüketici Elektroniği", "pdp": 4820, "pdp_change": 12.4, "a2c": 1240, "a2c_change": 8.1, "trans": 320, "trans_change": 15.2, "c2d": 25.72, "c2d_change": -1.2, "b2d": 6.64, "b2d_change": 2.4},
-        {"category": "Bilgisayar & Tablet", "pdp": 2600, "pdp_change": 5.8, "a2c": 780, "a2c_change": 3.4, "trans": 195, "trans_change": 4.1, "c2d": 30.00, "c2d_change": 0.5, "b2d": 7.50, "b2d_change": 1.1},
-        {"category": "Küçük Ev Aletleri", "pdp": 1850, "pdp_change": -3.2, "a2c": 520, "a2c_change": -1.8, "trans": 138, "trans_change": -2.5, "c2d": 28.11, "c2d_change": 1.4, "b2d": 7.46, "b2d_change": 0.8},
-        {"category": "Akıllı Ev & Ses", "pdp": 1240, "pdp_change": 18.9, "a2c": 310, "a2c_change": 14.2, "trans": 82, "trans_change": 22.0, "c2d": 25.00, "c2d_change": -3.1, "b2d": 6.61, "b2d_change": 1.8},
-        {"category": "Aksesuar & Kablo", "pdp": 820, "pdp_change": 2.1, "a2c": 190, "a2c_change": 0.5, "trans": 45, "trans_change": 1.2, "c2d": 23.17, "c2d_change": -0.8, "b2d": 5.49, "b2d_change": -0.4}
+        {"category": "Tüketici Elektroniği", "pdp": int(4820 * scale), "pdp_change": 12.4, "a2c": int(1240 * scale), "a2c_change": 8.1, "trans": int(320 * scale), "trans_change": 15.2, "c2d": 25.72, "c2d_change": -1.2, "b2d": 6.64, "b2d_change": 2.4},
+        {"category": "Bilgisayar & Tablet", "pdp": int(2600 * scale), "pdp_change": 5.8, "a2c": int(780 * scale), "a2c_change": 3.4, "trans": int(195 * scale), "trans_change": 4.1, "c2d": 30.00, "c2d_change": 0.5, "b2d": 7.50, "b2d_change": 1.1},
+        {"category": "Küçük Ev Aletleri", "pdp": int(1850 * scale), "pdp_change": -3.2, "a2c": int(520 * scale), "a2c_change": -1.8, "trans": int(138 * scale), "trans_change": -2.5, "c2d": 28.11, "c2d_change": 1.4, "b2d": 7.46, "b2d_change": 0.8},
+        {"category": "Akıllı Ev & Ses", "pdp": int(1240 * scale), "pdp_change": 18.9, "a2c": int(310 * scale), "a2c_change": 14.2, "trans": int(82 * scale), "trans_change": 22.0, "c2d": 25.00, "c2d_change": -3.1, "b2d": 6.61, "b2d_change": 1.8},
+        {"category": "Aksesuar & Kablo", "pdp": int(820 * scale), "pdp_change": 2.1, "a2c": int(190 * scale), "a2c_change": 0.5, "trans": int(45 * scale), "trans_change": 1.2, "c2d": 23.17, "c2d_change": -0.8, "b2d": 5.49, "b2d_change": -0.4}
     ]
 
     if not tokens or not tokens.get("access_token"):
-        return JSONResponse({"source": "demo", "ga4Categories": demo_categories, "period": f"Last {days} days"})
+        return JSONResponse({"source": "demo", "ga4Categories": demo_categories, "period": f"Last {days} days", "start_date": start_date, "end_date": end_date})
 
     try:
         access_token = tokens["access_token"]
@@ -3428,8 +3447,20 @@ async def merchant_availability(request: Request):
     })
 
 @app.get("/api/merchant/brand-price-comparison")
-async def merchant_brand_price_comparison(request: Request, type: str = "brands"):
-    """Fetch brand/product level price comparison benchmark data. Zero storage."""
+async def merchant_brand_price_comparison(request: Request, type: str = "brands", start_date: str = None, end_date: str = None):
+    """Fetch brand/product level price comparison benchmark data with dynamic date range support. Zero storage."""
+    scale = 1.0
+    period_label = "Last 28 days"
+    if start_date and end_date:
+        try:
+            d1 = datetime.strptime(start_date, "%Y-%m-%d")
+            d2 = datetime.strptime(end_date, "%Y-%m-%d")
+            diff_days = max(1, (d2 - d1).days + 1)
+            scale = round(diff_days / 30.0, 2)
+            period_label = f"{diff_days} Days ({start_date} - {end_date})"
+        except Exception:
+            pass
+
     brands = [
         {"brand": "Apple", "clicks": "559.34K", "clicks_num": 559340, "below_pct": 31, "at_pct": 19, "above_pct": 51, "product_count": 64},
         {"brand": "Samsung", "clicks": "276.45K", "clicks_num": 276450, "below_pct": 33, "at_pct": 20, "above_pct": 47, "product_count": 82},
@@ -3456,14 +3487,32 @@ async def merchant_brand_price_comparison(request: Request, type: str = "brands"
         {"id": "prod_8", "title": "JBL Boombox 3 Bluetooth Hoparlör Siyah", "brand": "Jbl", "sku": "JBL-BMBX-3", "category": "Ses Sistemleri", "clicks": "19.7K", "your_price": 16999.00, "benchmark_price": 17899.00, "price_diff_pct": -5.0, "status": "below", "stock": 14}
     ]
 
+    scaled_brands = []
+    for b in brands:
+        cn = max(100, int(b["clicks_num"] * scale))
+        scaled_brands.append({
+            **b,
+            "clicks_num": cn,
+            "clicks": f"{round(cn / 1000.0, 2)}K" if cn >= 1000 else str(cn)
+        })
+
+    scaled_products = []
+    for p in products:
+        base_c = float(p["clicks"].replace("K", "")) * 1000.0
+        cn = max(50, int(base_c * scale))
+        scaled_products.append({
+            **p,
+            "clicks": f"{round(cn / 1000.0, 1)}K" if cn >= 1000 else str(cn)
+        })
+
     return JSONResponse({
         "source": "connected_account",
         "merchant_account_id": "509182341",
         "merchant_account_name": "Injector Marketing — Google Merchant Store (ID: 509182341)",
-        "time_period": "Last 28 days",
+        "time_period": period_label,
         "type": type,
-        "brands": brands,
-        "products": products
+        "brands": scaled_brands,
+        "products": scaled_products
     })
 
 @app.get("/api/merchant/competitor-visibility")
@@ -5033,6 +5082,41 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
             </div>
           </div>
 
+          <!-- GLOBAL MASTER DATE RANGE FILTER BAR (HER MENÜ VE ÇALIŞMA ALANI İÇİN AKTİF) -->
+          <div id="globalDateRangeContainer" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 12px 20px; margin-bottom: 22px; box-shadow: 0 4px 14px rgba(0,0,0,0.03); transition: all 0.2s ease;">
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <!-- MANUEL ÖZEL TARİH SEÇİCİ (CUSTOM DATE RANGE PICKER) -->
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #f8fafc; border: 1.5px solid #cbd5e1; padding: 6px 14px; border-radius: 12px;">
+                <span id="masterDateLabel" style="font-size: 12px; font-weight: 800; color: #2563eb; display: flex; align-items: center; gap: 4px;">📅 Tarih Aralığı:</span>
+                <input type="date" id="masterStartDate" value="2026-08-11" onchange="applyGlobalDateRange()" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: #0f172a; outline: none; cursor: pointer;" />
+                <span style="color: #94a3b8; font-weight: 800;">→</span>
+                <input type="date" id="masterEndDate" value="2026-09-10" onchange="applyGlobalDateRange()" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: #0f172a; outline: none; cursor: pointer;" />
+                <button type="button" id="masterApplyDateBtn" onclick="applyGlobalDateRange()" style="background: #2563eb; color: #ffffff; border: none; border-radius: 8px; padding: 6px 15px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
+                  Uygula
+                </button>
+              </div>
+
+              <!-- HIZLI TARİH PRESETLERİ -->
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <button type="button" id="globalPreset_7d" onclick="setGlobalDatePreset('7d')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.15s;">Son 7G</button>
+                <button type="button" id="globalPreset_30d" onclick="setGlobalDatePreset('30d')" style="background: #eff6ff; border: 1.5px solid #3b82f6; color: #1d4ed8; padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 800; cursor: pointer; transition: all 0.15s;">Son 30G</button>
+                <button type="button" id="globalPreset_this_month" onclick="setGlobalDatePreset('this_month')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.15s;">Bu Ay</button>
+                <button type="button" id="globalPreset_last_month" onclick="setGlobalDatePreset('last_month')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 6px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.15s;">Geçen Ay</button>
+              </div>
+            </div>
+
+            <!-- AKTİF FİLTRE ETİKETİ VE ANLIK GERİBİLDİRİM TOAST -->
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span id="dateFilterToast" style="display: none; opacity: 0; transition: opacity 0.25s ease; background: #ecfdf5; color: #047857; font-size: 11.5px; font-weight: 700; padding: 5px 12px; border-radius: 8px; border: 1px solid #a7f3d0;">
+                ✓ Güncellendi
+              </span>
+              <span id="globalActiveRangeLabel" style="font-size: 12px; color: #475569; font-weight: 700; background: #f1f5f9; padding: 6px 14px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 6px;">
+                <span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10b981;"></span>
+                Aktif Filtre: 11 Ağu 2026 – 10 Eyl 2026 (30 Gün)
+              </span>
+            </div>
+          </div>
+
           <!-- PRESETS AREA (HIDDEN FOR EXCEL WIZARD) -->
           <div id="presetSection" style="display: none;">
             <div class="quick-title" style="margin-top: 0; margin-bottom: 6px;" id="quickTitleLabel">Presets</div>
@@ -5658,13 +5742,13 @@ print(res.json())
 
               <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
                 <span style="font-size: 11px; font-weight: 800; color: #d97706; text-transform: uppercase;">Total Ad Spend</span>
-                <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">₺485,200</div>
+                <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;" id="dmTotalAdSpend">₺485,200</div>
                 <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">Across 3 ad channels</div>
               </div>
 
               <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
                 <span style="font-size: 11px; font-weight: 800; color: #7c3aed; text-transform: uppercase;">Ad Attributed Revenue</span>
-                <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">₺2,353,220</div>
+                <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;" id="dmAttributedRevenue">₺2,353,220</div>
                 <div style="font-size: 11.5px; color: #059669; font-weight: 700; margin-top: 2px;">82.4% conversion share</div>
               </div>
             </div>
@@ -7235,6 +7319,19 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         if (modalTableSearch) modalTableSearch.placeholder = "🔍 Search in table (SKU, Brand, Category)...";
         if (modalStatusText) modalStatusText.textContent = "✓ Excel data is loaded and ready for AI analysis.";
         if (modalCloseBtn) modalCloseBtn.textContent = "Close";
+
+        const masterDateLabel = document.getElementById("masterDateLabel");
+        const masterApplyDateBtn = document.getElementById("masterApplyDateBtn");
+        const p7 = document.getElementById("globalPreset_7d");
+        const p30 = document.getElementById("globalPreset_30d");
+        const pTm = document.getElementById("globalPreset_this_month");
+        const pLm = document.getElementById("globalPreset_last_month");
+        if (masterDateLabel) masterDateLabel.innerHTML = '📅 Date Range:';
+        if (masterApplyDateBtn) masterApplyDateBtn.textContent = 'Apply';
+        if (p7) p7.textContent = 'Last 7D';
+        if (p30) p30.textContent = 'Last 30D';
+        if (pTm) pTm.textContent = 'This Month';
+        if (pLm) pLm.textContent = 'Last Month';
       } else {
         btnEN.style.background = "transparent";
         btnEN.style.borderColor = "transparent";
@@ -7281,6 +7378,19 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         if (modalTableSearch) modalTableSearch.placeholder = "🔍 Tablo içinde ara (SKU, Marka, Kategori)...";
         if (modalStatusText) modalStatusText.textContent = "✓ Excel verisi analize hazır durumdadır.";
         if (modalCloseBtn) modalCloseBtn.textContent = "Kapat";
+
+        const masterDateLabel = document.getElementById("masterDateLabel");
+        const masterApplyDateBtn = document.getElementById("masterApplyDateBtn");
+        const p7 = document.getElementById("globalPreset_7d");
+        const p30 = document.getElementById("globalPreset_30d");
+        const pTm = document.getElementById("globalPreset_this_month");
+        const pLm = document.getElementById("globalPreset_last_month");
+        if (masterDateLabel) masterDateLabel.innerHTML = '📅 Tarih Aralığı:';
+        if (masterApplyDateBtn) masterApplyDateBtn.textContent = 'Uygula';
+        if (p7) p7.textContent = 'Son 7G';
+        if (p30) p30.textContent = 'Son 30G';
+        if (pTm) pTm.textContent = 'Bu Ay';
+        if (pLm) pLm.textContent = 'Geçen Ay';
       }
 
       if (langToastTimer) clearTimeout(langToastTimer);
@@ -7378,6 +7488,11 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       if (digitalWorkspace) {
         if (key === "digital_marketing") {
           digitalWorkspace.classList.add("active");
+          const mStart = document.getElementById('masterStartDate') ? document.getElementById('masterStartDate').value : '';
+          const mEnd = document.getElementById('masterEndDate') ? document.getElementById('masterEndDate').value : '';
+          if (mStart && mEnd && typeof updateDigitalMarketingKPIs === 'function') {
+            updateDigitalMarketingKPIs(mStart, mEnd);
+          }
         } else {
           digitalWorkspace.classList.remove("active");
         }
@@ -7402,6 +7517,11 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
 
       renderHowToUse();
       updateRunButtonState();
+      const mCurStart = document.getElementById('masterStartDate') ? document.getElementById('masterStartDate').value : '';
+      const mCurEnd = document.getElementById('masterEndDate') ? document.getElementById('masterEndDate').value : '';
+      if (mCurStart && mCurEnd && typeof updateGlobalDateRangeLabel === 'function') {
+        updateGlobalDateRangeLabel(mCurStart, mCurEnd);
+      }
     }
 
     function switchConnectorTab(tabKey) {
@@ -7506,11 +7626,182 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       }
     }
 
+    /* ══════════════════════════════════════════════════════════
+       GLOBAL MASTER DATE RANGE CONTROLLER (ALL MENUS / WORKSPACES)
+    ══════════════════════════════════════════════════════════ */
+    function updateGlobalDateRangeLabel(startDateStr, endDateStr) {
+      const labelEl = document.getElementById('globalActiveRangeLabel');
+      if (!labelEl) return;
+      try {
+        const d1 = new Date(startDateStr);
+        const d2 = new Date(endDateStr);
+        const diffTime = Math.max(0, d2 - d1);
+        const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
+        const monthsTR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+        const monthsEN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const isEN = (typeof currentLang !== 'undefined' && currentLang === 'en');
+        const months = isEN ? monthsEN : monthsTR;
+        const prefix = isEN ? 'Active Filter: ' : 'Aktif Filtre: ';
+        const dayWord = isEN ? ' Days' : ' Gün';
+        labelEl.innerHTML = '<span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #10b981;"></span> ' + prefix + d1.getDate() + ' ' + months[d1.getMonth()] + ' ' + d1.getFullYear() + ' – ' + d2.getDate() + ' ' + months[d2.getMonth()] + ' ' + d2.getFullYear() + ' (' + diffDays + dayWord + ')';
+      } catch(e) {
+        labelEl.textContent = 'Aktif Filtre: ' + startDateStr + ' – ' + endDateStr;
+      }
+    }
+
+    function setGlobalDatePreset(preset) {
+      const today = new Date();
+      let start = new Date(today);
+      let end = new Date(today);
+
+      if (preset === '7d') {
+        start.setDate(today.getDate() - 7);
+      } else if (preset === '30d') {
+        start.setDate(today.getDate() - 30);
+      } else if (preset === 'this_month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = today;
+      } else if (preset === 'last_month') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+      }
+
+      const formatDate = (d) => {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return yyyy + '-' + mm + '-' + dd;
+      };
+
+      const startStr = formatDate(start);
+      const endStr = formatDate(end);
+
+      const mStart = document.getElementById('masterStartDate');
+      const mEnd = document.getElementById('masterEndDate');
+      if (mStart) mStart.value = startStr;
+      if (mEnd) mEnd.value = endStr;
+
+      const hmStart = document.getElementById('hmStartDate');
+      const hmEnd = document.getElementById('hmEndDate');
+      if (hmStart) hmStart.value = startStr;
+      if (hmEnd) hmEnd.value = endStr;
+
+      const presets = ['7d', '30d', 'this_month', 'last_month'];
+      presets.forEach(p => {
+        const btn = document.getElementById('globalPreset_' + p);
+        if (!btn) return;
+        if (p === preset) {
+          btn.style.background = '#eff6ff';
+          btn.style.border = '1.5px solid #3b82f6';
+          btn.style.color = '#1d4ed8';
+          btn.style.fontWeight = '800';
+        } else {
+          btn.style.background = '#ffffff';
+          btn.style.border = '1px solid #cbd5e1';
+          btn.style.color = '#475569';
+          btn.style.fontWeight = '700';
+        }
+      });
+
+      applyGlobalDateRange();
+    }
+
+    function applyGlobalDateRange() {
+      const mStart = document.getElementById('masterStartDate');
+      const mEnd = document.getElementById('masterEndDate');
+      if (!mStart || !mEnd) return;
+      const start = mStart.value;
+      const end = mEnd.value;
+      if (!start || !end) {
+        alert('Lütfen geçerli bir Başlangıç ve Bitiş tarihi seçin.');
+        return;
+      }
+
+      updateGlobalDateRangeLabel(start, end);
+
+      const hmStart = document.getElementById('hmStartDate');
+      const hmEnd = document.getElementById('hmEndDate');
+      if (hmStart && hmStart.value !== start) hmStart.value = start;
+      if (hmEnd && hmEnd.value !== end) hmEnd.value = end;
+
+      const fPeriod = document.getElementById('funnelPeriodSelect');
+      if (fPeriod) {
+        try {
+          const diffDays = Math.max(1, Math.round(Math.abs(new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)) + 1);
+          if (diffDays <= 10) fPeriod.value = "7";
+          else if (diffDays <= 45) fPeriod.value = "30";
+          else fPeriod.value = "90";
+        } catch(e) {}
+      }
+
+      const ga4Days = document.getElementById('ga4CategoryDays');
+      if (ga4Days) {
+        try {
+          const diffDays = Math.max(1, Math.round(Math.abs(new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24)) + 1);
+          if (diffDays <= 10) ga4Days.value = "7";
+          else if (diffDays <= 18) ga4Days.value = "14";
+          else if (diffDays <= 45) ga4Days.value = "30";
+          else ga4Days.value = "90";
+        } catch(e) {}
+      }
+
+      if (typeof currentModule !== 'undefined') {
+        if (currentModule === 'heatmap_analytics') {
+          if (typeof loadHeatmapData === 'function') loadHeatmapData();
+          if (typeof loadHeatmapInsights === 'function') loadHeatmapInsights();
+          if (typeof loadSessionReplays === 'function') loadSessionReplays();
+          if (typeof loadWebVitalsData === 'function') loadWebVitalsData();
+        } else if (currentModule === 'funnel_analysis') {
+          if (typeof loadFunnelData === 'function') loadFunnelData();
+          if (typeof loadFunnelInsights === 'function') loadFunnelInsights();
+        } else if (currentModule === 'category_insights') {
+          if (typeof loadGA4CategoryData === 'function') loadGA4CategoryData();
+        } else if (currentModule === 'stock_price_comp') {
+          if (typeof loadStockData === 'function') loadStockData();
+          if (typeof loadPriceDataForStock === 'function') loadPriceDataForStock();
+          if (typeof loadMerchantBrandPriceData === 'function') loadMerchantBrandPriceData();
+          if (typeof loadCompetitorVisibilityData === 'function') loadCompetitorVisibilityData();
+        } else if (currentModule === 'digital_marketing') {
+          updateDigitalMarketingKPIs(start, end);
+        }
+      }
+
+      const toast = document.getElementById('dateFilterToast');
+      if (toast) {
+        toast.style.display = 'inline-flex';
+        toast.style.opacity = '1';
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => { toast.style.display = 'none'; }, 250);
+        }, 1800);
+      }
+    }
+
+    function updateDigitalMarketingKPIs(start, end) {
+      try {
+        const d1 = new Date(start);
+        const d2 = new Date(end);
+        const diffDays = Math.max(1, Math.round(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24)) + 1);
+        const scale = diffDays / 30.0;
+
+        const spendEl = document.getElementById('dmTotalAdSpend');
+        const revEl = document.getElementById('dmAttributedRevenue');
+        if (spendEl) spendEl.textContent = '₺' + Math.round(485200 * scale).toLocaleString();
+        if (revEl) revEl.textContent = '₺' + Math.round(2353220 * scale).toLocaleString();
+      } catch(e) {}
+    }
+
     async function loadFunnelData() {
       const periodSelect = document.getElementById('funnelPeriodSelect');
       const days = periodSelect ? periodSelect.value : 30;
+      const mStart = document.getElementById('masterStartDate') ? document.getElementById('masterStartDate').value : '';
+      const mEnd = document.getElementById('masterEndDate') ? document.getElementById('masterEndDate').value : '';
       try {
-        const resp = await fetch(`/api/funnel/report?days=${days}`);
+        let url = `/api/funnel/report?days=${days}`;
+        if (mStart && mEnd) {
+          url += `&start_date=${encodeURIComponent(mStart)}&end_date=${encodeURIComponent(mEnd)}`;
+        }
+        const resp = await fetch(url);
         const data = await resp.json();
         allFunnelDataCache = data;
 
@@ -7528,7 +7819,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         if (cartAbEl && s.cart_abandonment) cartAbEl.textContent = s.cart_abandonment;
         if (overallScoreEl && s.overall_conversion) overallScoreEl.textContent = s.overall_conversion;
         if (overallEl) overallEl.textContent = (data.overall_conversion ? data.overall_conversion + '%' : (s.overall_conversion || '2.56%'));
-        if (periodLabel) periodLabel.textContent = data.period || `Last ${days} days`;
+        if (periodLabel) periodLabel.textContent = (mStart && mEnd) ? `${mStart} → ${mEnd} (${data.period || days + ' gün'})` : (data.period || `Last ${days} days`);
 
         const sourceBadge = document.getElementById('funnelSourceBadge');
         if (sourceBadge) {
@@ -7827,7 +8118,13 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px; color: #64748b; font-size: 13px;">⏳ Google Merchant Center fiyat benchmark verisi yükleniyor...</td></tr>`;
       }
       try {
-        const resp = await fetch(`/api/merchant/brand-price-comparison?type=${type}`);
+        const mStart = document.getElementById('masterStartDate') ? document.getElementById('masterStartDate').value : '';
+        const mEnd = document.getElementById('masterEndDate') ? document.getElementById('masterEndDate').value : '';
+        let url = `/api/merchant/brand-price-comparison?type=${type}`;
+        if (mStart && mEnd) {
+          url += `&start_date=${encodeURIComponent(mStart)}&end_date=${encodeURIComponent(mEnd)}`;
+        }
+        const resp = await fetch(url);
         const data = await resp.json();
         allBrandsPriceData = data.brands || [];
         allProductsPriceData = data.products || [];
@@ -8158,6 +8455,10 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     window.loadFunnelData = loadFunnelData;
     window.loadStockData = loadStockData;
     window.checkGoogleAuthStatus = checkGoogleAuthStatus;
+    window.applyGlobalDateRange = applyGlobalDateRange;
+    window.setGlobalDatePreset = setGlobalDatePreset;
+    window.updateGlobalDateRangeLabel = updateGlobalDateRangeLabel;
+    window.updateDigitalMarketingKPIs = updateDigitalMarketingKPIs;
 
     /* ══════════════════════════════════════════════════════════
        HEATMAP & UX ANALYTICS — JavaScript Engine (Task 1)
@@ -8186,8 +8487,10 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
 
     async function loadHeatmapData() {
       try {
-        const start = document.getElementById('hmStartDate') ? document.getElementById('hmStartDate').value : '';
-        const end = document.getElementById('hmEndDate') ? document.getElementById('hmEndDate').value : '';
+        const mStart = document.getElementById('masterStartDate') ? document.getElementById('masterStartDate').value : '';
+        const mEnd = document.getElementById('masterEndDate') ? document.getElementById('masterEndDate').value : '';
+        const start = mStart || (document.getElementById('hmStartDate') ? document.getElementById('hmStartDate').value : '');
+        const end = mEnd || (document.getElementById('hmEndDate') ? document.getElementById('hmEndDate').value : '');
         const period = document.getElementById('hmPeriodSelect') ? document.getElementById('hmPeriodSelect').value : '30d';
         
         let url = '/api/heatmap/data?page=' + currentHmPage + '&device=' + currentHmDevice + '&period=' + period;
@@ -8225,41 +8528,19 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     }
 
     function applyCustomDateRange() {
-      const start = document.getElementById('hmStartDate').value;
-      const end = document.getElementById('hmEndDate').value;
-      if (!start || !end) {
-        alert('Lütfen geçerli bir Başlangıç ve Bitiş tarihi seçin.');
-        return;
+      const hmStart = document.getElementById('hmStartDate');
+      const hmEnd = document.getElementById('hmEndDate');
+      if (hmStart && hmEnd) {
+        const mStart = document.getElementById('masterStartDate');
+        const mEnd = document.getElementById('masterEndDate');
+        if (mStart) mStart.value = hmStart.value;
+        if (mEnd) mEnd.value = hmEnd.value;
       }
-      loadHeatmapData();
+      applyGlobalDateRange();
     }
 
     function setQuickDateRange(preset) {
-      const today = new Date();
-      let start = new Date();
-      let end = new Date();
-
-      if (preset === '7d') {
-        start.setDate(today.getDate() - 7);
-      } else if (preset === '30d') {
-        start.setDate(today.getDate() - 30);
-      } else if (preset === 'this_month') {
-        start = new Date(today.getFullYear(), today.getMonth(), 1);
-      } else if (preset === 'last_month') {
-        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        end = new Date(today.getFullYear(), today.getMonth(), 0);
-      }
-
-      const formatDate = (d) => {
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return yyyy + '-' + mm + '-' + dd;
-      };
-
-      if (document.getElementById('hmStartDate')) document.getElementById('hmStartDate').value = formatDate(start);
-      if (document.getElementById('hmEndDate')) document.getElementById('hmEndDate').value = formatDate(end);
-      applyCustomDateRange();
+      setGlobalDatePreset(preset);
     }
 
     function switchHmSubTab(tabKey) {
@@ -9876,9 +10157,14 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       
       try {
         const days = daysSel ? daysSel.value : '30';
-        const endpoint = propVal 
+        const mStart = document.getElementById('masterStartDate') ? document.getElementById('masterStartDate').value : '';
+        const mEnd = document.getElementById('masterEndDate') ? document.getElementById('masterEndDate').value : '';
+        let endpoint = propVal 
           ? `/api/ga4/category-report?property_id=${propVal}&days=${days}`
           : `/api/ga4/category-report?days=${days}`;
+        if (mStart && mEnd) {
+          endpoint += `&start_date=${encodeURIComponent(mStart)}&end_date=${encodeURIComponent(mEnd)}`;
+        }
         const resp = await fetch(endpoint);
         const data = await resp.json();
         
