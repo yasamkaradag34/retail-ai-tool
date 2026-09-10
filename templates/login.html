@@ -437,6 +437,12 @@
       <div id="noticeBanner" class="alert-banner success">
         ✓ Password reset link has been sent to your email inbox.
       </div>
+      <div id="loggedOutBanner" class="alert-banner success">
+        ✓ Successfully logged out.
+      </div>
+      <div id="authRequiredBanner" class="alert-banner" style="display: none; background: #fff7ed; border: 1px solid #fed7aa; color: #c2410c;">
+        🔒 Sisteme erişebilmek için lütfen giriş yapın.
+      </div>
       <div id="errorBanner" class="alert-banner error">
         ✕ Invalid email or password. Please try again.
       </div>
@@ -453,7 +459,7 @@
       <form action="/api/auth/login" method="POST">
         <div class="input-group">
           <label for="loginEmail">Email Address</label>
-          <input type="email" id="loginEmail" name="email" placeholder="name@company.com" required autocomplete="email">
+          <input type="email" id="loginEmail" name="email" placeholder="dataprovido@gmail.com" required autocomplete="email">
         </div>
         
         <div class="input-group">
@@ -497,9 +503,27 @@
       const banner = document.getElementById('noticeBanner');
       if (banner) banner.style.display = 'block';
     }
+    if (urlParams.get('notice') === 'logged_out') {
+      const banner = document.getElementById('loggedOutBanner');
+      if (banner) banner.style.display = 'block';
+    }
+    if (urlParams.get('notice') === 'login_required') {
+      const banner = document.getElementById('authRequiredBanner');
+      if (banner) banner.style.display = 'block';
+    }
     if (urlParams.get('error') === 'invalid_credentials') {
       const banner = document.getElementById('errorBanner');
-      if (banner) banner.style.display = 'block';
+      if (banner) {
+        banner.textContent = '✕ Geçersiz e-posta veya şifre. Lütfen tekrar deneyin.';
+        banner.style.display = 'block';
+      }
+    }
+    if (urlParams.get('error') === 'unauthorized_email') {
+      const banner = document.getElementById('errorBanner');
+      if (banner) {
+        banner.textContent = '✕ Bu hesabın sisteme erişim yetkisi bulunmamaktadır.';
+        banner.style.display = 'block';
+      }
     }
 
     function toggleForgotForm() {

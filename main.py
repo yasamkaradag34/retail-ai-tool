@@ -2717,6 +2717,8 @@ GOOGLE_SCOPES = [
     "openid"
 ]
 
+ALLOWED_LOGIN_EMAILS = {"dataprovido@gmail.com", "myasamkaradag@gmail.com"}
+
 def _encrypt_token(token_json: str) -> str:
     """Simple HMAC-signed base64 encoding for cookie storage."""
     b64 = base64.urlsafe_b64encode(token_json.encode()).decode()
@@ -2790,6 +2792,11 @@ async def google_auth_callback(code: str = None, error: str = None, state: str =
         if profile_resp.status_code == 200:
             user_info = profile_resp.json()
     
+    user_email = user_info.get("email", "").strip().lower()
+    if user_email and user_email not in ALLOWED_LOGIN_EMAILS:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/login?error=unauthorized_email", status_code=303)
+    
     # Build cookie payload (tokens + user info, NO analytics data)
     cookie_data = json.dumps({
         "access_token": tokens.get("access_token", ""),
@@ -2858,7 +2865,16 @@ async def google_auth_status(request: Request):
 async def google_disconnect():
     """Remove Google auth cookie."""
     from fastapi.responses import RedirectResponse
-    response = RedirectResponse(url="/journey?activated=true")
+    response = RedirectResponse(url="/login?notice=logged_out")
+    response.delete_cookie("gauth", path="/")
+    return response
+
+@app.get("/logout")
+@app.get("/api/auth/logout")
+def logout():
+    """Log out user and clear auth cookie."""
+    from fastapi.responses import RedirectResponse
+    response = RedirectResponse(url="/login?notice=logged_out", status_code=303)
     response.delete_cookie("gauth", path="/")
     return response
 
@@ -4003,16 +4019,27 @@ async def heatmap_friction_insights():
 
 @app.get("/journey", response_class=HTMLResponse)
 def journey(request: Request, activated: str = None, plan: str = None, demo: str = None):
-    # Task 1 Scoping: Only allow console access if user purchased (activated=true) or clicked demo on pricing (demo=true)
-    if not (activated == "true" or demo == "true" or plan):
+    # Only allow console access if user is authenticated via cookie
+    cookie = request.cookies.get("gauth")
+    user_data = None
+    if cookie:
+        decrypted = _decrypt_token(cookie)
+        if decrypted:
+            try:
+                user_data = json.loads(decrypted)
+            except Exception:
+                user_data = None
+
+    if not user_data or not user_data.get("email") or user_data.get("email", "").strip().lower() not in ALLOWED_LOGIN_EMAILS:
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/pricing?notice=direct_access_restricted", status_code=303)
+        return RedirectResponse(url="/login?notice=login_required", status_code=303)
 
     return templates.TemplateResponse("journey.html", {
         "request": request,
-        "activated": activated,
+        "activated": activated or "true",
         "plan": plan,
-        "demo": demo
+        "demo": demo,
+        "user": user_data
     })
 
 
@@ -4023,10 +4050,10 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
     nav_how_cls     = "nav-link active" if active_nav == "how-works" else "nav-link"
     nav_privacy_cls = "nav-link active" if active_nav == "privacy" else "nav-link"
 
-    cta_url = "/journey?demo=true" if active_nav == "pricing" else "/pricing"
-    cta_label = "Start Journey (Test) &nbsp;→" if active_nav == "pricing" else "Start Journey &nbsp;→"
-    bottom_cta_url = "/journey?demo=true" if active_nav == "pricing" else "/pricing"
-    bottom_cta_label = "Test Sandbox Console &nbsp;→" if active_nav == "pricing" else "View Plans &amp; Subscribe &nbsp;→"
+    cta_url = "/login"
+    cta_label = "Login &nbsp;→"
+    bottom_cta_url = "/login" if active_nav == "pricing" else "/pricing"
+    bottom_cta_label = "Login to Console &nbsp;→" if active_nav == "pricing" else "View Plans &amp; Subscribe &nbsp;→"
 
     template = templates.env.get_template("base_page.html")
     return template.render(
@@ -4252,37 +4279,24 @@ def login_page(request: Request):
 
 @app.post("/api/auth/login")
 async def email_password_login(request: Request):
-    """Handle email & password login via Supabase Auth API."""
+    """Handle email & password login. Only allow authorized user dataprovido@gmail.com with password 123456."""
     form_data = await request.form()
-    email = form_data.get("email", "").strip()
+    email = form_data.get("email", "").strip().lower()
     password = form_data.get("password", "").strip()
     
-    supabase_token = ""
-    if SUPABASE_URL and SUPABASE_ANON_KEY and email and password:
-        try:
-            supa_resp = requests.post(
-                f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
-                headers={
-                    "apikey": SUPABASE_ANON_KEY,
-                    "Content-Type": "application/json"
-                },
-                json={"email": email, "password": password},
-                timeout=5
-            )
-            if supa_resp.status_code == 200:
-                data = supa_resp.json()
-                supabase_token = data.get("access_token", "")
-        except Exception as e:
-            print("Supabase login error:", e)
+    from fastapi.responses import RedirectResponse
+
+    # Strictly check credentials for dataprovido@gmail.com / 123456
+    if email != "dataprovido@gmail.com" or password != "123456":
+        return RedirectResponse(url="/login?error=invalid_credentials", status_code=303)
 
     cookie_data = json.dumps({
-        "email": email,
-        "name": email.split("@")[0].title() if "@" in email else "User",
+        "email": "dataprovido@gmail.com",
+        "name": "DataProvido",
         "login_type": "email",
-        "supabase_token": supabase_token
+        "role": "admin"
     })
     encrypted = _encrypt_token(cookie_data)
-    from fastapi.responses import RedirectResponse
     response = RedirectResponse(url="/journey?activated=true", status_code=303)
     response.set_cookie(
         key="gauth",
