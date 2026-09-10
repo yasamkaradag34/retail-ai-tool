@@ -12963,67 +12963,179 @@ def index():
     .sc-metric-label { font-size: 11px; color: var(--text-500); margin-top: 3px; }
     .sc-slide-visual { position: absolute; right: -10px; bottom: -10px; font-size: 140px; opacity: 0.05; pointer-events: none; line-height: 1; }
 
-    @media (max-width: 900px) {
-      .showcase-body { grid-template-columns: 1fr; }
-      .sc-slide { position: relative; inset: unset; padding: 32px 24px; }
-      .sc-panel { min-height: unset; }
+    /* HAMBURGER & MOBILE DRAWER */
+    .nav-hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      flex-direction: column;
+      gap: 5px;
+      justify-content: center;
+      align-items: center;
+      z-index: 1002;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 24px;
+      height: 2.5px;
+      background: var(--text-900);
+      border-radius: 2px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nav-hamburger.active span:nth-child(1) {
+      transform: translateY(7.5px) rotate(45deg);
+      background: var(--orange);
+    }
+    .nav-hamburger.active span:nth-child(2) {
+      opacity: 0;
+      transform: scaleX(0);
+    }
+    .nav-hamburger.active span:nth-child(3) {
+      transform: translateY(-7.5px) rotate(-45deg);
+      background: var(--orange);
     }
 
-
-    /* FEATURE CARDS */
-    .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 56px; }
-    .feat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 24px; transition: border-color .25s, transform .25s, box-shadow .25s; position: relative; overflow: hidden; box-shadow: var(--card-shadow); }
-    .feat-card:hover { border-color: var(--border-orange); transform: translateY(-3px); box-shadow: 0 10px 36px rgba(242,111,38,0.1); }
-    .feat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 18px; background: rgba(242,111,38,0.08); border: 1px solid rgba(242,111,38,0.18); }
-    .feat-title { font-size: 16px; font-weight: 700; color: var(--text-900); margin-bottom: 8px; }
-    .feat-desc { font-size: 14px; color: var(--text-700); line-height: 1.65; }
-
-    /* HOW IT WORKS */
-    .how-section { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-    .steps-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 64px; }
-    .step { padding: 0 32px 0 0; border-right: 1px solid var(--border); }
-    .step:last-child { border-right: none; padding-right: 0; }
-    .step-num { font-size: 52px; font-weight: 800; color: rgba(242,111,38,0.15); line-height: 1; margin-bottom: 14px; font-family: 'Playfair Display', serif; letter-spacing: -2px; }
-    .step-title { font-size: 16px; font-weight: 700; color: var(--text-900); margin-bottom: 8px; }
-    .step-desc { font-size: 14px; color: var(--text-700); line-height: 1.65; }
-
-    /* TRUST */
-    .trust-section { text-align: center; background: var(--bg); }
-    .trust-badges { display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 48px; }
-    .trust-badge { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 18px 24px; display: flex; align-items: center; gap: 14px; transition: border-color .25s, box-shadow .25s; box-shadow: var(--card-shadow); }
-    .trust-badge:hover { border-color: var(--border-orange); box-shadow: 0 6px 24px rgba(242,111,38,0.1); }
-    .trust-badge-icon { font-size: 26px; }
-    .trust-badge-text .label { font-size: 11px; color: var(--text-500); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; }
-    .trust-badge-text .value { font-size: 18px; font-weight: 700; color: var(--text-900); }
-
-    /* CTA BANNER */
-    .cta-banner { margin: 0 40px 80px; background: linear-gradient(135deg, #fff3ec 0%, #ecf7ff 100%); border: 1px solid var(--border-orange); border-radius: 24px; padding: 72px 56px; text-align: center; position: relative; overflow: hidden; }
-    .cta-banner::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(242,111,38,0.06), transparent); pointer-events: none; }
-    .cta-banner h2 { font-family: 'Playfair Display', serif; font-size: clamp(28px, 4vw, 46px); font-weight: 700; color: var(--text-900); margin-bottom: 18px; letter-spacing: -0.5px; }
-    .cta-banner p { font-size: 17px; color: var(--text-700); margin-bottom: 36px; }
-
-    /* FOOTER */
-    .site-footer { border-top: 1px solid var(--border); padding: 28px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; background: var(--bg-2); }
-    .footer-left { display: flex; align-items: center; gap: 10px; }
-    .footer-logo { font-size: 15px; font-weight: 700; color: var(--text-900); }
-    .footer-copy { font-size: 13px; color: var(--text-500); }
-    .footer-right { font-size: 12px; color: var(--text-500); letter-spacing: 0.1em; text-transform: uppercase; }
-
-    /* ANIMATIONS */
-    @keyframes fade-up { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
-    .reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-    /* JS nav style update for light nav */
-    body.scrolled .nav { box-shadow: 0 2px 16px rgba(0,0,0,0.07); }
+    .mobile-drawer {
+      position: fixed;
+      top: var(--nav-h);
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 20px 36px;
+      gap: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-12px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      overflow-y: auto;
+      border-bottom: 1px solid var(--border);
+    }
+    .mobile-drawer.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .mobile-drawer-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-radius: 12px;
+      color: var(--text-900);
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .mobile-drawer-link:active, .mobile-drawer-link:hover {
+      background: rgba(242, 111, 38, 0.08);
+      color: var(--orange);
+    }
+    .mobile-drawer-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 0;
+    }
+    .mobile-drawer-btn {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 12px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
     @media (max-width: 900px) {
-      .nav { padding: 0 20px; } .nav-links { display: none; }
-      .stats-inner { grid-template-columns: repeat(2, 1fr); } .stat-item:nth-child(2) { border-right: none; }
+      .nav { padding: 0 16px; }
+      .nav-links, .nav-desktop-actions { display: none !important; }
+      .nav-hamburger { display: flex; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .stat-item:nth-child(2) { border-right: none; }
+      .stat-item { padding: 12px 10px; }
+      .stat-number { font-size: 32px; }
       .features-grid { grid-template-columns: 1fr; }
-      .steps-row { grid-template-columns: 1fr 1fr; gap: 32px; } .step { border-right: none; padding-right: 0; }
-      .cta-banner { margin: 0 20px 60px; padding: 48px 28px; }
-      .section { padding: 64px 20px; } .slider-wrap { padding: 0 20px; }
-      .slide { min-width: 100%; }
+      .steps-row { grid-template-columns: 1fr; gap: 24px; }
+      .step { border-right: none; padding-right: 0; }
+      .cta-banner { margin: 0 16px 50px; padding: 40px 20px; }
+      .section { padding: 56px 16px; }
+      .showcase { padding: 56px 0; }
+      .showcase-inner { padding: 0 16px; }
+      .showcase-header { margin-bottom: 28px; }
+      .showcase-header .section-title { font-size: 26px; }
+      .showcase-body {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      /* MOBILE HORIZONTAL SCROLLING TABS */
+      .sc-tabs {
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 8px;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .sc-tabs::-webkit-scrollbar { display: none; }
+      .sc-tab {
+        flex: 0 0 auto;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: #fff;
+        border: 1px solid var(--border);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      }
+      .sc-tab.active {
+        background: var(--orange);
+        border-color: var(--orange);
+        box-shadow: 0 4px 12px rgba(242,111,38,0.3);
+      }
+      .sc-tab-bar, .sc-tab-progress, .sc-tab-desc { display: none !important; }
+      .sc-tab-head { margin-bottom: 0; gap: 6px; }
+      .sc-tab-title { font-size: 13px; font-weight: 600; white-space: nowrap; }
+      .sc-tab.active .sc-tab-title { color: #fff !important; }
+      .sc-tab:not(.active) .sc-tab-title { color: var(--text-700); }
+
+      /* MOBILE SLIDES PANEL: Fix ghost white space */
+      .sc-panel {
+        min-height: unset !important;
+        position: relative;
+        border-radius: 16px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+      }
+      .sc-slide {
+        position: relative !important;
+        inset: unset !important;
+        padding: 24px 20px !important;
+        display: none !important;
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+      }
+      .sc-slide.active {
+        display: flex !important;
+        opacity: 1 !important;
+        transform: translateY(0);
+      }
+      .sc-slide h3 { font-size: 22px; margin-bottom: 10px; }
+      .sc-slide p { font-size: 14px; margin-bottom: 20px; }
+      .sc-metrics { gap: 10px; }
+      .sc-metric { flex: 1; padding: 10px 14px; text-align: center; }
+      .sc-metric-val { font-size: 20px; }
     }
   </style>
 </head>
@@ -13034,7 +13146,10 @@ def index():
   <!-- End Google Tag Manager (noscript) -->
 
 <nav class="nav" id="main-nav">
-  <a href="/" class="nav-logo" style="display: flex; align-items: center; gap: 10px;"><img src="/logo.png" alt="DataProvido" style="height: 36px; width: 36px; object-fit: contain; border-radius: 8px;" /><span>DataProvido</span></a>
+  <a href="/" class="nav-logo" style="display: flex; align-items: center; gap: 10px;">
+    <img src="/logo.png" alt="DataProvido" style="height: 36px; width: 36px; object-fit: contain; border-radius: 8px;" />
+    <span>DataProvido</span>
+  </a>
   <div class="nav-links">
     <a href="/pricing" class="nav-link">Pricing</a>
     <a href="/contact" class="nav-link">Contact</a>
@@ -13042,11 +13157,27 @@ def index():
     <a href="/how-works" class="nav-link">How Works?</a>
     <a href="/privacy" class="nav-link">Privacy Policy</a>
   </div>
-  <div style="display: flex; align-items: center; gap: 20px;">
+  <div class="nav-desktop-actions" style="display: flex; align-items: center; gap: 20px;">
     <a href="/login" style="color: #0f172a; font-weight: 700; font-size: 14.5px; text-decoration: none; transition: opacity 0.2s;">Log in / Sign in</a>
     <a href="/journey" class="nav-cta">Start Journey &nbsp;→</a>
   </div>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Toggle navigation" onclick="toggleMobileMenu()">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
 </nav>
+
+<div class="mobile-drawer" id="mobileDrawer">
+  <a href="/pricing" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Pricing</span> <span>›</span></a>
+  <a href="/contact" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Contact</span> <span>›</span></a>
+  <a href="/who-we-are" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Who We Are?</span> <span>›</span></a>
+  <a href="/how-works" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>How Works?</span> <span>›</span></a>
+  <a href="/privacy" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Privacy Policy</span> <span>›</span></a>
+  <div class="mobile-drawer-divider"></div>
+  <a href="/login" class="mobile-drawer-btn btn-ghost" style="border: 1px solid var(--border); color: var(--text-900);">Log in / Sign in</a>
+  <a href="/journey" class="mobile-drawer-btn btn-primary" style="margin-top: 8px;">Start Journey &nbsp;→</a>
+</div>
 
 <section class="hero" id="hero">
   <div class="hero-content">
@@ -13251,21 +13382,39 @@ def index():
   const scPanels = document.querySelectorAll('.sc-slide');
   let scCurrent = 0, scTimer;
 
+  function toggleMobileMenu() {
+    const drawer = document.getElementById('mobileDrawer');
+    const burger = document.getElementById('navHamburger');
+    const isOpen = drawer.classList.toggle('open');
+    burger.classList.toggle('active');
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+  }
+
   function scGoTo(idx) {
     scTabs[scCurrent].classList.remove('active');
     scPanels[scCurrent].classList.remove('active');
     const oldProg = scTabs[scCurrent].querySelector('.sc-tab-progress');
-    oldProg.style.animation = 'none';
-    oldProg.offsetHeight;
-    oldProg.style.animation = '';
+    if (oldProg) {
+      oldProg.style.animation = 'none';
+      oldProg.offsetHeight;
+      oldProg.style.animation = '';
+    }
 
     scCurrent = ((idx % scTabs.length) + scTabs.length) % scTabs.length;
     scTabs[scCurrent].classList.add('active');
     scPanels[scCurrent].classList.add('active');
+    
+    // Smooth scroll the active tab pill into view on mobile
+    try {
+      scTabs[scCurrent].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    } catch(e) {}
+
     const newProg = scTabs[scCurrent].querySelector('.sc-tab-progress');
-    newProg.style.animation = 'none';
-    newProg.offsetHeight;
-    newProg.style.animation = 'tab-fill 5s linear forwards';
+    if (newProg) {
+      newProg.style.animation = 'none';
+      newProg.offsetHeight;
+      newProg.style.animation = 'tab-fill 5s linear forwards';
+    }
   }
 
   function scNext() { scGoTo(scCurrent + 1); }
