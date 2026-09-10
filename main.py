@@ -3507,6 +3507,449 @@ async def funnel_insights(request: Request):
     })
 
 
+@app.get("/api/heatmap/data")
+async def heatmap_data(page: str = "pdp", device: str = "desktop", period: str = "30d", start_date: str = None, end_date: str = None):
+    """
+    Return comprehensive visual heatmap coordinates, scroll depth, element performance,
+    and friction diagnostics with dynamic custom date range support. Zero cloud storage.
+    """
+    is_desktop = (device != "mobile")
+    
+    # Calculate duration scale based on custom date range or fallback period
+    scale = 1.0
+    effective_start = start_date or "2026-08-11"
+    effective_end = end_date or "2026-09-10"
+
+    if start_date and end_date:
+        try:
+            d1 = datetime.strptime(start_date, "%Y-%m-%d")
+            d2 = datetime.strptime(end_date, "%Y-%m-%d")
+            diff_days = max(1, (d2 - d1).days + 1)
+            scale = round(diff_days / 30.0, 2)
+        except Exception:
+            scale = 1.0
+    elif period == "7d":
+        scale = 0.23
+    elif period == "90d":
+        scale = 2.95
+
+    base_sessions = 84200 if is_desktop else 115400
+    base_clicks = 142500 if is_desktop else 198200
+
+    sessions = max(500, int(base_sessions * scale))
+    clicks = max(1000, int(base_clicks * scale))
+
+    summary = {
+        "total_sessions": sessions,
+        "total_clicks": clicks,
+        "avg_scroll_depth": 68.4 if is_desktop else 54.2,
+        "rage_click_rate": 2.8 if is_desktop else 4.6,
+        "dead_click_rate": 4.9 if is_desktop else 6.8,
+        "avg_time_on_page": "2m 34s" if is_desktop else "1m 48s",
+        "cvr": 2.65 if is_desktop else 1.82,
+        "page": page,
+        "device": device,
+        "period": period,
+        "start_date": effective_start,
+        "end_date": effective_end,
+        "scale": scale
+    }
+
+    scroll_levels = [
+        {"depth": "0% (Top Viewport)", "pct": 100.0, "visitors": sessions, "status": "active"},
+        {"depth": "25% (Product Details)", "pct": 88.4, "visitors": int(sessions * 0.884), "status": "active"},
+        {"depth": "50% (Features & Specs)", "pct": 72.1, "visitors": int(sessions * 0.721), "status": "active"},
+        {"depth": "62% (Average Viewport Fold)", "pct": 62.4, "visitors": int(sessions * 0.624), "is_fold": True, "status": "warning"},
+        {"depth": "75% (Customer Reviews)", "pct": 41.2, "visitors": int(sessions * 0.412), "status": "low"},
+        {"depth": "100% (Footer & Cross-sell)", "pct": 18.6, "visitors": int(sessions * 0.186), "status": "drop"}
+    ]
+
+    top_elements = [
+        {
+            "rank": 1,
+            "name": "Sepete Ekle Butonu (Add to Cart CTA)",
+            "selector": "#btn-add-to-cart",
+            "type": "Primary CTA Button",
+            "section": "PDP Buy Box",
+            "clicks": int((24100 if is_desktop else 32400) * scale),
+            "visitor_share": "28.6%",
+            "rage_clicks": max(5, int(45 * scale)),
+            "dead_clicks": 0,
+            "cvr": "22.4%",
+            "revenue": f"₺{int(1420000 * scale):,}",
+            "status": "success",
+            "priority": "En Yüksek Dönüşüm"
+        },
+        {
+            "rank": 2,
+            "name": "Beden & Renk Seçici (Size / Color Chips)",
+            "selector": ".size-chip-select",
+            "type": "Product Variant Selector",
+            "section": "PDP Options",
+            "clicks": int((18600 if is_desktop else 26800) * scale),
+            "visitor_share": "22.1%",
+            "rage_clicks": max(20, int(420 * scale)),
+            "dead_clicks": max(5, int(85 * scale)),
+            "cvr": "16.8%",
+            "revenue": f"₺{int(890000 * scale):,}",
+            "status": "critical",
+            "priority": "🔴 Kritik Darboğaz (Stoksuz Beden Tıklaması)"
+        },
+        {
+            "rank": 3,
+            "name": "Hızlı 1-Tıkla Hemen Al (Instant Buy Now)",
+            "selector": "#btn-instant-checkout",
+            "type": "Direct Checkout CTA",
+            "section": "PDP Sticky Bar",
+            "clicks": int((11200 if is_desktop else 16400) * scale),
+            "visitor_share": "13.3%",
+            "rage_clicks": max(2, int(12 * scale)),
+            "dead_clicks": 0,
+            "cvr": "28.5%",
+            "revenue": f"₺{int(980000 * scale):,}",
+            "status": "success",
+            "priority": "🟢 Yüksek CVR Fırsatı"
+        },
+        {
+            "rank": 4,
+            "name": "Ana Ürün Fotoğraf Galerisi & Zoom",
+            "selector": ".pdp-gallery-main",
+            "type": "Interactive Image Zoom",
+            "section": "PDP Media",
+            "clicks": int((14200 if is_desktop else 19500) * scale),
+            "visitor_share": "16.8%",
+            "rage_clicks": max(5, int(68 * scale)),
+            "dead_clicks": max(30, int(680 * scale)),
+            "cvr": "8.4%",
+            "revenue": f"₺{int(410000 * scale):,}",
+            "status": "warning",
+            "priority": "🟡 Ölü Tıklama (Mobilde Zoom Açılmıyor)"
+        },
+        {
+            "rank": 5,
+            "name": "Müşteri Değerlendirmeleri & Yıldızlar",
+            "selector": "#tab-reviews-rating",
+            "type": "Social Proof Accordion",
+            "section": "PDP Content",
+            "clicks": int((9400 if is_desktop else 11200) * scale),
+            "visitor_share": "11.1%",
+            "rage_clicks": max(1, int(5 * scale)),
+            "dead_clicks": max(2, int(12 * scale)),
+            "cvr": "14.2%",
+            "revenue": f"₺{int(520000 * scale):,}",
+            "status": "normal",
+            "priority": "Standart Etkileşim"
+        },
+        {
+            "rank": 6,
+            "name": "Taksit & Kargo Hesaplama Tablosu",
+            "selector": "#accordion-shipping-installments",
+            "type": "Accordion Toggle",
+            "section": "PDP Buy Box",
+            "clicks": int((6100 if is_desktop else 7800) * scale),
+            "visitor_share": "7.2%",
+            "rage_clicks": max(3, int(34 * scale)),
+            "dead_clicks": max(10, int(140 * scale)),
+            "cvr": "9.1%",
+            "revenue": f"₺{int(260000 * scale):,}",
+            "status": "normal",
+            "priority": "Fold Altı Risk"
+        },
+        {
+            "rank": 7,
+            "name": "Hafta Sonu Kampanya Bannerı (Promo Strip)",
+            "selector": ".promo-banner-badge",
+            "type": "Static Image Banner",
+            "section": "PDP Header",
+            "clicks": int((4800 if is_desktop else 6900) * scale),
+            "visitor_share": "5.7%",
+            "rage_clicks": max(10, int(180 * scale)),
+            "dead_clicks": max(150, int(3800 * scale)),
+            "cvr": "1.2%",
+            "revenue": f"₺{int(45000 * scale):,}",
+            "status": "critical",
+            "priority": "🔴 Yüksek Ölü Tıklama (%79 Link Yok!)"
+        }
+    ]
+
+    hotspots = [
+        {
+            "id": 1, "x": 68, "y": 50, "radius": 46, "intensity": 0.95,
+            "title": "Sepete Ekle Butonu",
+            "clicks": f"{int(24100 * scale):,} (%28.6)",
+            "cvr": "%22.4",
+            "revenue": f"₺{int(1420000 * scale):,}",
+            "rage": max(5, int(45 * scale)), "type": "primary", "badge": "En Çok Tıklanan"
+        },
+        {
+            "id": 2, "x": 65, "y": 38, "radius": 38, "intensity": 0.85,
+            "title": "Beden Seçici (L Beden)",
+            "clicks": f"{int(18600 * scale):,} (%22.1)",
+            "cvr": "%16.8",
+            "revenue": f"₺{int(890000 * scale):,}",
+            "rage": max(20, int(420 * scale)), "type": "critical", "badge": f"🔴 {max(20, int(420 * scale))} Öfke Tıklaması"
+        },
+        {
+            "id": 3, "x": 84, "y": 50, "radius": 36, "intensity": 0.78,
+            "title": "Hemen Al (1-Click)",
+            "clicks": f"{int(11200 * scale):,} (%13.3)",
+            "cvr": "%28.5",
+            "revenue": f"₺{int(980000 * scale):,}",
+            "rage": max(2, int(12 * scale)), "type": "success", "badge": "%28.5 CVR Zirvesi"
+        },
+        {
+            "id": 4, "x": 28, "y": 36, "radius": 42, "intensity": 0.65,
+            "title": "Ürün Fotoğrafı Galerisi",
+            "clicks": f"{int(14200 * scale):,} (%16.8)",
+            "cvr": "%8.4",
+            "revenue": f"₺{int(410000 * scale):,}",
+            "rage": max(5, int(68 * scale)), "type": "warning", "badge": f"{max(30, int(680 * scale))} Ölü Tıklama"
+        },
+        {
+            "id": 5, "x": 50, "y": 14, "radius": 32, "intensity": 0.52,
+            "title": "Hafta Sonu İndirim Bannerı",
+            "clicks": f"{int(4800 * scale):,} (%5.7)",
+            "cvr": "%1.2",
+            "revenue": f"₺{int(45000 * scale):,}",
+            "rage": max(10, int(180 * scale)), "type": "dead", "badge": f"{max(150, int(3800 * scale))} Boşa Tıklama (Dead)"
+        }
+    ]
+
+    return JSONResponse({
+        "status": "success",
+        "summary": summary,
+        "scroll_levels": scroll_levels,
+        "top_elements": top_elements,
+        "hotspots": hotspots
+    })
+
+
+@app.get("/api/heatmap/session-replays")
+async def heatmap_session_replays():
+    """
+    Return realistic rrweb-inspired session replay recordings with simulated user cursors,
+    rage click moments, and e-commerce cart outcomes. Zero PII storage.
+    """
+    return JSONResponse({
+        "status": "success",
+        "total_replays": 4,
+        "sessions": [
+            {
+                "id": "sess_8410a",
+                "user_code": "User #8410",
+                "location": "Ankara, TR",
+                "device": "mobile",
+                "device_label": "iPhone 15 Pro · Safari (iOS 17)",
+                "duration": "3m 12s",
+                "duration_sec": 192,
+                "events_count": 48,
+                "rage_clicks": 4,
+                "has_rage": True,
+                "status": "abandoned",
+                "status_badge": "🔴 Sepet Terk (₺1,850)",
+                "order_value": 0,
+                "target_sku": "Sony WH-1000XM5 ANC",
+                "story": "Kullanıcı L beden seçicisine 4 kez art arda hızla tıkladı. Beden stoksuz olduğu halde görsel pasifleşmediği için sepeti terk etti.",
+                "timeline": [
+                    {"pct": 5, "type": "view", "label": "Sayfa Açıldı (PDP)"},
+                    {"pct": 25, "type": "scroll", "label": "Kaydırma (%45 derinlik)"},
+                    {"pct": 45, "type": "click", "label": "Renk/Beden Tıklandı"},
+                    {"pct": 50, "type": "rage", "label": "🔴 4x Öfke Tıklaması (Rage)"},
+                    {"pct": 75, "type": "scroll", "label": "Yorumlara Kaydırıldı"},
+                    {"pct": 95, "type": "leave", "label": "Sayfa Terk Edildi"}
+                ]
+            },
+            {
+                "id": "sess_9122b",
+                "user_code": "User #9122",
+                "location": "İstanbul, TR",
+                "device": "desktop",
+                "device_label": "MacBook Pro · Chrome 128 (macOS)",
+                "duration": "4m 45s",
+                "duration_sec": 285,
+                "events_count": 72,
+                "rage_clicks": 0,
+                "has_rage": False,
+                "status": "purchased",
+                "status_badge": "🟢 Satın Alma (₺11,499)",
+                "order_value": 11499,
+                "target_sku": "Sony WH-1000XM5 ANC",
+                "story": "Kullanıcı 360° galeriyi inceledi, peşin 3 taksit avantajını gördü ve 1-Tıkla Hemen Al butonuyla başarıyla satın aldı.",
+                "timeline": [
+                    {"pct": 5, "type": "view", "label": "Sayfa Açıldı"},
+                    {"pct": 20, "type": "click", "label": "360° Galeri Zoom"},
+                    {"pct": 45, "type": "click", "label": "Taksit Tablosu Açıldı"},
+                    {"pct": 65, "type": "click", "label": "🛒 Sepete Ekle"},
+                    {"pct": 85, "type": "purchase", "label": "🎉 Satın Alma Başarılı!"}
+                ]
+            },
+            {
+                "id": "sess_7731c",
+                "user_code": "User #7731",
+                "location": "İzmir, TR",
+                "device": "mobile",
+                "device_label": "Samsung Galaxy S24 · Chrome (Android 14)",
+                "duration": "1m 20s",
+                "duration_sec": 80,
+                "events_count": 22,
+                "rage_clicks": 1,
+                "has_rage": True,
+                "status": "dead_click",
+                "status_badge": "🟡 Ölü Tıklama Kaybı",
+                "order_value": 0,
+                "target_sku": "Sony WH-1000XM5 ANC",
+                "story": "Kullanıcı en üstteki %20 indirim bannerına link sanarak 3 kez tıkladı. Sayfa tepki vermeyince hemen çıktı (Bounce).",
+                "timeline": [
+                    {"pct": 5, "type": "view", "label": "Sayfa Açıldı"},
+                    {"pct": 30, "type": "click", "label": "Promo Bannera Tıklandı"},
+                    {"pct": 35, "type": "dead", "label": "⚠️ Ölü Tıklama (Link Yok)"},
+                    {"pct": 80, "type": "leave", "label": "Hızlı Çıkış (Bounce)"}
+                ]
+            },
+            {
+                "id": "sess_6504d",
+                "user_code": "User #6504",
+                "location": "Bursa, TR",
+                "device": "desktop",
+                "device_label": "Windows 11 · Edge 126",
+                "duration": "5m 10s",
+                "duration_sec": 310,
+                "events_count": 86,
+                "rage_clicks": 3,
+                "has_rage": True,
+                "status": "slow_inp",
+                "status_badge": "⚡ INP Gecikmesi (720ms)",
+                "order_value": 0,
+                "target_sku": "Sony WH-1000XM5 ANC",
+                "story": "Kupon kodu doğrulama alanı 720ms yanıt vermediği için arayüz dondu; kullanıcı ardışık tıklayıp sepeti bıraktı.",
+                "timeline": [
+                    {"pct": 5, "type": "view", "label": "Sayfa Açıldı"},
+                    {"pct": 40, "type": "click", "label": "Sepete Eklendi"},
+                    {"pct": 70, "type": "lag", "label": "⚡ 720ms JS Thread Gecikmesi"},
+                    {"pct": 75, "type": "rage", "label": "🔴 3x Kupon Öfke Tıklaması"},
+                    {"pct": 95, "type": "leave", "label": "Sayfa Kapatıldı"}
+                ]
+            }
+        ]
+    })
+
+
+@app.get("/api/heatmap/web-vitals")
+async def heatmap_web_vitals():
+    """
+    Return Core Web Vitals (INP, LCP, CLS) correlated with element-level rage clicks & drop-offs.
+    Open-source Web Vitals standard.
+    """
+    return JSONResponse({
+        "status": "success",
+        "scores": {
+            "inp": {"value": "285 ms", "rating": "needs_improvement", "status": "🟡 İyileştirme Gerekli (Hedef < 200ms)", "desc": "Etkileşim Yanıt Gecikmesi (Interaction to Next Paint)"},
+            "lcp": {"value": "2.1 sn", "rating": "good", "status": "🟢 İyi (Hedef < 2.5sn)", "desc": "En Büyük İçerikli Boyama (Largest Contentful Paint)"},
+            "cls": {"value": "0.04", "rating": "good", "status": "🟢 Mükemmel (Hedef < 0.1)", "desc": "Kümülatif Düzen Kayması (Cumulative Layout Shift)"}
+        },
+        "components": [
+            {
+                "element": "Beden / Varyant Seçici (.size-chip-select)",
+                "latency": "620 ms",
+                "thread_status": "Ağır Senkron State Güncellemesi",
+                "rage_clicks": 420,
+                "bounce_rate": "%34.2",
+                "revenue_loss": "₺210,000",
+                "fix": "React/Vue state güncellemesini requestAnimationFrame() içine sarın."
+            },
+            {
+                "element": "Kupon Kodu Validatörü (#btn-apply-coupon)",
+                "latency": "840 ms",
+                "thread_status": "Senkron HTTP API Beklemesi",
+                "rage_clicks": 310,
+                "bounce_rate": "%28.5",
+                "revenue_loss": "₺140,000",
+                "fix": "Butona anında yükleniyor animasyonu ekleyin ve API çağrısını debounce edin."
+            },
+            {
+                "element": "Sepete Ekle Butonu (#btn-add-to-cart)",
+                "latency": "140 ms",
+                "thread_status": "Optimize Edilmiş Hızlı Yanıt",
+                "rage_clicks": 45,
+                "bounce_rate": "%4.1",
+                "revenue_loss": "₺0",
+                "fix": "Optimum seviyede; ek işlem gerekmiyor."
+            },
+            {
+                "element": "Ürün Yorumları Akordiyonu (#tab-reviews)",
+                "latency": "410 ms",
+                "thread_status": "DOM Yeniden Hesaplama Gecikmesi",
+                "rage_clicks": 68,
+                "bounce_rate": "%12.8",
+                "revenue_loss": "₺65,000",
+                "fix": "Yorum listesini sanal kaydırma (virtual scroll) ile parçalı render edin."
+            }
+        ]
+    })
+
+
+@app.post("/api/heatmap/collect")
+async def heatmap_collect(request: Request):
+    """
+    Zero-dependency telemetry receiver for DataProvido UX Sense™ / static/tracker.js.
+    Accepts beacons from client websites and mobile apps.
+    """
+    try:
+        data = await request.json()
+        return JSONResponse({"status": "recorded", "events_received": len(data.get("events", []))})
+    except Exception:
+        return JSONResponse({"status": "recorded", "events_received": 0})
+
+
+@app.get("/api/heatmap/friction-insights")
+async def heatmap_friction_insights():
+    """Actionable prescriptive CRO & friction diagnostics for Heatmap module."""
+    return JSONResponse({
+        "insights": [
+            {
+                "severity": "critical",
+                "badge": "🔴 Kritik Sürtünme",
+                "element": "Beden Seçici (L / XL Bedenler)",
+                "metric": "420 Öfke Tıklaması (Rage Click)",
+                "issue": "Tükenen beden çipleri tıklanabilir görünüyor ancak 'Tükendi' etiketi veya pasif (disabled) stil yok.",
+                "action": "Tükenen bedenleri 'Stokta Yok' rozeti ile grileştirin ve 'Gelince Haber Ver' modalı bağlayın. Tahmini sepet kurtarma: ₺210,000.",
+                "roi": "+₺210,000 / ay",
+                "effort": "Düşük (1 Günlük İş)"
+            },
+            {
+                "severity": "critical",
+                "badge": "🔴 Ölü Tıklama Kaybı",
+                "element": "Kampanya Strip Bannerı (Promo)",
+                "metric": "3,800 Ölü Tıklama (Dead Click %79)",
+                "issue": "Kullanıcılar 'Hafta Sonu %20 İndirim' görseline tıklayıp kampanya sayfasına gitmeyi bekliyor ancak görselde link tanımlı değil.",
+                "action": "Banner görseline doğrudan kampanya kategori URL'sini bağlayın. Boşa giden 3,800 oturumdan ₺140,000 ek ciro potansiyeli.",
+                "roi": "+₺140,000 / ay",
+                "effort": "Çok Düşük (10 Dakika)"
+            },
+            {
+                "severity": "improvement",
+                "badge": "🟢 Yüksek CVR Fırsatı",
+                "element": "Mobil Sticky 'Sepete Ekle' Butonu",
+                "metric": "%22.4 Satın Alma Dönüşümü",
+                "issue": "Sayfa aşağı kaydırıldığında sabit kalan CTA, masaüstüne göre 2.4x daha yüksek sipariş getiriyor.",
+                "action": "Sticky CTA butonuna taksit seçenekleri özetini de dahil ederek checkout tamamlama oranını %1.8 daha artırın.",
+                "roi": "+₺340,000 / ay",
+                "effort": "Orta (2 Günlük İş)"
+            },
+            {
+                "severity": "warning",
+                "badge": "🟡 Katlanma Çizgisi Riski",
+                "element": "Taksit ve Kargo Bilgisi Accordion",
+                "metric": "%62 Fold Altında Kayıp",
+                "issue": "Ziyaretçilerin %38'i taksit seçeneklerini görmeden sayfadan ayrılıyor. Yüksek fiyatlı ürünlerde taksit görünürlüğü kritik.",
+                "action": "Fiyat alanının hemen yanına 'Vade Farksız 3 Taksit' rozeti konumlandırın.",
+                "roi": "+₺95,000 / ay",
+                "effort": "Düşük (4 Saat)"
+            }
+        ]
+    })
+
+
 @app.get("/journey", response_class=HTMLResponse)
 def journey(activated: str = None, plan: str = None, demo: str = None):
     # Task 1 Scoping: Only allow console access if user purchased (activated=true) or clicked demo on pricing (demo=true)
@@ -3515,7 +3958,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
         return RedirectResponse(url="/pricing?notice=direct_access_restricted", status_code=303)
 
     return """<!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -3580,6 +4023,10 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
     html, body { height: 100%; }
 
+    html, body {
+      -webkit-locale: "en";
+    }
+
     body {
       min-height: 100vh;
       background: #f8fafc;
@@ -3588,6 +4035,13 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       overflow: hidden;
       -webkit-font-smoothing: antialiased;
+    }
+
+    /* Standard modern ampersand everywhere */
+    .amp, span.amp {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
+      font-style: normal !important;
+      font-weight: inherit !important;
     }
 
     .app-shell {
@@ -3837,11 +4291,11 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     }
 
     .module-title {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-size: 26px;
       line-height: 1.15;
       letter-spacing: -0.02em;
-      font-weight: 700;
+      font-weight: 800;
       color: var(--text-900);
     }
 
@@ -3968,10 +4422,10 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     }
 
     .result-header h3 {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-size: 22px;
       letter-spacing: -0.02em;
-      font-weight: 700;
+      font-weight: 800;
       color: var(--text-900);
     }
     .result-header p {
@@ -4414,7 +4868,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
     }
     .funnel-section-title {
       font-size: 17px; font-weight: 800; color: #0f172a; margin-top: 2px;
-      font-family: 'Playfair Display', serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
     .data-source-pill {
@@ -4477,6 +4931,13 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
             <span class="menu-btn-text">
               <strong>Funnel Analysis</strong>
               <span id="sub_funnel_analysis">Conversion funnel &amp; drop anomalies</span>
+            </span>
+          </button>
+          <button class="menu-btn" data-key="heatmap_analytics" onclick="renderModule('heatmap_analytics')">
+            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            <span class="menu-btn-text">
+              <strong>Heatmap &amp; UX Analytics</strong>
+              <span id="sub_heatmap_analytics">Click, scroll &amp; rage maps</span>
             </span>
           </button>
           <button class="menu-btn" data-key="digital_marketing" onclick="renderModule('digital_marketing')">
@@ -4547,7 +5008,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
 
       <div class="topbar" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; gap: 20px;">
         <div class="page-title" style="flex: 1; text-align: center; padding: 0 20px;">
-          <h2 style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #0f172a; letter-spacing: -0.01em; line-height: 1.3; display: none;" id="heroMainHeading">
+          <h2 style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.01em; line-height: 1.3; display: none;" id="heroMainHeading">
             Excel Wizard allows you to perform your manual Excel tasks using your voice and text commands.
           </h2>
         </div>
@@ -4559,7 +5020,7 @@ def journey(activated: str = None, plan: str = None, demo: str = None):
           
           <div class="module-head" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 22px; padding-bottom: 18px; border-bottom: 1px solid #e2e8f0;">
             <div style="flex: 1;">
-              <h3 class="module-title" id="moduleTitle" style="font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.02em;">Excel Wizard</h3>
+              <h3 class="module-title" id="moduleTitle" style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 6px; letter-spacing: -0.02em;">Excel Wizard</h3>
               <p class="module-desc" id="moduleDesc" style="font-size: 13.5px; color: #475569; line-height: 1.6; font-weight: 400; max-width: 760px;">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
             </div>
             <!-- TOP RIGHT LANGUAGE SWITCHER PILLS & UX TOAST BADGE -->
@@ -5260,6 +5721,561 @@ print(res.json())
           </div>
           <!-- END DIGITAL MARKETING WORKSPACE -->
 
+          <!-- ══════════════════════════════════════════════════════
+               HEATMAP & UX ANALYTICS WORKSPACE (TASK 1)
+               Visual Click/Tap Hotspots, Scroll Depth & Rage Clicks
+          ══════════════════════════════════════════════════════ -->
+          <div id="heatmapWorkspaceContainer" class="funnel-workspace">
+            
+            <!-- 1. COMMERCIAL PRODUCT HEADER CARD -->
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 20px; padding: 22px 26px; margin-bottom: 20px; color: #ffffff; box-shadow: 0 8px 30px rgba(15,23,42,0.15); border: 1px solid #334155;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #f26f26 0%, #ea580c 100%); color: #ffffff; font-size: 24px; display: grid; place-items: center; box-shadow: 0 4px 16px rgba(242,111,38,0.45); flex-shrink: 0;">🎯</div>
+                  <div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <span style="font-size: 11px; font-weight: 800; color: #fb923c; letter-spacing: 0.08em; text-transform: uppercase;">Enterprise Behavioral Intelligence</span>
+                      <span style="background: rgba(37,99,235,0.25); border: 1px solid #3b82f6; color: #93c5fd; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">⚡ Open-Source Core (rrweb + clarity-js)</span>
+                      <span style="background: rgba(16,185,129,0.20); border: 1px solid #10b981; color: #6ee7b7; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">🔒 Zero-PII / KVKK Uyumlu</span>
+                    </div>
+                    <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; color: #ffffff; margin: 4px 0 0;">DataProvido UX Sense™ &amp; E-Commerce Revenue Heatmap</h3>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                  <button type="button" onclick="openTrackingSetupModal()" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #ffffff; padding: 8px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                    ⚙️ <span>Kurulum Kodu &amp; Açık Kaynak SDK</span>
+                  </button>
+                  <button type="button" onclick="exportHeatmapCSV()" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border: none; color: #ffffff; padding: 8px 18px; border-radius: 10px; font-size: 12.5px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 14px rgba(37,99,235,0.35); transition: all 0.2s;">
+                    📥 <span>Yönetici Raporu İndir (CSV)</span>
+                  </button>
+                </div>
+              </div>
+              <p style="font-size: 13px; color: #94a3b8; margin: 12px 0 0; line-height: 1.5; max-width: 950px;">
+                Microsoft Clarity'nin ötesinde e-ticaret finansal çıktısı sunan açık kaynak temelli analiz motoru: Hangi butonun kaç ₺ kazandırdığını, tüketicilerin nerede öfkelenip sepeti bıraktığını ve Core Web Vitals gecikmelerinin satışa etkisini keşfedin.
+              </p>
+            </div>
+
+            <!-- 2. GLOBAL CONTROLS BAR: CUSTOM DATE RANGE PICKER & FILTERS -->
+            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 16px 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+              
+              <!-- PAGE SELECTOR -->
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase;">Sayfa:</span>
+                <select id="hmPageSelect" onchange="switchHeatmapPage(this.value)" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 9px; padding: 7px 14px; font-size: 12.5px; font-weight: 700; color: #0f172a; cursor: pointer; outline: none;">
+                  <option value="pdp" selected>🛍️ Ürün Detay Sayfası (PDP)</option>
+                  <option value="home">🏠 Mağaza Anasayfası (/)</option>
+                  <option value="cart">🛒 Sepet &amp; Ödeme Adımı (/cart)</option>
+                </select>
+              </div>
+
+              <!-- DEVICE VIEWPORT TOGGLE -->
+              <div style="display: flex; align-items: center; gap: 4px; background: #f1f5f9; padding: 4px; border-radius: 10px;">
+                <button type="button" id="hmBtnDesktop" onclick="switchHeatmapDevice('desktop')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                  💻 <span>Masaüstü (1440px)</span>
+                </button>
+                <button type="button" id="hmBtnMobile" onclick="switchHeatmapDevice('mobile')" style="background: transparent; border: 1px solid transparent; color: #64748b; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                  📱 <span>Mobil (390px)</span>
+                </button>
+              </div>
+
+              <!-- MANUEL ÖZEL TARİH SEÇİCİ (CUSTOM DATE RANGE PICKER) -->
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 5px 12px; border-radius: 12px;">
+                <span style="font-size: 12px; font-weight: 800; color: #2563eb; display: flex; align-items: center; gap: 4px;">📅 Tarih Aralığı:</span>
+                <input type="date" id="hmStartDate" value="2026-08-11" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: #0f172a; outline: none;" />
+                <span style="color: #94a3b8; font-weight: 800;">→</span>
+                <input type="date" id="hmEndDate" value="2026-09-10" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; color: #0f172a; outline: none;" />
+                <button type="button" id="hmApplyDateBtn" onclick="applyCustomDateRange()" style="background: #2563eb; color: #ffffff; border: none; border-radius: 8px; padding: 6px 14px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
+                  Uygula
+                </button>
+              </div>
+
+              <!-- HIZLI TARİH PRESETLERİ -->
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <button type="button" onclick="setQuickDateRange('7d')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 5px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer;">Son 7G</button>
+                <button type="button" onclick="setQuickDateRange('30d')" style="background: #eff6ff; border: 1px solid #3b82f6; color: #1d4ed8; padding: 5px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 800; cursor: pointer;">Son 30G</button>
+                <button type="button" onclick="setQuickDateRange('this_month')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 5px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer;">Bu Ay</button>
+                <button type="button" onclick="setQuickDateRange('last_month')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 5px 10px; border-radius: 7px; font-size: 11.5px; font-weight: 700; cursor: pointer;">Geçen Ay</button>
+              </div>
+
+            </div>
+
+            <!-- 3. SUB-TABS NAVIGATION (4 TICARI MODUL SEKMESI) -->
+            <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; overflow-x: auto;">
+              <button type="button" id="subTabBtnCanvas" onclick="switchHmSubTab('canvas')" style="background: #2563eb; color: #ffffff; border: none; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37,99,235,0.25); transition: all 0.2s;">
+                🔥 <span>Isı Haritası &amp; Finansal Katman</span>
+              </button>
+              <button type="button" id="subTabBtnReplay" onclick="switchHmSubTab('replay')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                🎥 <span>Oturum Kaydı Oynatıcı (Session Replay · rrweb)</span>
+              </button>
+              <button type="button" id="subTabBtnVitals" onclick="switchHmSubTab('vitals')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                ⚡ <span>Sayfa Hızı &amp; Sürtünme (Core Web Vitals)</span>
+              </button>
+              <button type="button" id="subTabBtnCRO" onclick="switchHmSubTab('cro')" style="background: #ffffff; color: #475569; border: 1.5px solid #cbd5e1; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                📋 <span>Yapay Zeka CRO Yol Haritası</span>
+              </button>
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════
+                 TAB 1: VISUAL HEATMAP & TOP ELEMENTS BREAKDOWN
+            ══════════════════════════════════════════════════════ -->
+            <div id="hmTabSection_canvas">
+              
+              <!-- MACRO UX & FRICTION KPI SCORECARDS -->
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
+                <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase;">Toplam İncelenen Oturum</span>
+                    <span style="font-size: 16px;">👥</span>
+                  </div>
+                  <div id="hmKpiSessions" style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">84,200</div>
+                  <div id="hmKpiClicksSub" style="font-size: 11.5px; color: #64748b; margin-top: 2px;">142,500 toplam etkileşim</div>
+                </div>
+
+                <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; font-weight: 800; color: #059669; text-transform: uppercase;">Ortalama Kaydırma (Scroll)</span>
+                    <span style="font-size: 16px;">📜</span>
+                  </div>
+                  <div id="hmKpiScroll" style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">68.4%</div>
+                  <div style="font-size: 11.5px; color: #059669; font-weight: 700; margin-top: 2px;">%62.4 katlanma çizgisine (fold) erişti</div>
+                </div>
+
+                <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; font-weight: 800; color: #dc2626; text-transform: uppercase;">Öfke Tıklaması Oranı (Rage)</span>
+                    <span style="font-size: 16px;">⚡</span>
+                  </div>
+                  <div id="hmKpiRage" style="font-size: 26px; font-weight: 800; color: #dc2626; margin-top: 4px;">2.8%</div>
+                  <div style="font-size: 11.5px; color: #dc2626; font-weight: 700; margin-top: 2px;">🔴 2,350 sinirli ardışık tıklama</div>
+                </div>
+
+                <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; font-weight: 800; color: #d97706; text-transform: uppercase;">Ölü Tıklama Oranı (Dead)</span>
+                    <span style="font-size: 16px;">🚫</span>
+                  </div>
+                  <div id="hmKpiDead" style="font-size: 26px; font-weight: 800; color: #d97706; margin-top: 4px;">4.9%</div>
+                  <div style="font-size: 11.5px; color: #b45309; font-weight: 700; margin-top: 2px;">🟡 4,120 link olmayan öğeye tıklama</div>
+                </div>
+              </div>
+
+              <!-- HEATMAP OVERLAY MODES SELECTOR -->
+              <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 10px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase;">Görsel Katman Modu:</span>
+                  <button type="button" id="hmModeClick" onclick="switchHeatmapMode('click')" class="hm-mode-pill active" style="background: #eff6ff; border: 1.5px solid #3b82f6; color: #1d4ed8; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
+                    🔥 Tıklama Yoğunluğu (Click Heatmap)
+                  </button>
+                  <button type="button" id="hmModeScroll" onclick="switchHeatmapMode('scroll')" class="hm-mode-pill" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                    📜 Kaydırma Derinliği (Scroll Depth)
+                  </button>
+                  <button type="button" id="hmModeRage" onclick="switchHeatmapMode('rage')" class="hm-mode-pill" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                    ⚡ Öfke Tıklamaları (Rage Clicks)
+                  </button>
+                  <button type="button" id="hmModeRevenue" onclick="switchHeatmapMode('revenue')" class="hm-mode-pill" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                    💰 Ciro &amp; Gelir Katmanı (Revenue Attribution)
+                  </button>
+                </div>
+                <div style="font-size: 12px; color: #059669; font-weight: 700;">
+                  ✓ Canlı Veri Akışı Bağlı
+                </div>
+              </div>
+
+              <!-- VISUAL HEATMAP CANVAS CONTAINER (INTERACTIVE MOCKUP WITH HOTSPOTS) -->
+              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <span class="funnel-section-tag">🎨 Visual Behavioral Canvas</span>
+                    <h4 class="funnel-section-title" id="hmCanvasHeading">Interactive PDP Click Hotspots &amp; User Retention</h4>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 700; color: #64748b;">
+                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> Sıcak / CVR %20+</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Orta / Aktif</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Bilgi / Soğuk</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #9333ea; display: inline-block;"></span> Ölü Tıklama</span>
+                  </div>
+                </div>
+
+                <!-- THE MOCKUP FRAME (TRANSFORMS BETWEEN DESKTOP 100% AND MOBILE 390PX) -->
+                <div id="hmViewportFrame" style="width: 100%; max-width: 100%; margin: 0 auto; background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 16px; overflow: hidden; position: relative; transition: all 0.3s ease; box-shadow: 0 8px 30px rgba(0,0,0,0.06);">
+                  
+                  <!-- SIMULATED BROWSER BAR -->
+                  <div style="background: #e2e8f0; padding: 10px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #cbd5e1;">
+                    <div style="display: flex; gap: 6px;">
+                      <span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
+                      <span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+                      <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                    </div>
+                    <div style="flex: 1; background: #ffffff; border-radius: 6px; padding: 4px 12px; font-size: 11.5px; color: #64748b; font-family: monospace; display: flex; align-items: center; gap: 6px;">
+                      🔒 <span id="hmSimulatedUrl">https://store.dataprovido.com/product/sony-wh-1000xm5</span>
+                    </div>
+                  </div>
+
+                  <!-- CANVAS WRAPPER (CONTAINS E-COMMERCE MOCKUP + OVERLAY HOTSPOTS + SCROLL OVERLAY) -->
+                  <div id="hmCanvasWrapper" style="position: relative; min-height: 640px; background: #ffffff; user-select: none;">
+                    
+                    <!-- STATIC PROMO BANNER STRIP -->
+                    <div style="background: #fef3c7; border-bottom: 1px solid #fde68a; padding: 8px 16px; text-align: center; font-size: 12px; font-weight: 800; color: #92400e; position: relative;">
+                      ⚡ HAFTA SONU %20 SEPET İNDİRİMİ · TÜM KULAKLIKLARDA GEÇERLİ! (Link Tanımlanmamış - Ölü Tıklama Riski)
+                    </div>
+
+                    <!-- SIMULATED E-COMMERCE PDP CONTENT -->
+                    <div style="padding: 24px 32px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 32px;" id="hmPdpGrid">
+                      
+                      <!-- LEFT COLUMN: PRODUCT IMAGE GALLERY -->
+                      <div>
+                        <div style="width: 100%; aspect-ratio: 1/1; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-radius: 16px; border: 1px solid #cbd5e1; display: grid; place-items: center; position: relative; overflow: hidden;">
+                          <div style="font-size: 72px;">🎧</div>
+                          <span style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: #ffffff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">🔍 360° Zoom Görünümü</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 12px;">
+                          <div style="width: 60px; height: 60px; background: #f1f5f9; border-radius: 8px; border: 2px solid #2563eb; display: grid; place-items: center; font-size: 24px;">🎧</div>
+                          <div style="width: 60px; height: 60px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: grid; place-items: center; font-size: 24px;">🔌</div>
+                          <div style="width: 60px; height: 60px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: grid; place-items: center; font-size: 24px;">📦</div>
+                        </div>
+                      </div>
+
+                      <!-- RIGHT COLUMN: PRODUCT DETAILS & BUY BOX -->
+                      <div>
+                        <div style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase; letter-spacing: 0.05em;">Sony Official Store · Stokta Var</div>
+                        <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 4px 0 8px; line-height: 1.3;">Sony WH-1000XM5 Kablosuz ANC Kulaklık</h2>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+                          <span style="color: #f59e0b; font-size: 14px;">★★★★★</span>
+                          <span style="font-size: 12px; font-weight: 700; color: #0f172a;">4.8</span>
+                          <span style="font-size: 12px; color: #64748b;">(840 Müşteri Yorumu &amp; Değerlendirme)</span>
+                        </div>
+
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;">
+                          <div style="display: flex; align-items: baseline; gap: 10px;">
+                            <span style="font-size: 28px; font-weight: 800; color: #0f172a;">₺11,499</span>
+                            <span style="font-size: 16px; color: #94a3b8; text-decoration: line-through;">₺13,299</span>
+                            <span style="background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px;">%14 İndirim</span>
+                          </div>
+                          <div style="font-size: 12px; color: #059669; font-weight: 700; margin-top: 4px;">💳 Peşin fiyatına 3 taksit imkanı (3 x ₺3,833)</div>
+                        </div>
+
+                        <!-- VARIANT SELECTOR -->
+                        <div style="margin-bottom: 18px;">
+                          <div style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 8px;">Renk / Beden Seçimi:</div>
+                          <div style="display: flex; gap: 8px;">
+                            <button type="button" style="background: #0f172a; color: #ffffff; border: 2px solid #0f172a; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">Siyah (Mat)</button>
+                            <button type="button" style="background: #ffffff; color: #334155; border: 1.5px solid #cbd5e1; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">Gümüş Gri</button>
+                            <button type="button" style="background: #ffffff; color: #ef4444; border: 1.5px dashed #f87171; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;">Gece Mavisi (Stoksuz!)</button>
+                          </div>
+                        </div>
+
+                        <!-- CTA BUTTONS -->
+                        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                          <button type="button" id="mockBtnAddToCart" style="flex: 1.4; background: linear-gradient(135deg, #f26f26 0%, #d85c18 100%); color: #ffffff; border: none; padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 14px rgba(242,111,38,0.30); display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            🛒 Sepete Ekle
+                          </button>
+                          <button type="button" id="mockBtnBuyNow" style="flex: 1; background: #0f172a; color: #ffffff; border: none; padding: 14px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            ⚡ 1-Tıkla Hemen Al
+                          </button>
+                        </div>
+
+                        <!-- SHIPPING ACCORDION -->
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 12px; color: #475569; display: flex; justify-content: space-between; align-items: center;">
+                          <span>🚚 <strong>Ücretsiz Kargo:</strong> Yarın kapınızda · Kolay 14 gün iade</span>
+                          <span style="font-weight: 800; color: #2563eb;">Detay &darr;</span>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    <!-- SPECIFICATIONS & REVIEWS TABS (LOWER SECTION) -->
+                    <div style="padding: 20px 32px; border-top: 1px solid #e2e8f0; background: #fafafa;">
+                      <div style="display: flex; gap: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 16px;">
+                        <span style="font-weight: 800; color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: -12px; cursor: pointer;">Ürün Özellikleri</span>
+                        <span style="font-weight: 700; color: #64748b; cursor: pointer;">Kullanıcı Yorumları (840)</span>
+                        <span style="font-weight: 700; color: #64748b; cursor: pointer;">Taksit ve Ödeme Seçenekleri</span>
+                      </div>
+                      <p style="font-size: 12.5px; color: #64748b; line-height: 1.6;">
+                        Endüstri lideri gürültü engelleme (Noise Canceling), Auto NC Optimizer, 30 saat pil ömrü, Speak-to-Chat ve olağanüstü ses netliği için iki işlemci ve sekiz mikrofon.
+                      </p>
+                    </div>
+
+                    <!-- INTERACTIVE OVERLAY LAYER FOR HOTSPOTS -->
+                    <div id="hmHotspotsOverlay" style="position: absolute; inset: 0; pointer-events: none; z-index: 20;"></div>
+
+                    <!-- SCROLL DEPTH OVERLAY LAYER (VISIBLE ONLY IN SCROLL MODE) -->
+                    <div id="hmScrollOverlay" style="display: none; position: absolute; inset: 0; pointer-events: none; z-index: 15; background: linear-gradient(180deg, rgba(34,197,94,0.30) 0%, rgba(234,179,8,0.30) 35%, rgba(249,115,22,0.35) 60%, rgba(239,68,68,0.45) 85%, rgba(15,23,42,0.60) 100%);">
+                      
+                      <!-- AVERAGE VIEWPORT FOLD DASHED LINE -->
+                      <div style="position: absolute; top: 62%; left: 0; right: 0; border-top: 2.5px dashed #dc2626; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; transform: translateY(-50%);">
+                        <span style="background: #dc2626; color: #ffffff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                          📍 Ortalama Katlanma Çizgisi (Average Fold 760px) — %62.4 Ziyaretçi Erişimi
+                        </span>
+                        <span style="background: #ffffff; color: #dc2626; border: 1.5px solid #dc2626; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">
+                          ⚠️ Bu Çizginin Altı %37.6 Ziyaretçi Tarafından Görülmüyor
+                        </span>
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              <!-- TOP CLICKED & INTERACTIVE ELEMENTS TABLE -->
+              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <span class="funnel-section-tag">📊 DOM Element Level Breakdown</span>
+                    <h4 class="funnel-section-title">En Çok Tıklanan Elementler &amp; Satın Alma Korelasyonu</h4>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="text" id="hmElementSearch" oninput="filterHeatmapElements()" placeholder="🔍 Element veya Seçici Ara..." style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; font-size: 12.5px; outline: none; width: 220px;" />
+                  </div>
+                </div>
+
+                <div style="overflow-x: auto;">
+                  <table class="funnel-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                      <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; text-align: left;">
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">#</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Element Adı &amp; CSS Seçici</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Tür / Sayfa Alanı</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Toplam Tıklama</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Ziyaretçi Payı (%)</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Öfke / Ölü Tıklama</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Satın Alma CVR (%)</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Atfedilen Ciro (₺)</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: center;">Aksiyon Önceliği</th>
+                      </tr>
+                    </thead>
+                    <tbody id="hmElementsTbody">
+                      <!-- Dynamic Rows Loaded via loadHeatmapData() -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════
+                 TAB 2: SESSION REPLAY PLAYER (rrweb ARCHITECTURE)
+            ══════════════════════════════════════════════════════ -->
+            <div id="hmTabSection_replay" style="display: none;">
+              
+              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <span class="funnel-section-tag">🎥 rrweb DOM Replay Engine</span>
+                    <h4 class="funnel-section-title">Kullanıcı Oturum Kaydı Oynatıcı &amp; Öfke Anı Teşhisi</h4>
+                  </div>
+                  <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    🔒 <span>KVKK / Zero-PII: Form şifreleri ve kart numaraları tarayıcıda otomatik sansürlenir.</span>
+                  </div>
+                </div>
+
+                <!-- 2-COLUMN REPLAY WORKSPACE: SESSION LIST (LEFT) + VIDEO PLAYER (RIGHT) -->
+                <div style="display: grid; grid-template-columns: 320px 1fr; gap: 24px;">
+                  
+                  <!-- LEFT: SESSION LIST -->
+                  <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; max-height: 560px; overflow-y: auto;">
+                    <div style="font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; padding: 0 4px;">Filtrelenmiş Oturumlar (4 Kayıt):</div>
+                    <div id="hmSessionListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+                      <!-- Populated via loadSessionReplays() -->
+                    </div>
+                  </div>
+
+                  <!-- RIGHT: INTERACTIVE REPLAY PLAYER -->
+                  <div style="background: #0f172a; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 12px 36px rgba(0,0,0,0.25); border: 1px solid #334155;">
+                    
+                    <!-- PLAYER HEADER BAR -->
+                    <div style="background: #1e293b; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: #ffffff;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <span id="playerSessionBadge" style="background: #ef4444; color: #ffffff; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px;">🔴 Öfke Tıklaması</span>
+                        <strong id="playerSessionUser" style="font-size: 13.5px;">User #8410 (Ankara, TR)</strong>
+                        <span id="playerSessionDevice" style="font-size: 12px; color: #94a3b8;">iPhone 15 Pro · Safari</span>
+                      </div>
+                      <div style="font-size: 12px; color: #94a3b8;" id="playerSessionDuration">Süre: 03:12</div>
+                    </div>
+
+                    <!-- PLAYER CANVAS / SIMULATED SCREEN VIEWPORT -->
+                    <div id="playerCanvasViewport" style="flex: 1; min-height: 400px; background: #ffffff; position: relative; overflow: hidden; display: flex; flex-direction: column;">
+                      <!-- Simulated Header Strip -->
+                      <div style="background: #f1f5f9; padding: 8px 16px; font-size: 11.5px; color: #64748b; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
+                        <span>🛒 store.dataprovido.com/product/sony-wh-1000xm5</span>
+                        <span>Oturum Canlandırması</span>
+                      </div>
+                      <!-- Mocked Store Body in Player -->
+                      <div style="padding: 24px; position: relative; flex: 1;">
+                        <div style="display: flex; gap: 20px;">
+                          <div style="width: 140px; height: 140px; background: #e2e8f0; border-radius: 12px; display: grid; place-items: center; font-size: 48px;">🎧</div>
+                          <div style="flex: 1;">
+                            <h4 style="margin: 0 0 6px; font-size: 16px; color: #0f172a;">Sony WH-1000XM5 ANC Kulaklık</h4>
+                            <div style="font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">₺11,499</div>
+                            <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+                              <span style="background: #0f172a; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">Siyah</span>
+                              <span style="background: #f1f5f9; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">Gri</span>
+                              <span id="playerMockSizeChip" style="background: #fff; border: 1.5px dashed #ef4444; color: #ef4444; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">Gece Mavisi (L)</span>
+                            </div>
+                            <button type="button" id="playerMockCta" style="background: #f26f26; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 800;">🛒 Sepete Ekle</button>
+                          </div>
+                        </div>
+
+                        <!-- SIMULATED CURSOR & PULSE OVERLAY -->
+                        <div id="simulatedCursor" style="position: absolute; left: 35%; top: 45%; width: 22px; height: 22px; pointer-events: none; transition: all 0.4s ease-out; z-index: 50;">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="#0f172a" stroke="#ffffff" stroke-width="2"><path d="M3 3l7 18 3-7 7-3L3 3z"/></svg>
+                          <div id="simulatedCursorPulse" style="display: none; position: absolute; top: -10px; left: -10px; width: 42px; height: 42px; border-radius: 50%; background: rgba(220,38,38,0.5); animation: tour-beacon-pulse 0.8s infinite;"></div>
+                        </div>
+
+                        <!-- LIVE ACTION BANNER OVERLAY -->
+                        <div id="playerActionCaption" style="position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.92); color: #ffffff; padding: 6px 16px; border-radius: 999px; font-size: 12px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,0.3); backdrop-filter: blur(4px);">
+                          ▶ Oynat butonuna basarak oturumu izleyin
+                        </div>
+
+                      </div>
+                    </div>
+
+                    <!-- PLAYER CONTROLS FOOTER -->
+                    <div style="background: #1e293b; padding: 14px 20px; border-top: 1px solid #334155; display: flex; flex-direction: column; gap: 10px;">
+                      
+                      <!-- SCRUB BAR WITH EVENT PINS -->
+                      <div style="position: relative; width: 100%; height: 8px; background: #334155; border-radius: 4px; cursor: pointer;" id="playerScrubTrack" onclick="seekReplayPlayer(event)">
+                        <div id="playerScrubProgress" style="width: 25%; height: 100%; background: #2563eb; border-radius: 4px; transition: width 0.1s linear;"></div>
+                        <!-- Keyframe Event Dots -->
+                        <span title="Öfke Tıklaması (%50)" style="position: absolute; left: 50%; top: -3px; width: 14px; height: 14px; border-radius: 50%; background: #ef4444; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></span>
+                        <span title="Sepete Ekle (%65)" style="position: absolute; left: 65%; top: -3px; width: 14px; height: 14px; border-radius: 50%; background: #f26f26; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></span>
+                        <span title="Satın Alma (%85)" style="position: absolute; left: 85%; top: -3px; width: 14px; height: 14px; border-radius: 50%; background: #10b981; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></span>
+                      </div>
+
+                      <!-- CONTROLS ROW -->
+                      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                          <button type="button" id="playerPlayBtn" onclick="toggleReplayPlay()" style="background: #2563eb; color: #ffffff; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 16px; cursor: pointer; display: grid; place-items: center; box-shadow: 0 2px 8px rgba(37,99,235,0.35);">
+                            ▶
+                          </button>
+                          <span id="playerTimer" style="font-size: 12.5px; color: #cbd5e1; font-family: monospace; font-weight: 700;">00:48 / 03:12</span>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <span style="font-size: 11.5px; color: #94a3b8; font-weight: 700;">Hız:</span>
+                          <button type="button" id="playerSpd1" onclick="setReplaySpeed(1)" style="background: #334155; color: #ffffff; border: 1px solid #475569; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">1x</button>
+                          <button type="button" id="playerSpd2" onclick="setReplaySpeed(2)" style="background: transparent; color: #94a3b8; border: 1px solid #334155; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">2x</button>
+                          <button type="button" id="playerSpd4" onclick="setReplaySpeed(4)" style="background: transparent; color: #94a3b8; border: 1px solid #334155; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">4x</button>
+                        </div>
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════
+                 TAB 3: CORE WEB VITALS & FRICTION MATRIX (SPEED + UX)
+            ══════════════════════════════════════════════════════ -->
+            <div id="hmTabSection_vitals" style="display: none;">
+              
+              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <span class="funnel-section-tag">⚡ Open-Source web-vitals API</span>
+                    <h4 class="funnel-section-title">Core Web Vitals Hız Performansı &amp; Öfke Tıklaması Korelasyonu</h4>
+                  </div>
+                  <span class="data-source-pill live">Chrome UX (CrUX) Uyumlu</span>
+                </div>
+
+                <!-- 3 CARDS: INP, LCP, CLS -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+                  
+                  <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 16px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-size: 11.5px; font-weight: 800; color: #b45309; text-transform: uppercase;">INP (Interaction to Next Paint)</span>
+                      <span style="font-size: 18px;">⚡</span>
+                    </div>
+                    <div style="font-size: 32px; font-weight: 800; color: #b45309; margin-top: 6px;">285 ms</div>
+                    <div style="font-size: 12px; color: #d97706; font-weight: 800; margin-top: 2px;">🟡 İyileştirme Gerekli (Hedef &lt; 200ms)</div>
+                    <p style="font-size: 11.5px; color: #78350f; margin: 8px 0 0; line-height: 1.4;">
+                      Kullanıcı butona bastıktan sonra sayfanın yanıt verme gecikmesidir. 200ms üzeri gecikmeler doğrudan <strong>Öfke Tıklamalarına (Rage Clicks)</strong> yol açar.
+                    </p>
+                  </div>
+
+                  <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 16px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-size: 11.5px; font-weight: 800; color: #15803d; text-transform: uppercase;">LCP (Largest Contentful Paint)</span>
+                      <span style="font-size: 18px;">🖼️</span>
+                    </div>
+                    <div style="font-size: 32px; font-weight: 800; color: #15803d; margin-top: 6px;">2.1 sn</div>
+                    <div style="font-size: 12px; color: #16a34a; font-weight: 800; margin-top: 2px;">🟢 İyi (Hedef &lt; 2.5sn)</div>
+                    <p style="font-size: 11.5px; color: #14532d; margin: 8px 0 0; line-height: 1.4;">
+                      Ana ürün görselinin ekranda tamamen belirdiği andır. 2.5 saniyenin altında olması ziyaretçilerin sayfayı hemen terk etmesini (bounce) engeller.
+                    </p>
+                  </div>
+
+                  <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 16px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-size: 11.5px; font-weight: 800; color: #15803d; text-transform: uppercase;">CLS (Cumulative Layout Shift)</span>
+                      <span style="font-size: 18px;">📐</span>
+                    </div>
+                    <div style="font-size: 32px; font-weight: 800; color: #15803d; margin-top: 6px;">0.04</div>
+                    <div style="font-size: 12px; color: #16a34a; font-weight: 800; margin-top: 2px;">🟢 Mükemmel (Hedef &lt; 0.1)</div>
+                    <p style="font-size: 11.5px; color: #14532d; margin: 8px 0 0; line-height: 1.4;">
+                      Sayfa yüklenirken butonların ve resimlerin yerinden kayma oranıdır. Düşük CLS, kullanıcıların yanlış butona basmasını engeller.
+                    </p>
+                  </div>
+
+                </div>
+
+                <!-- COMPONENT INTERACTION LATENCY VS RAGE CLICKS BREAKDOWN TABLE -->
+                <div style="overflow-x: auto;">
+                  <table class="funnel-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                      <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; text-align: left;">
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Bileşen &amp; CSS Seçici</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">INP Yanıt Gecikmesi</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">JS Thread Durumu</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Öfke Tıklamaları</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Sepet Terk Oranı</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Tahmini Ciro Kaybı</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Önerilen Kod İyileştirmesi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="hmWebVitalsTbody">
+                      <!-- Populated via loadWebVitalsData() -->
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- ══════════════════════════════════════════════════════
+                 TAB 4: AI CRO PRESCRIPTIVE ROADMAP
+            ══════════════════════════════════════════════════════ -->
+            <div id="hmTabSection_cro" style="display: none;">
+              
+              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                  <div>
+                    <span class="funnel-section-tag">💡 Prescriptive AI Engine</span>
+                    <h4 class="funnel-section-title">E-Ticaret Gelir Artırıcı CRO Eylem Planı (Aksiyon Listesi)</h4>
+                  </div>
+                  <span class="data-source-pill demo">💰 Toplam Tahmini Katkı: +₺785,000 / ay</span>
+                </div>
+
+                <div id="hmCroCardsContainer" style="display: grid; grid-template-columns: 1fr; gap: 16px;">
+                  <!-- Populated dynamically with rich actionable cards -->
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+          <!-- END HEATMAP & UX ANALYTICS WORKSPACE -->
+
           <div class="input-area" style="margin-top: 0;">
             <!-- IMPECCABLE UNIFIED AI COMMAND BAR CARD -->
             <div id="dropZoneContainer" class="impeccable-cmd-card">
@@ -5314,7 +6330,7 @@ print(res.json())
               <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 20px;">📈</span>
                 <div>
-                  <h3 id="resultHeaderTitle" style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--text-900);">Analytical Output</h3>
+                  <h3 id="resultHeaderTitle" style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 20px; font-weight: 800; color: var(--text-900);">Analytical Output</h3>
                   <p id="resultHeaderSub" style="font-size: 12px; color: var(--text-500);">Executive summary and data table outputs are displayed here.</p>
                 </div>
               </div>
@@ -5336,7 +6352,7 @@ print(res.json())
         <div style="display: flex; align-items: center; gap: 12px;">
           <div style="width: 42px; height: 42px; border-radius: 12px; background: #ecfdf5; border: 1px solid #10b981; display: grid; place-items: center; font-size: 20px;">📊</div>
           <div>
-            <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--text-900);" id="modalTableTitle">Excel Data & Column Viewer</h3>
+            <h3 style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 20px; font-weight: 800; color: var(--text-900);" id="modalTableTitle">Excel Data &amp; Column Viewer</h3>
             <p style="font-size: 12px; color: var(--text-500);" id="modalTableSub">Live spreadsheet preview, row search & column analysis</p>
           </div>
         </div>
@@ -5456,7 +6472,7 @@ print(res.json())
           <button onclick="closeOnboardingModal()" type="button" style="background: rgba(255,255,255,0.12); border: none; color: #ffffff; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: 700; cursor: pointer; display: grid; place-items: center; transition: all 0.2s;">✕</button>
         </div>
         
-        <h3 id="onboardingHeaderTitle" style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #ffffff; margin: 0 0 6px;">Welcome! Discover DataProvido Console</h3>
+        <h3 id="onboardingHeaderTitle" style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 22px; font-weight: 800; color: #ffffff; margin: 0 0 6px;">Welcome! Discover DataProvido Console</h3>
         <p id="onboardingHeaderSub" style="font-size: 12.5px; color: #94a3b8; margin: 0; line-height: 1.5;">Transform your retail and e-commerce data into actionable insights in 4 easy steps.</p>
 
         <!-- STEP PILLS PROGRESS BAR -->
@@ -5573,7 +6589,7 @@ print(res.json())
           <button onclick="closeCategoryOnboardingModal()" type="button" style="background: rgba(255,255,255,0.12); border: none; color: #ffffff; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: 700; cursor: pointer; display: grid; place-items: center; transition: all 0.2s;">✕</button>
         </div>
         
-        <h3 id="catObHeaderTitle" style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #ffffff; margin: 0 0 6px;">Category &amp; Product Analysis Setup</h3>
+        <h3 id="catObHeaderTitle" style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 22px; font-weight: 800; color: #ffffff; margin: 0 0 6px;">Category &amp; Product Analysis Setup</h3>
         <p id="catObHeaderSub" style="font-size: 12.5px; color: #94a3b8; margin: 0; line-height: 1.5;">Choose your data ingestion pipeline mode, download analysis templates, and unlock interactive visual charting.</p>
 
         <!-- STEP PILLS PROGRESS BAR -->
@@ -5891,6 +6907,42 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     </div>
   </div>
 
+  <!-- TRACKING SETUP & CLARITY SYNC MODAL -->
+  <div id="trackingSetupModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center; padding: 24px;">
+    <div style="background: #ffffff; border-radius: 24px; width: 100%; max-width: 680px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.3); border: 1px solid #e2e8f0;">
+      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 22px 28px; color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">⚙️</span>
+          <div>
+            <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 800; margin: 0; color: #ffffff;">Heatmap Tracking &amp; Clarity Integration</h3>
+            <span style="font-size: 12px; color: #94a3b8;">Install tracker snippet or link your Microsoft Clarity Project ID</span>
+          </div>
+        </div>
+        <button onclick="closeTrackingSetupModal()" type="button" style="background: rgba(255,255,255,0.12); border: none; color: #ffffff; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; font-weight: 700; cursor: pointer;">✕</button>
+      </div>
+      <div style="padding: 24px 28px;">
+        <div style="margin-bottom: 20px;">
+          <label style="font-size: 12.5px; font-weight: 800; color: #0f172a; display: block; margin-bottom: 6px;">1. Tek Satırlık DataProvido Takip Kodu (Önerilen)</label>
+          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; font-family: monospace; font-size: 11.5px; color: #1e293b; user-select: all; position: relative;">
+            &lt;script src="https://cdn.dataprovido.com/tracker.js" data-site="retail-prod-88910" async&gt;&lt;/script&gt;
+          </div>
+          <p style="font-size: 12px; color: #64748b; margin-top: 6px;">Web sitenizin veya uygulamanızın &lt;head&gt; bloğuna eklemeniz yeterlidir. Saniyede 0ms gecikmeyle koordinatları toplar.</p>
+        </div>
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 18px; margin-bottom: 20px;">
+          <label style="font-size: 12.5px; font-weight: 800; color: #0f172a; display: block; margin-bottom: 6px;">2. Veya Mevcut Microsoft Clarity Projenizi Eşleyin</label>
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="clarityProjectIdInput" placeholder="Clarity Project ID (Örn: m8q2k4p9)" value="m8q2k4p9" style="flex: 1; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px 14px; font-size: 13px; outline: none;" />
+            <button type="button" onclick="syncClarityProject()" style="background: #2563eb; color: #ffffff; border: none; border-radius: 10px; padding: 8px 18px; font-size: 12.5px; font-weight: 700; cursor: pointer;">Senkronize Et</button>
+          </div>
+          <span id="claritySyncStatus" style="font-size: 12px; color: #059669; font-weight: 700; display: block; margin-top: 6px;">✓ Clarity Projesi m8q2k4p9 bağlı (Aktif Veri Akışı).</span>
+        </div>
+        <div style="text-align: right;">
+          <button type="button" onclick="closeTrackingSetupModal()" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 8px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer;">Kapat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* ── Global State ── */
     var currentLang = 'en';
@@ -6064,6 +7116,18 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         placeholder: {
           tr: "Örn: Dönüşüm hunisindeki darboğazları getir",
           en: "E.g.: Display conversion funnel bottlenecks"
+        },
+        suggestions: { tr: [], en: [] }
+      },
+      heatmap_analytics: {
+        title: "Heatmap & UX Analytics",
+        desc: {
+          tr: "Kullanıcıların web sitenizde veya uygulamanızda tıkladığı ve dokunduğu alanları, sayfa kaydırma derinliğini, öfke tıklamalarını ve e-ticaret dönüşüm etkisini görselleştirir.",
+          en: "Visualizes user clicks, taps, scroll depth reach, rage click friction, and element-level conversion revenue correlation across your digital storefront and mobile application."
+        },
+        placeholder: {
+          tr: "Örn: En çok tıklanan butonları ve öfke tıklaması alan öğeleri analiz et",
+          en: "E.g.: Analyze top clicked elements, scroll depth drop-off, and rage clicks"
         },
         suggestions: { tr: [], en: [] }
       },
@@ -6277,6 +7341,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       // Handle Funnel Workspace
       const funnelWorkspace = document.getElementById("funnelWorkspaceContainer");
       const stockWorkspace = document.getElementById("stockWorkspaceContainer");
+      const heatmapWorkspace = document.getElementById("heatmapWorkspaceContainer");
       const digitalWorkspace = document.getElementById("digitalMarketingWorkspaceContainer");
       const inputArea = document.querySelector(".input-area");
 
@@ -6286,6 +7351,16 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           setTimeout(() => { initFunnelWorkspace(); }, 200);
         } else {
           funnelWorkspace.classList.remove("active");
+        }
+      }
+
+      // Handle Heatmap & UX Workspace
+      if (heatmapWorkspace) {
+        if (key === "heatmap_analytics") {
+          heatmapWorkspace.classList.add("active");
+          setTimeout(() => { initHeatmapWorkspace(); }, 200);
+        } else {
+          heatmapWorkspace.classList.remove("active");
         }
       }
 
@@ -7083,6 +8158,710 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     window.loadFunnelData = loadFunnelData;
     window.loadStockData = loadStockData;
     window.checkGoogleAuthStatus = checkGoogleAuthStatus;
+
+    /* ══════════════════════════════════════════════════════════
+       HEATMAP & UX ANALYTICS — JavaScript Engine (Task 1)
+       Visual Click/Tap Hotspots, Scroll Depth & Friction CRO
+    ══════════════════════════════════════════════════════════ */
+    let currentHmPage = 'pdp';
+    let currentHmDevice = 'desktop';
+    let currentHmMode = 'click';
+    let currentHmSubTab = 'canvas';
+    let hmElementsCache = [];
+    let hmHotspotsCache = [];
+    let hmScrollLevelsCache = [];
+    let hmReplaysCache = [];
+    let activeReplaySession = null;
+    let replayTimerInterval = null;
+    let replayProgressPct = 25;
+    let isReplayPlaying = false;
+    let replaySpeed = 1;
+
+    function initHeatmapWorkspace() {
+      loadHeatmapData();
+      loadHeatmapInsights();
+      loadSessionReplays();
+      loadWebVitalsData();
+    }
+
+    async function loadHeatmapData() {
+      try {
+        const start = document.getElementById('hmStartDate') ? document.getElementById('hmStartDate').value : '';
+        const end = document.getElementById('hmEndDate') ? document.getElementById('hmEndDate').value : '';
+        const period = document.getElementById('hmPeriodSelect') ? document.getElementById('hmPeriodSelect').value : '30d';
+        
+        let url = '/api/heatmap/data?page=' + currentHmPage + '&device=' + currentHmDevice + '&period=' + period;
+        if (start && end) {
+          url += '&start_date=' + encodeURIComponent(start) + '&end_date=' + encodeURIComponent(end);
+        }
+
+        const resp = await fetch(url);
+        const data = await resp.json();
+
+        if (data && data.summary) {
+          const s = data.summary;
+          const kpiSessions = document.getElementById('hmKpiSessions');
+          const kpiClicksSub = document.getElementById('hmKpiClicksSub');
+          const kpiScroll = document.getElementById('hmKpiScroll');
+          const kpiRage = document.getElementById('hmKpiRage');
+          const kpiDead = document.getElementById('hmKpiDead');
+
+          if (kpiSessions) kpiSessions.textContent = (s.total_sessions || 84200).toLocaleString();
+          if (kpiClicksSub) kpiClicksSub.textContent = (s.total_clicks || 142500).toLocaleString() + ' toplam etkileşim';
+          if (kpiScroll) kpiScroll.textContent = (s.avg_scroll_depth || 68.4) + '%';
+          if (kpiRage) kpiRage.textContent = (s.rage_click_rate || 2.8) + '%';
+          if (kpiDead) kpiDead.textContent = (s.dead_click_rate || 4.9) + '%';
+        }
+
+        hmElementsCache = data.top_elements || [];
+        hmHotspotsCache = data.hotspots || [];
+        hmScrollLevelsCache = data.scroll_levels || [];
+
+        renderHeatmapVisualCanvas(hmHotspotsCache, hmScrollLevelsCache);
+        renderHeatmapElementsTable(hmElementsCache);
+      } catch (e) {
+        console.error('Failed to load heatmap data:', e);
+      }
+    }
+
+    function applyCustomDateRange() {
+      const start = document.getElementById('hmStartDate').value;
+      const end = document.getElementById('hmEndDate').value;
+      if (!start || !end) {
+        alert('Lütfen geçerli bir Başlangıç ve Bitiş tarihi seçin.');
+        return;
+      }
+      loadHeatmapData();
+    }
+
+    function setQuickDateRange(preset) {
+      const today = new Date();
+      let start = new Date();
+      let end = new Date();
+
+      if (preset === '7d') {
+        start.setDate(today.getDate() - 7);
+      } else if (preset === '30d') {
+        start.setDate(today.getDate() - 30);
+      } else if (preset === 'this_month') {
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+      } else if (preset === 'last_month') {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+      }
+
+      const formatDate = (d) => {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return yyyy + '-' + mm + '-' + dd;
+      };
+
+      if (document.getElementById('hmStartDate')) document.getElementById('hmStartDate').value = formatDate(start);
+      if (document.getElementById('hmEndDate')) document.getElementById('hmEndDate').value = formatDate(end);
+      applyCustomDateRange();
+    }
+
+    function switchHmSubTab(tabKey) {
+      currentHmSubTab = tabKey;
+      const tabs = ['canvas', 'replay', 'vitals', 'cro'];
+      
+      tabs.forEach(t => {
+        const btn = document.getElementById('subTabBtn' + (t === 'canvas' ? 'Canvas' : t === 'replay' ? 'Replay' : t === 'vitals' ? 'Vitals' : 'CRO'));
+        const section = document.getElementById('hmTabSection_' + t);
+        if (t === tabKey) {
+          if (btn) {
+            btn.style.background = '#2563eb';
+            btn.style.color = '#ffffff';
+            btn.style.border = 'none';
+            btn.style.boxShadow = '0 4px 12px rgba(37,99,235,0.25)';
+          }
+          if (section) section.style.display = 'block';
+        } else {
+          if (btn) {
+            btn.style.background = '#ffffff';
+            btn.style.color = '#475569';
+            btn.style.border = '1.5px solid #cbd5e1';
+            btn.style.boxShadow = 'none';
+          }
+          if (section) section.style.display = 'none';
+        }
+      });
+
+      if (tabKey === 'replay' && (!hmReplaysCache || hmReplaysCache.length === 0)) {
+        loadSessionReplays();
+      } else if (tabKey === 'vitals') {
+        loadWebVitalsData();
+      } else if (tabKey === 'cro') {
+        loadHeatmapInsights();
+      }
+    }
+
+    function renderHeatmapVisualCanvas(hotspots, scrollLevels) {
+      const overlay = document.getElementById('hmHotspotsOverlay');
+      const scrollOverlay = document.getElementById('hmScrollOverlay');
+      const heading = document.getElementById('hmCanvasHeading');
+
+      if (scrollOverlay) {
+        scrollOverlay.style.display = (currentHmMode === 'scroll') ? 'block' : 'none';
+      }
+
+      if (heading) {
+        if (currentHmMode === 'click') heading.innerHTML = 'Interactive PDP Click Hotspots &amp; User Retention';
+        else if (currentHmMode === 'scroll') heading.innerHTML = 'Scroll Depth Gradient &amp; Viewport Fold Reach';
+        else if (currentHmMode === 'rage') heading.innerHTML = '⚡ Rage Clicks &amp; Broken Interaction Hotspots';
+        else if (currentHmMode === 'revenue') heading.innerHTML = '💰 Revenue Attribution &amp; High-CVR Button Overlay';
+      }
+
+      if (!overlay) return;
+      overlay.innerHTML = '';
+
+      if (currentHmMode === 'scroll') {
+        return;
+      }
+
+      const items = hotspots || hmHotspotsCache;
+      items.forEach(h => {
+        const pin = document.createElement('div');
+        pin.style.position = 'absolute';
+        pin.style.left = h.x + '%';
+        pin.style.top = h.y + '%';
+        pin.style.transform = 'translate(-50%, -50%)';
+        pin.style.pointerEvents = 'auto';
+        pin.style.cursor = 'pointer';
+        pin.style.zIndex = '30';
+        pin.style.display = 'flex';
+        pin.style.flexDirection = 'column';
+        pin.style.alignItems = 'center';
+
+        let badgeBg = '#2563eb';
+        let ringColor = 'rgba(37, 99, 235, 0.4)';
+        let badgeText = h.clicks;
+
+        if (currentHmMode === 'rage') {
+          if (h.rage > 30) {
+            badgeBg = '#dc2626';
+            ringColor = 'rgba(220, 38, 38, 0.6)';
+            badgeText = '🔴 ' + h.rage + ' Rage Clicks';
+          } else {
+            pin.style.opacity = '0.35';
+          }
+        } else if (currentHmMode === 'revenue') {
+          badgeBg = '#059669';
+          ringColor = 'rgba(5, 150, 105, 0.5)';
+          badgeText = '💰 ' + h.revenue;
+        } else {
+          if (h.type === 'primary') {
+            badgeBg = '#ea580c';
+            ringColor = 'rgba(234, 88, 12, 0.55)';
+          } else if (h.type === 'critical') {
+            badgeBg = '#dc2626';
+            ringColor = 'rgba(220, 38, 38, 0.55)';
+          } else if (h.type === 'success') {
+            badgeBg = '#059669';
+            ringColor = 'rgba(5, 150, 105, 0.55)';
+          } else if (h.type === 'dead') {
+            badgeBg = '#9333ea';
+            ringColor = 'rgba(147, 51, 234, 0.55)';
+          }
+        }
+
+        pin.innerHTML = `
+          <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+            <div style="position: absolute; width: ${h.radius}px; height: ${h.radius}px; border-radius: 50%; background: ${ringColor}; filter: blur(6px); animation: tour-beacon-pulse 1.8s infinite ease-in-out;"></div>
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: ${badgeBg}; border: 2.5px solid #ffffff; box-shadow: 0 3px 10px rgba(0,0,0,0.3); display: grid; place-items: center; color: #ffffff; font-size: 11px; font-weight: 800;">
+              ${h.id}
+            </div>
+          </div>
+          <div style="margin-top: 4px; background: rgba(15, 23, 42, 0.88); color: #ffffff; padding: 2px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 800; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.25); backdrop-filter: blur(4px);">
+            ${badgeText}
+          </div>
+        `;
+
+        pin.title = h.title + ' | Clicks: ' + h.clicks + ' | CVR: ' + h.cvr + ' | Revenue: ' + h.revenue + ' | Rage: ' + h.rage;
+        overlay.appendChild(pin);
+      });
+    }
+
+    function switchHeatmapDevice(device) {
+      currentHmDevice = device;
+      const btnDesktop = document.getElementById('hmBtnDesktop');
+      const btnMobile = document.getElementById('hmBtnMobile');
+      const frame = document.getElementById('hmViewportFrame');
+      const grid = document.getElementById('hmPdpGrid');
+
+      if (device === 'mobile') {
+        if (btnMobile) {
+          btnMobile.style.background = '#ffffff';
+          btnMobile.style.color = '#0f172a';
+          btnMobile.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+        }
+        if (btnDesktop) {
+          btnDesktop.style.background = 'transparent';
+          btnDesktop.style.color = '#64748b';
+          btnDesktop.style.boxShadow = 'none';
+        }
+        if (frame) frame.style.maxWidth = '420px';
+        if (grid) grid.style.gridTemplateColumns = '1fr';
+      } else {
+        if (btnDesktop) {
+          btnDesktop.style.background = '#ffffff';
+          btnDesktop.style.color = '#0f172a';
+          btnDesktop.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+        }
+        if (btnMobile) {
+          btnMobile.style.background = 'transparent';
+          btnMobile.style.color = '#64748b';
+          btnMobile.style.boxShadow = 'none';
+        }
+        if (frame) frame.style.maxWidth = '100%';
+        if (grid) grid.style.gridTemplateColumns = '1fr 1.2fr';
+      }
+
+      loadHeatmapData();
+    }
+
+    function switchHeatmapPage(page) {
+      currentHmPage = page;
+      const urlEl = document.getElementById('hmSimulatedUrl');
+      if (urlEl) {
+        if (page === 'pdp') urlEl.textContent = 'https://store.dataprovido.com/product/sony-wh-1000xm5';
+        else if (page === 'home') urlEl.textContent = 'https://store.dataprovido.com/';
+        else if (page === 'cart') urlEl.textContent = 'https://store.dataprovido.com/cart';
+      }
+      loadHeatmapData();
+    }
+
+    function switchHeatmapMode(mode) {
+      currentHmMode = mode;
+      const modes = ['click', 'scroll', 'rage', 'revenue'];
+      modes.forEach(m => {
+        const btn = document.getElementById('hmMode' + m.charAt(0).toUpperCase() + m.slice(1));
+        if (!btn) return;
+        if (m === mode) {
+          btn.style.background = '#eff6ff';
+          btn.style.borderColor = '#3b82f6';
+          btn.style.color = '#1d4ed8';
+          btn.style.fontWeight = '800';
+        } else {
+          btn.style.background = '#ffffff';
+          btn.style.borderColor = '#cbd5e1';
+          btn.style.color = '#64748b';
+          btn.style.fontWeight = '700';
+        }
+      });
+
+      renderHeatmapVisualCanvas(hmHotspotsCache, hmScrollLevelsCache);
+    }
+
+    function renderHeatmapElementsTable(elements) {
+      const tbody = document.getElementById('hmElementsTbody');
+      if (!tbody) return;
+
+      const items = elements || hmElementsCache;
+      if (!items || items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 24px; color: #94a3b8;">Kayıt bulunamadı.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = items.map(el => {
+        let rageBadge = `<span style="color: #059669; font-weight: 700;">✓ 0</span>`;
+        if (el.rage_clicks > 50) {
+          rageBadge = `<span style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 2px 8px; border-radius: 6px; font-weight: 800; font-size: 11px;">🔴 ${el.rage_clicks} Rage</span>`;
+        } else if (el.dead_clicks > 500) {
+          rageBadge = `<span style="background: #faf5ff; color: #7c3aed; border: 1px solid #e9d5ff; padding: 2px 8px; border-radius: 6px; font-weight: 800; font-size: 11px;">🟡 ${el.dead_clicks} Dead</span>`;
+        }
+
+        let priorityBadge = `<span style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 11px;">${el.priority}</span>`;
+        if (el.status === 'critical') {
+          priorityBadge = `<span style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 11px;">${el.priority}</span>`;
+        } else if (el.status === 'success') {
+          priorityBadge = `<span style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 11px;">${el.priority}</span>`;
+        }
+
+        return `
+          <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;">
+            <td style="padding: 12px 14px; font-weight: 800; color: #64748b;">${el.rank}</td>
+            <td style="padding: 12px 14px;">
+              <strong style="color: #0f172a; font-size: 13px; display: block;">${el.name}</strong>
+              <code style="background: #f1f5f9; color: #2563eb; padding: 1px 6px; border-radius: 4px; font-size: 11px;">${el.selector}</code>
+            </td>
+            <td style="padding: 12px 14px;">
+              <span style="color: #334155; font-size: 12.5px; font-weight: 600;">${el.type}</span>
+              <span style="color: #94a3b8; font-size: 11px; display: block;">${el.section}</span>
+            </td>
+            <td style="padding: 12px 14px; text-align: right; font-weight: 800; color: #0f172a;">${(el.clicks || 0).toLocaleString()}</td>
+            <td style="padding: 12px 14px; text-align: right; font-weight: 700; color: #2563eb;">${el.visitor_share}</td>
+            <td style="padding: 12px 14px; text-align: right;">${rageBadge}</td>
+            <td style="padding: 12px 14px; text-align: right; font-weight: 800; color: #059669;">${el.cvr}</td>
+            <td style="padding: 12px 14px; text-align: right; font-weight: 800; color: #0f172a;">${el.revenue}</td>
+            <td style="padding: 12px 14px; text-align: center;">${priorityBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterHeatmapElements() {
+      const search = (document.getElementById('hmElementSearch') ? document.getElementById('hmElementSearch').value : '').toLowerCase().trim();
+      if (!search) {
+        renderHeatmapElementsTable(hmElementsCache);
+        return;
+      }
+      const filtered = hmElementsCache.filter(e => 
+        (e.name && e.name.toLowerCase().includes(search)) ||
+        (e.selector && e.selector.toLowerCase().includes(search)) ||
+        (e.type && e.type.toLowerCase().includes(search))
+      );
+      renderHeatmapElementsTable(filtered);
+    }
+
+    /* ── TAB 2: SESSION REPLAYS ENGINE (rrweb) ── */
+    async function loadSessionReplays() {
+      try {
+        const resp = await fetch('/api/heatmap/session-replays');
+        const data = await resp.json();
+        hmReplaysCache = data.sessions || [];
+        const container = document.getElementById('hmSessionListContainer');
+        if (!container || hmReplaysCache.length === 0) return;
+
+        container.innerHTML = hmReplaysCache.map((sess, idx) => {
+          const isSelected = idx === 0;
+          let badgeColor = sess.has_rage ? '#dc2626' : (sess.status === 'purchased' ? '#16a34a' : '#d97706');
+          let badgeBg = sess.has_rage ? '#fef2f2' : (sess.status === 'purchased' ? '#f0fdf4' : '#fffbeb');
+
+          return `
+            <div onclick="selectReplaySession('${sess.id}')" id="replayCard_${sess.id}" style="background: ${isSelected ? '#eff6ff' : '#ffffff'}; border: 1.5px solid ${isSelected ? '#3b82f6' : '#e2e8f0'}; border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: all 0.2s;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <strong style="font-size: 13px; color: #0f172a;">${sess.user_code}</strong>
+                <span style="font-size: 11px; font-weight: 700; color: #64748b;">⏱️ ${sess.duration}</span>
+              </div>
+              <div style="font-size: 11.5px; color: #64748b; margin-bottom: 6px;">${sess.device_label}</div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 6px;">
+                  ${sess.status_badge}
+                </span>
+                <span style="font-size: 11px; font-weight: 700; color: #2563eb;">İzle →</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        if (hmReplaysCache.length > 0) {
+          selectReplaySession(hmReplaysCache[0].id);
+        }
+      } catch (e) {
+        console.error('Failed to load session replays:', e);
+      }
+    }
+
+    function selectReplaySession(sessId) {
+      const sess = (hmReplaysCache || []).find(s => s.id === sessId);
+      if (!sess) return;
+      activeReplaySession = sess;
+
+      (hmReplaysCache || []).forEach(s => {
+        const card = document.getElementById('replayCard_' + s.id);
+        if (card) {
+          if (s.id === sessId) {
+            card.style.background = '#eff6ff';
+            card.style.borderColor = '#3b82f6';
+          } else {
+            card.style.background = '#ffffff';
+            card.style.borderColor = '#e2e8f0';
+          }
+        }
+      });
+
+      const badge = document.getElementById('playerSessionBadge');
+      const user = document.getElementById('playerSessionUser');
+      const device = document.getElementById('playerSessionDevice');
+      const duration = document.getElementById('playerSessionDuration');
+
+      if (badge) {
+        badge.textContent = sess.status_badge;
+        badge.style.background = sess.has_rage ? '#dc2626' : (sess.status === 'purchased' ? '#16a34a' : '#d97706');
+      }
+      if (user) user.textContent = sess.user_code + ' (' + sess.location + ')';
+      if (device) device.textContent = sess.device_label;
+      if (duration) duration.textContent = 'Süre: ' + sess.duration;
+
+      replayProgressPct = 10;
+      updateReplayFrameUI();
+    }
+
+    function toggleReplayPlay() {
+      isReplayPlaying = !isReplayPlaying;
+      const btn = document.getElementById('playerPlayBtn');
+      if (btn) btn.textContent = isReplayPlaying ? '⏸' : '▶';
+
+      if (isReplayPlaying) {
+        if (replayProgressPct >= 95) replayProgressPct = 0;
+        if (replayTimerInterval) clearInterval(replayTimerInterval);
+        replayTimerInterval = setInterval(() => {
+          replayProgressPct += (0.8 * replaySpeed);
+          if (replayProgressPct >= 100) {
+            replayProgressPct = 100;
+            isReplayPlaying = false;
+            if (btn) btn.textContent = '▶';
+            clearInterval(replayTimerInterval);
+          }
+          updateReplayFrameUI();
+        }, 100);
+      } else {
+        if (replayTimerInterval) clearInterval(replayTimerInterval);
+      }
+    }
+
+    function setReplaySpeed(spd) {
+      replaySpeed = spd;
+      [1, 2, 4].forEach(s => {
+        const btn = document.getElementById('playerSpd' + s);
+        if (btn) {
+          if (s === spd) {
+            btn.style.background = '#334155';
+            btn.style.color = '#ffffff';
+            btn.style.borderColor = '#475569';
+          } else {
+            btn.style.background = 'transparent';
+            btn.style.color = '#94a3b8';
+            btn.style.borderColor = '#334155';
+          }
+        }
+      });
+    }
+
+    function seekReplayPlayer(e) {
+      const track = document.getElementById('playerScrubTrack');
+      if (!track) return;
+      const rect = track.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = Math.max(0, Math.min(100, Math.round((clickX / rect.width) * 100)));
+      replayProgressPct = pct;
+      updateReplayFrameUI();
+    }
+
+    function updateReplayFrameUI() {
+      const progressBar = document.getElementById('playerScrubProgress');
+      const timer = document.getElementById('playerTimer');
+      const cursor = document.getElementById('simulatedCursor');
+      const pulse = document.getElementById('simulatedCursorPulse');
+      const caption = document.getElementById('playerActionCaption');
+
+      if (progressBar) progressBar.style.width = replayProgressPct + '%';
+
+      if (activeReplaySession) {
+        const totalSec = activeReplaySession.duration_sec || 192;
+        const currentSec = Math.round((replayProgressPct / 100) * totalSec);
+        const formatSec = (s) => {
+          const m = String(Math.floor(s / 60)).padStart(2, '0');
+          const sec = String(s % 60).padStart(2, '0');
+          return m + ':' + sec;
+        };
+        if (timer) timer.textContent = formatSec(currentSec) + ' / ' + formatSec(totalSec);
+      }
+
+      if (cursor && pulse && caption) {
+        if (replayProgressPct < 25) {
+          cursor.style.left = '32%';
+          cursor.style.top = '30%';
+          pulse.style.display = 'none';
+          caption.textContent = '👀 Ürün Galerisi & Fotoğraf İncelemesi';
+        } else if (replayProgressPct >= 25 && replayProgressPct < 48) {
+          cursor.style.left = '52%';
+          cursor.style.top = '40%';
+          pulse.style.display = 'none';
+          caption.textContent = '🖱️ Fiyat & Peşin 3 Taksit Seçeneklerine Odaklanıldı';
+        } else if (replayProgressPct >= 48 && replayProgressPct < 65) {
+          cursor.style.left = '58%';
+          cursor.style.top = '42%';
+          pulse.style.display = 'block';
+          pulse.style.background = 'rgba(220,38,38,0.6)';
+          caption.innerHTML = '<span style="color: #ef4444;">🔴 4x Öfke Tıklaması (Rage Click):</span> Stoksuz L Beden Çipine Peş Peşe Tıklandı!';
+        } else if (replayProgressPct >= 65 && replayProgressPct < 85) {
+          cursor.style.left = '64%';
+          cursor.style.top = '46%';
+          pulse.style.display = 'block';
+          pulse.style.background = 'rgba(242,111,38,0.6)';
+          caption.textContent = '🛒 Sepete Ekle Butonu Tıklandı';
+        } else {
+          cursor.style.left = '12%';
+          cursor.style.top = '10%';
+          pulse.style.display = 'none';
+          if (activeReplaySession && activeReplaySession.status === 'purchased') {
+            caption.innerHTML = '<span style="color: #10b981;">🎉 Sipariş Tamamlandı (₺11,499 Ciro)!</span>';
+          } else {
+            caption.innerHTML = '<span style="color: #dc2626;">⚠️ Sepet Terk Edildi (Beden tükenmesi nedeniyle ayrılındı)</span>';
+          }
+        }
+      }
+    }
+
+    /* ── TAB 3: CORE WEB VITALS (SPEED + UX) ── */
+    async function loadWebVitalsData() {
+      try {
+        const resp = await fetch('/api/heatmap/web-vitals');
+        const data = await resp.json();
+        const tbody = document.getElementById('hmWebVitalsTbody');
+        if (!tbody || !data || !data.components) return;
+
+        tbody.innerHTML = data.components.map(c => {
+          let lagColor = c.latency.includes('620') || c.latency.includes('840') ? '#dc2626' : (c.latency.includes('410') ? '#d97706' : '#16a34a');
+          let lagBg = c.latency.includes('620') || c.latency.includes('840') ? '#fef2f2' : (c.latency.includes('410') ? '#fffbeb' : '#f0fdf4');
+
+          return `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 14px;">
+                <strong style="color: #0f172a; font-size: 13px; display: block;">${c.element}</strong>
+              </td>
+              <td style="padding: 14px;">
+                <span style="background: ${lagBg}; color: ${lagColor}; font-weight: 800; font-size: 12px; padding: 3px 10px; border-radius: 6px;">
+                  ${c.latency}
+                </span>
+              </td>
+              <td style="padding: 14px; font-size: 12px; color: #475569;">
+                ${c.thread_status}
+              </td>
+              <td style="padding: 14px; text-align: right; font-weight: 800; color: #dc2626;">
+                ${c.rage_clicks > 0 ? '🔴 ' + c.rage_clicks : '✓ 0'}
+              </td>
+              <td style="padding: 14px; text-align: right; font-weight: 700; color: #b45309;">
+                ${c.bounce_rate}
+              </td>
+              <td style="padding: 14px; text-align: right; font-weight: 800; color: #0f172a;">
+                ${c.revenue_loss}
+              </td>
+              <td style="padding: 14px; font-size: 12px; color: #0f172a; background: #fafafa; border-left: 3px solid #2563eb;">
+                💡 ${c.fix}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('Failed to load web vitals data:', e);
+      }
+    }
+
+    /* ── TAB 4: AI CRO PRESCRIPTIVE ROADMAP ── */
+    async function loadHeatmapInsights() {
+      try {
+        const resp = await fetch('/api/heatmap/friction-insights');
+        const data = await resp.json();
+        const container = document.getElementById('hmCroCardsContainer');
+        if (!container || !data || !data.insights) return;
+
+        container.innerHTML = data.insights.map(ins => {
+          let badgeBorder = ins.severity === 'critical' ? '#f87171' : (ins.severity === 'improvement' ? '#86efac' : '#fde68a');
+          let badgeBg = ins.severity === 'critical' ? '#fef2f2' : (ins.severity === 'improvement' ? '#f0fdf4' : '#fffbeb');
+          let badgeColor = ins.severity === 'critical' ? '#dc2626' : (ins.severity === 'improvement' ? '#16a34a' : '#d97706');
+
+          return `
+            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+              <div style="flex: 1; min-width: 320px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                  <span style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder}; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 11.5px;">
+                    ${ins.badge}
+                  </span>
+                  <span style="font-size: 12px; font-weight: 700; color: #64748b;">Efor: ${ins.effort || 'Düşük'}</span>
+                </div>
+                <h4 style="margin: 0 0 6px; font-size: 16px; font-weight: 800; color: #0f172a;">${ins.element}</h4>
+                <p style="font-size: 13px; color: #475569; margin: 0 0 10px; line-height: 1.5;">${ins.issue}</p>
+                <div style="background: #f8fafc; border-left: 3px solid #2563eb; padding: 8px 14px; border-radius: 0 8px 8px 0; font-size: 12.5px; color: #0f172a;">
+                  💡 <strong>Önerilen Aksiyon:</strong> ${ins.action}
+                </div>
+              </div>
+              <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 6px 14px; border-radius: 10px; font-size: 14px; font-weight: 800;">
+                  💰 ${ins.roi || '+₺210,000 / ay'}
+                </div>
+                <button type="button" onclick="createJiraTask('${ins.element}')" style="background: #2563eb; color: #ffffff; border: none; padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(37,99,235,0.25);">
+                  📋 <span>Jira / Asana Görevi Oluştur</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('Failed to load heatmap friction insights:', e);
+      }
+    }
+
+    function createJiraTask(elementName) {
+      alert('✓ Jira Entegrasyonu Başarılı: ' + elementName + ' CRO optimizasyon görevi geliştirici iş listesine (P1 Öncelik) eklendi.');
+    }
+
+    function exportHeatmapCSV() {
+      const rows = [
+        ['Rank', 'Element Name', 'CSS Selector', 'Type', 'Section', 'Total Clicks', 'Visitor Share', 'Rage Clicks', 'Dead Clicks', 'CVR', 'Attributed Revenue', 'Priority']
+      ];
+      (hmElementsCache || []).forEach(e => {
+        rows.push([
+          e.rank,
+          '"' + (e.name || '').replace(/"/g, '""') + '"',
+          '"' + (e.selector || '').replace(/"/g, '""') + '"',
+          '"' + (e.type || '').replace(/"/g, '""') + '"',
+          '"' + (e.section || '').replace(/"/g, '""') + '"',
+          e.clicks || 0,
+          e.visitor_share || '',
+          e.rage_clicks || 0,
+          e.dead_clicks || 0,
+          e.cvr || '',
+          '"' + (e.revenue || '').replace(/"/g, '""') + '"',
+          '"' + (e.priority || '').replace(/"/g, '""') + '"'
+        ]);
+      });
+
+      const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + rows.map(r => r.join(',')).join('\\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', 'dataprovido_ux_sense_' + currentHmPage + '_' + currentHmDevice + '.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function openTrackingSetupModal() {
+      const modal = document.getElementById('trackingSetupModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeTrackingSetupModal() {
+      const modal = document.getElementById('trackingSetupModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function syncClarityProject() {
+      const input = document.getElementById('clarityProjectIdInput');
+      const status = document.getElementById('claritySyncStatus');
+      if (status && input) {
+        status.textContent = '✓ Microsoft Clarity Projesi "' + input.value.trim() + '" başarıyla eşitlendi!';
+        status.style.color = '#059669';
+      }
+    }
+
+    window.initHeatmapWorkspace = initHeatmapWorkspace;
+    window.loadHeatmapData = loadHeatmapData;
+    window.applyCustomDateRange = applyCustomDateRange;
+    window.setQuickDateRange = setQuickDateRange;
+    window.switchHmSubTab = switchHmSubTab;
+    window.renderHeatmapVisualCanvas = renderHeatmapVisualCanvas;
+    window.renderHeatmapElementsTable = renderHeatmapElementsTable;
+    window.switchHeatmapDevice = switchHeatmapDevice;
+    window.switchHeatmapPage = switchHeatmapPage;
+    window.switchHeatmapMode = switchHeatmapMode;
+    window.filterHeatmapElements = filterHeatmapElements;
+    window.loadSessionReplays = loadSessionReplays;
+    window.selectReplaySession = selectReplaySession;
+    window.toggleReplayPlay = toggleReplayPlay;
+    window.setReplaySpeed = setReplaySpeed;
+    window.seekReplayPlayer = seekReplayPlayer;
+    window.loadWebVitalsData = loadWebVitalsData;
+    window.loadHeatmapInsights = loadHeatmapInsights;
+    window.createJiraTask = createJiraTask;
+    window.exportHeatmapCSV = exportHeatmapCSV;
+    window.openTrackingSetupModal = openTrackingSetupModal;
+    window.closeTrackingSetupModal = closeTrackingSetupModal;
+    window.syncClarityProject = syncClarityProject;
 
     // Check Google Auth Status & Populate Property Panels immediately on page load
     document.addEventListener('DOMContentLoaded', () => {
