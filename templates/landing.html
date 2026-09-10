@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'consent_default',
+      'consent_default_ad_storage': 'denied',
+      'consent_default_analytics': 'denied'
+    });
+
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied',
+      'functionality_storage': 'denied',
+      'personalization_storage': 'denied',
+      'security_storage': 'granted',
+      'wait_for_update': 1000
+    });
+  </script>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-TVKFC4P6');</script>
+  <!-- End Google Tag Manager -->
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataProvido – Analyze your e-commerce data locally—no need to share it with anyone!</title>
+  <meta name="description" content="Don't just analyze data—know exactly what actions to take next. DataProvido delivers real-time prescriptive commercial decisions 100% locally.">
+  <meta property="og:title" content="DataProvido – Analyze your e-commerce data locally—no need to share it with anyone!">
+  <meta property="og:description" content="Don't just analyze data—know exactly what actions to take next. DataProvido delivers real-time prescriptive commercial decisions 100% locally.">
+  <meta property="og:image" content="https://www.dataprovido.com/logo.png">
+  <meta property="og:url" content="https://www.dataprovido.com/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="DataProvido – Analyze your e-commerce data locally—no need to share it with anyone!">
+  <meta name="twitter:description" content="Don't just analyze data—know exactly what actions to take next. DataProvido delivers real-time prescriptive commercial decisions 100% locally.">
+  <meta name="twitter:image" content="https://www.dataprovido.com/logo.png">
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="shortcut icon" type="image/png" href="/logo.png">
+  <link rel="apple-touch-icon" href="/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --orange: #f26f26; --orange-dark: #d85c18; --orange-light: #f58c50;
+      --bg:      #ffffff;
+      --bg-2:    #f9fafb;
+      --bg-3:    #f1f3f5;
+      --bg-grad: linear-gradient(180deg, #ecf7ff 0%, #fff3ec 100%);
+      --text-900: #292c2f;
+      --text-700: #4e5359;
+      --text-500: #6b7178;
+      --text-dim: #a3acb6;
+      --border:   #dadee2;
+      --border-orange: rgba(242,111,38,0.25);
+      --card-bg:  #ffffff;
+      --card-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+      --radius: 16px; --nav-h: 72px;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text-900); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+    /* NAV */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000; height: var(--nav-h);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 40px;
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border); transition: background .3s;
+      box-shadow: 0 1px 0 var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text-900); text-decoration: none; }
+    .nav-logo-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--orange); animation: pulse-dot 2.5s ease-in-out infinite; }
+    @keyframes pulse-dot { 0%,100% { box-shadow: 0 0 0 0 rgba(242,111,38,0.5); } 50% { box-shadow: 0 0 0 6px rgba(242,111,38,0); } }
+    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-link { color: var(--text-700); text-decoration: none; font-size: 14px; font-weight: 500; padding: 8px 14px; border-radius: 8px; transition: color .2s, background .2s; }
+    .nav-link:hover { color: var(--orange); background: rgba(242,111,38,0.06); }
+    .nav-cta { background: var(--orange); color: #fff; border: none; padding: 10px 22px; border-radius: 24px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background .2s, transform .15s; box-shadow: 0 4px 14px rgba(242,111,38,0.3); }
+    .nav-cta:hover { background: var(--orange-dark); transform: translateY(-1px); }
+
+    /* HERO — clean light gradient, no image */
+    .hero { position: relative; min-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: calc(var(--nav-h) + 80px) 24px 100px; overflow: hidden; background: linear-gradient(160deg, #fff8f4 0%, #ffffff 45%, #f0f7ff 100%); }
+    .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(242,111,38,0.07) 0%, transparent 70%); pointer-events: none; }
+    .hero-content { position: relative; z-index: 2; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(242,111,38,0.08); border: 1px solid rgba(242,111,38,0.2); border-radius: 999px; padding: 6px 16px; font-size: 13px; font-weight: 600; color: var(--orange); margin-bottom: 28px; animation: fade-up 0.7s ease both; }
+    .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(40px, 6.5vw, 80px); font-weight: 700; line-height: 1.1; color: var(--text-900); letter-spacing: -1.5px; margin-bottom: 24px; animation: fade-up 0.9s ease 0.1s both; }
+    .hero h1 span { color: var(--orange); }
+    .hero-sub { font-size: clamp(16px, 2vw, 19px); font-weight: 400; color: var(--text-700); max-width: 560px; margin: 0 auto 44px; line-height: 1.7; animation: fade-up 0.9s ease 0.2s both; }
+    .hero-actions { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; animation: fade-up 0.9s ease 0.3s both; }
+    .btn-primary { background: var(--orange); color: #fff; padding: 14px 30px; border-radius: 999px; font-size: 15px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 6px 20px rgba(242,111,38,0.35); transition: background .2s, transform .15s, box-shadow .2s; }
+    .btn-primary:hover { background: var(--orange-dark); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(242,111,38,0.45); }
+    .btn-ghost { background: #fff; color: var(--text-900); border: 1.5px solid var(--border); padding: 13px 28px; border-radius: 999px; font-size: 15px; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: border-color .2s, box-shadow .2s; box-shadow: var(--card-shadow); }
+    .btn-ghost:hover { border-color: var(--orange); box-shadow: 0 4px 16px rgba(242,111,38,0.12); }
+
+    /* STATS */
+    .stats-strip { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 40px 40px; }
+    .stats-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }
+    .stat-item { text-align: center; padding: 0 24px; border-right: 1px solid var(--border); }
+    .stat-item:last-child { border-right: none; }
+    .stat-number { font-size: clamp(36px, 4vw, 52px); font-weight: 800; color: var(--orange); line-height: 1; }
+    .stat-label { font-size: 13px; color: var(--text-500); margin-top: 8px; font-weight: 400; }
+
+    /* SECTION */
+    .section { padding: 96px 40px; background: var(--bg); }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(242,111,38,0.08); border: 1px solid var(--border-orange); border-radius: 999px; padding: 5px 14px; font-size: 11px; font-weight: 700; color: var(--orange); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: clamp(28px, 3.5vw, 48px); font-weight: 700; color: var(--text-900); line-height: 1.2; margin-bottom: 16px; letter-spacing: -0.5px; }
+    .section-desc { font-size: 17px; color: var(--text-700); max-width: 540px; line-height: 1.75; }
+
+    /* YODECK-STYLE FEATURE SHOWCASE */
+    .showcase { background: var(--bg-2); padding: 100px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .showcase-inner { max-width: 1200px; margin: 0 auto; padding: 0 40px; }
+    .showcase-header { margin-bottom: 64px; }
+    .showcase-body { display: grid; grid-template-columns: 320px 1fr; gap: 32px; align-items: start; }
+
+    /* LEFT TABS */
+    .sc-tabs { display: flex; flex-direction: column; gap: 4px; }
+    .sc-tab {
+      position: relative; padding: 16px 18px 16px 22px;
+      border-radius: 12px; cursor: pointer;
+      border: 1px solid transparent;
+      transition: background .2s, border-color .2s;
+      overflow: hidden;
+    }
+    .sc-tab:hover { background: rgba(242,111,38,0.04); border-color: var(--border-orange); }
+    .sc-tab.active { background: #fff; border-color: var(--border); box-shadow: var(--card-shadow); }
+    .sc-tab-bar {
+      position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: var(--bg-3); border-radius: 3px 0 0 3px;
+    }
+    .sc-tab.active .sc-tab-bar { background: rgba(242,111,38,0.2); }
+    .sc-tab-progress {
+      position: absolute; left: 0; top: 0; width: 3px;
+      background: var(--orange); border-radius: 3px 0 0 3px;
+      height: 0%;
+    }
+    .sc-tab.active .sc-tab-progress { animation: tab-fill 5s linear forwards; }
+    @keyframes tab-fill { from { height: 0%; } to { height: 100%; } }
+    .sc-tab-head { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
+    .sc-tab-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
+    .sc-tab-title { font-size: 13px; font-weight: 700; color: var(--text-900); }
+    .sc-tab:not(.active) .sc-tab-title { color: var(--text-700); font-weight: 500; }
+    .sc-tab-desc { font-size: 12px; color: var(--text-500); line-height: 1.5; padding-left: 26px; display: none; margin-top: 4px; }
+    .sc-tab.active .sc-tab-desc { display: block; }
+
+    /* RIGHT PANEL */
+    .sc-panel { position: relative; background: #fff; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 32px rgba(0,0,0,0.07); min-height: 440px; }
+    .sc-slide { position: absolute; inset: 0; padding: 48px 52px; display: flex; flex-direction: column; justify-content: center; opacity: 0; transform: translateX(16px); transition: opacity .4s ease, transform .4s ease; pointer-events: none; }
+    .sc-slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+    .sc-slide-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(242,111,38,0.08); border: 1px solid var(--border-orange); border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 700; color: var(--orange); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 22px; width: fit-content; }
+    .sc-slide h3 { font-family: 'Playfair Display', serif; font-size: clamp(22px, 2.8vw, 36px); font-weight: 700; color: var(--text-900); line-height: 1.2; margin-bottom: 14px; letter-spacing: -0.5px; }
+    .sc-slide p { font-size: 15px; color: var(--text-700); line-height: 1.75; max-width: 460px; margin-bottom: 30px; }
+    .sc-metrics { display: flex; gap: 16px; flex-wrap: wrap; }
+    .sc-metric { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; }
+    .sc-metric-val { font-size: 22px; font-weight: 800; color: var(--orange); line-height: 1; }
+    .sc-metric-label { font-size: 11px; color: var(--text-500); margin-top: 3px; }
+    .sc-slide-visual { position: absolute; right: -10px; bottom: -10px; font-size: 140px; opacity: 0.05; pointer-events: none; line-height: 1; }
+
+    /* HAMBURGER & MOBILE DRAWER */
+    .nav-hamburger {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      flex-direction: column;
+      gap: 5px;
+      justify-content: center;
+      align-items: center;
+      z-index: 1002;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 24px;
+      height: 2.5px;
+      background: var(--text-900);
+      border-radius: 2px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nav-hamburger.active span:nth-child(1) {
+      transform: translateY(7.5px) rotate(45deg);
+      background: var(--orange);
+    }
+    .nav-hamburger.active span:nth-child(2) {
+      opacity: 0;
+      transform: scaleX(0);
+    }
+    .nav-hamburger.active span:nth-child(3) {
+      transform: translateY(-7.5px) rotate(-45deg);
+      background: var(--orange);
+    }
+
+    .mobile-drawer {
+      position: fixed;
+      top: var(--nav-h);
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 20px 36px;
+      gap: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-12px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      overflow-y: auto;
+      border-bottom: 1px solid var(--border);
+    }
+    .mobile-drawer.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .mobile-drawer-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-radius: 12px;
+      color: var(--text-900);
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .mobile-drawer-link:active, .mobile-drawer-link:hover {
+      background: rgba(242, 111, 38, 0.08);
+      color: var(--orange);
+    }
+    .mobile-drawer-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 0;
+    }
+    .mobile-drawer-btn {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      border-radius: 12px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @media (max-width: 900px) {
+      .nav { padding: 0 16px; }
+      .nav-links, .nav-desktop-actions { display: none !important; }
+      .nav-hamburger { display: flex; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .stat-item:nth-child(2) { border-right: none; }
+      .stat-item { padding: 12px 10px; }
+      .stat-number { font-size: 32px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .steps-row { grid-template-columns: 1fr; gap: 24px; }
+      .step { border-right: none; padding-right: 0; }
+      .cta-banner { margin: 0 16px 50px; padding: 40px 20px; }
+      .section { padding: 56px 16px; }
+      .showcase { padding: 56px 0; }
+      .showcase-inner { padding: 0 16px; }
+      .showcase-header { margin-bottom: 28px; }
+      .showcase-header .section-title { font-size: 26px; }
+      .showcase-body {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      /* MOBILE HORIZONTAL SCROLLING TABS */
+      .sc-tabs {
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 8px;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .sc-tabs::-webkit-scrollbar { display: none; }
+      .sc-tab {
+        flex: 0 0 auto;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: #fff;
+        border: 1px solid var(--border);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      }
+      .sc-tab.active {
+        background: var(--orange);
+        border-color: var(--orange);
+        box-shadow: 0 4px 12px rgba(242,111,38,0.3);
+      }
+      .sc-tab-bar, .sc-tab-progress, .sc-tab-desc { display: none !important; }
+      .sc-tab-head { margin-bottom: 0; gap: 6px; }
+      .sc-tab-title { font-size: 13px; font-weight: 600; white-space: nowrap; }
+      .sc-tab.active .sc-tab-title { color: #fff !important; }
+      .sc-tab:not(.active) .sc-tab-title { color: var(--text-700); }
+
+      /* MOBILE SLIDES PANEL: Fix ghost white space */
+      .sc-panel {
+        min-height: unset !important;
+        position: relative;
+        border-radius: 16px;
+        box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+      }
+      .sc-slide {
+        position: relative !important;
+        inset: unset !important;
+        padding: 24px 20px !important;
+        display: none !important;
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+      }
+      .sc-slide.active {
+        display: flex !important;
+        opacity: 1 !important;
+        transform: translateY(0);
+      }
+      .sc-slide h3 { font-size: 22px; margin-bottom: 10px; }
+      .sc-slide p { font-size: 14px; margin-bottom: 20px; }
+      .sc-metrics { gap: 10px; }
+      .sc-metric { flex: 1; padding: 10px 14px; text-align: center; }
+      .sc-metric-val { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TVKFC4P6"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+
+<nav class="nav" id="main-nav">
+  <a href="/" class="nav-logo" style="display: flex; align-items: center; gap: 10px;">
+    <img src="/logo.png" alt="DataProvido" style="height: 36px; width: 36px; object-fit: contain; border-radius: 8px;" />
+    <span>DataProvido</span>
+  </a>
+  <div class="nav-links">
+    <a href="/pricing" class="nav-link">Pricing</a>
+    <a href="/contact" class="nav-link">Contact</a>
+    <a href="/who-we-are" class="nav-link">Who We Are?</a>
+    <a href="/how-works" class="nav-link">How Works?</a>
+    <a href="/privacy" class="nav-link">Privacy Policy</a>
+  </div>
+  <div class="nav-desktop-actions" style="display: flex; align-items: center; gap: 20px;">
+    <a href="/login" style="color: #0f172a; font-weight: 700; font-size: 14.5px; text-decoration: none; transition: opacity 0.2s;">Log in / Sign in</a>
+    <a href="/journey" class="nav-cta">Start Journey &nbsp;→</a>
+  </div>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Toggle navigation" onclick="toggleMobileMenu()">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+</nav>
+
+<div class="mobile-drawer" id="mobileDrawer">
+  <a href="/pricing" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Pricing</span> <span>›</span></a>
+  <a href="/contact" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Contact</span> <span>›</span></a>
+  <a href="/who-we-are" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Who We Are?</span> <span>›</span></a>
+  <a href="/how-works" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>How Works?</span> <span>›</span></a>
+  <a href="/privacy" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Privacy Policy</span> <span>›</span></a>
+  <div class="mobile-drawer-divider"></div>
+  <a href="/login" class="mobile-drawer-btn btn-ghost" style="border: 1px solid var(--border); color: var(--text-900);">Log in / Sign in</a>
+  <a href="/journey" class="mobile-drawer-btn btn-primary" style="margin-top: 8px;">Start Journey &nbsp;→</a>
+</div>
+
+<section class="hero" id="hero">
+  <div class="hero-content">
+    <div class="hero-badge">✦ Local Intelligence. Zero Compromise.</div>
+    <h1>We read your data, spot the trends,<br><span>tell you what's next.</span></h1>
+    <p class="hero-sub" style="max-width: 680px;">DataProvido doesn't just analyze your stock, funnel, and sales data locally — it revolutionizes your decision-making by delivering clear, prescriptive commercial actions your team can execute instantly with total data privacy.</p>
+    <div class="hero-actions" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <a href="/journey" class="btn-primary">Start Your Journey &nbsp;→</a>
+      <a href="/login" class="btn-ghost" style="font-weight: 700;">Log In / Sign In</a>
+      <a href="/how-works" class="btn-ghost">See How It Works</a>
+    </div>
+  </div>
+</section>
+
+<div class="stats-strip reveal">
+  <div class="stats-inner">
+    <div class="stat-item"><div class="stat-number">3.2×</div><div class="stat-label">Average increase in insight speed</div></div>
+    <div class="stat-item"><div class="stat-number">98%</div><div class="stat-label">Data stays local, zero cloud exposure</div></div>
+    <div class="stat-item"><div class="stat-number">15+</div><div class="stat-label">Pre-built analytical modules</div></div>
+    <div class="stat-item"><div class="stat-number">&lt;30s</div><div class="stat-label">Average query response time</div></div>
+  </div>
+</div>
+
+<section class="showcase">
+  <div class="showcase-inner">
+    <div class="showcase-header reveal">
+      <div class="section-tag">✦ Core Capabilities</div>
+      <h2 class="section-title">Everything your retail team<br>needs in one place</h2>
+      <p class="section-desc">From CRM pipelines to funnel drop-offs — ask any business question and get a precise, actionable answer in seconds.</p>
+    </div>
+    <div class="showcase-body">
+
+      <div class="sc-tabs" id="scTabs">
+        <div class="sc-tab active" data-sc="0">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">📊</span><span class="sc-tab-title">CRM Data to Insights</span></div>
+          <div class="sc-tab-desc">Surface underperforming deals and campaigns instantly.</div>
+        </div>
+        <div class="sc-tab" data-sc="1">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">🛒</span><span class="sc-tab-title">Funnel &amp; Conversion</span></div>
+          <div class="sc-tab-desc">Track PDP &rarr; Cart &rarr; Checkout drop-offs in seconds.</div>
+        </div>
+        <div class="sc-tab" data-sc="2">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">📦</span><span class="sc-tab-title">Stock Intelligence</span></div>
+          <div class="sc-tab-desc">Live stock levels, alerts and turnover velocity.</div>
+        </div>
+        <div class="sc-tab" data-sc="3">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">💰</span><span class="sc-tab-title">Price Radar</span></div>
+          <div class="sc-tab-desc">Compare prices against market benchmarks per SKU.</div>
+        </div>
+        <div class="sc-tab" data-sc="4">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">🏷️</span><span class="sc-tab-title">Category &amp; Product Analysis</span></div>
+          <div class="sc-tab-desc">Brand rankings and SKU-level competitive positioning.</div>
+        </div>
+        <div class="sc-tab" data-sc="5">
+          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">⚡</span><span class="sc-tab-title">Action Executor</span></div>
+          <div class="sc-tab-desc">Recommended actions you can execute directly from chat.</div>
+        </div>
+      </div>
+
+      <div class="sc-panel" id="scPanel">
+        <div class="sc-slide active" data-panel="0">
+          <div class="sc-slide-tag">📊 Business Intelligence</div>
+          <h3>Turn CRM data into<br>clear next actions</h3>
+          <p>Connect your CRM pipeline and instantly surface which deals, segments, or campaigns are underperforming — with recommended actions attached. No SQL. No analyst queue.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">3.2×</div><div class="sc-metric-label">Faster insights</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">&lt;30s</div><div class="sc-metric-label">Query response</div></div>
+          </div>
+          <div class="sc-slide-visual">📊</div>
+        </div>
+        <div class="sc-slide" data-panel="1">
+          <div class="sc-slide-tag">🛒 Funnel Analytics</div>
+          <h3>Pinpoint exactly where<br>customers drop off</h3>
+          <p>Track PDP View → Add to Cart → Checkout flows. Identify conversion blockers and get actionable recommendations to improve your funnel rate.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">+18%</div><div class="sc-metric-label">Avg. conversion lift</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">4 steps</div><div class="sc-metric-label">Full funnel tracked</div></div>
+          </div>
+          <div class="sc-slide-visual">🛒</div>
+        </div>
+        <div class="sc-slide" data-panel="2">
+          <div class="sc-slide-tag">📦 Inventory</div>
+          <h3>Real-time stock visibility<br>across all SKUs</h3>
+          <p>Get live stock levels, low-stock alerts, out-of-stock reports, and turnover velocity — all answered in plain language. Never miss a stockout again.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">100%</div><div class="sc-metric-label">SKU coverage</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Real-time</div><div class="sc-metric-label">Data freshness</div></div>
+          </div>
+          <div class="sc-slide-visual">📦</div>
+        </div>
+        <div class="sc-slide" data-panel="3">
+          <div class="sc-slide-tag">💰 Pricing</div>
+          <h3>Stay ahead with intelligent<br>price monitoring</h3>
+          <p>Compare your pricing against market benchmarks automatically. Identify price gaps per SKU and brand, and act before competitors capture your customers.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">Daily</div><div class="sc-metric-label">Market updates</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">SKU-level</div><div class="sc-metric-label">Granularity</div></div>
+          </div>
+          <div class="sc-slide-visual">💰</div>
+        </div>
+        <div class="sc-slide" data-panel="4">
+          <div class="sc-slide-tag">🏷️ Category Intelligence</div>
+          <h3>Dominate your category<br>with product insights</h3>
+          <p>Upload product datasets and instantly get brand performance rankings, category share analysis, and SKU-level competitive positioning — without touching a spreadsheet.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">Auto</div><div class="sc-metric-label">Report parsing</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Brand+SKU</div><div class="sc-metric-label">Two-level view</div></div>
+          </div>
+          <div class="sc-slide-visual">🏷️</div>
+        </div>
+        <div class="sc-slide" data-panel="5">
+          <div class="sc-slide-tag">⚡ Automation</div>
+          <h3>From insight to action<br>in one click</h3>
+          <p>Go beyond insights — DataProvido recommends specific business actions and lets you execute them directly from the chat interface. Analyse, decide, act — all in one place.</p>
+          <div class="sc-metrics">
+            <div class="sc-metric"><div class="sc-metric-val">1-click</div><div class="sc-metric-label">Action execution</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">15+</div><div class="sc-metric-label">Action types</div></div>
+          </div>
+          <div class="sc-slide-visual">⚡</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">✦ Why DataProvido</div>
+      <h2 class="section-title">Built for retail teams,<br>not data scientists</h2>
+      <p class="section-desc">No SQL, no dashboards, no waiting. Just ask your question in plain language and get a precise answer with recommended next steps.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card reveal"><div class="feat-icon">🔒</div><div class="feat-title">100% Local &amp; Private</div><div class="feat-desc">Your data never leaves your server. Powered by Llama 3.1 running entirely on-premise — zero cloud, zero data risk.</div></div>
+      <div class="feat-card reveal"><div class="feat-icon">⚡</div><div class="feat-title">Instant Answers</div><div class="feat-desc">From question to insight in under 30 seconds. No waiting for reports or analyst queues — just real-time business intelligence.</div></div>
+      <div class="feat-card reveal"><div class="feat-icon">🎯</div><div class="feat-title">Action-Oriented Output</div><div class="feat-desc">Every answer comes with a recommended next action. Not just "what happened" but "what to do next" — ready to execute.</div></div>
+      <div class="feat-card reveal"><div class="feat-icon">📈</div><div class="feat-title">Revenue Intelligence</div><div class="feat-desc">Track B2D, C2D, revenue per category, brand performance and more. Full financial picture without touching a single spreadsheet.</div></div>
+      <div class="feat-card reveal"><div class="feat-icon">🗣️</div><div class="feat-title">Natural Language Interface</div><div class="feat-desc">Ask "Which SKUs are underperforming in GSM?" and get a ranked list with context — no training required.</div></div>
+      <div class="feat-card reveal"><div class="feat-icon">📤</div><div class="feat-title">Export Ready</div><div class="feat-desc">Download any analysis as a formatted Excel report with one click — branded, structured, and ready to share with stakeholders.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section how-section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">✦ Process</div>
+      <h2 class="section-title">Get your first insight<br>in minutes</h2>
+    </div>
+    <div class="steps-row">
+      <div class="step reveal"><div class="step-num">01</div><div class="step-title">Upload Your Data</div><div class="step-desc">Drop in your Excel files — product list, sales data, GFK reports, funnel exports. DataProvido ingests them automatically.</div></div>
+      <div class="step reveal"><div class="step-num">02</div><div class="step-title">Ask Any Question</div><div class="step-desc">Type a business question in plain English or Turkish. "Which brands have the highest C2D?" "What's my best-selling SKU this week?"</div></div>
+      <div class="step reveal"><div class="step-num">03</div><div class="step-title">Get Smart Insights</div><div class="step-desc">DataProvido queries your data, runs the analysis, and returns a precise answer with numbers, trends, and context — in seconds.</div></div>
+      <div class="step reveal"><div class="step-num">04</div><div class="step-title">Take Action</div><div class="step-desc">Follow the recommended next steps or export the full analysis as an Excel report — ready to share with your team.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section trust-section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">✦ Built on Solid Ground</div>
+      <h2 class="section-title">Trusted by retail teams<br>who care about their data</h2>
+    </div>
+    <div class="trust-badges reveal">
+      <div class="trust-badge"><div class="trust-badge-icon">🦙</div><div class="trust-badge-text"><div class="label">Powered by</div><div class="value">Llama 3.1</div></div></div>
+      <div class="trust-badge"><div class="trust-badge-icon">🌐</div><div class="trust-badge-text"><div class="label">Runs</div><div class="value">100% Offline</div></div></div>
+      <div class="trust-badge"><div class="trust-badge-icon">⚡</div><div class="trust-badge-text"><div class="label">Built with</div><div class="value">FastAPI</div></div></div>
+      <div class="trust-badge"><div class="trust-badge-icon">📊</div><div class="trust-badge-text"><div class="label">Analyzes</div><div class="value">Any Excel</div></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="cta-banner reveal">
+  <h2>Ready to turn your data<br>into decisions?</h2>
+  <p>Start exploring your retail data with AI-powered intelligence — locally, privately, instantly.</p>
+  <a href="/journey" class="btn-primary" style="margin: 0 auto; display: inline-flex;">Jump to Journey &nbsp;→</a>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-left" style="display: flex; align-items: center; gap: 10px;"><img src="/logo.png" alt="DataProvido" style="height: 28px; width: 28px; object-fit: contain; border-radius: 6px;" /><span class="footer-logo">DataProvido</span><span class="footer-copy">· Local Intelligence. Zero Compromise.</span></div>
+  <div class="footer-right">Powered by Llama 3.1 &nbsp;·&nbsp; Runs entirely offline</div>
+</footer>
+
+<script>
+  const nav = document.getElementById('main-nav');
+  window.addEventListener('scroll', () => { 
+    if (window.scrollY > 40) { nav.style.background = 'rgba(255,255,255,0.98)'; nav.style.boxShadow = '0 2px 16px rgba(0,0,0,0.07)'; }
+    else { nav.style.background = 'rgba(255,255,255,0.95)'; nav.style.boxShadow = '0 1px 0 #dadee2'; }
+  });
+  const observer = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }); }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  // Showcase tab switcher (Yodeck-style)
+  const scTabs = document.querySelectorAll('.sc-tab');
+  const scPanels = document.querySelectorAll('.sc-slide');
+  let scCurrent = 0, scTimer;
+
+  function toggleMobileMenu() {
+    const drawer = document.getElementById('mobileDrawer');
+    const burger = document.getElementById('navHamburger');
+    const isOpen = drawer.classList.toggle('open');
+    burger.classList.toggle('active');
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+  }
+
+  function scGoTo(idx) {
+    scTabs[scCurrent].classList.remove('active');
+    scPanels[scCurrent].classList.remove('active');
+    const oldProg = scTabs[scCurrent].querySelector('.sc-tab-progress');
+    if (oldProg) {
+      oldProg.style.animation = 'none';
+      oldProg.offsetHeight;
+      oldProg.style.animation = '';
+    }
+
+    scCurrent = ((idx % scTabs.length) + scTabs.length) % scTabs.length;
+    scTabs[scCurrent].classList.add('active');
+    scPanels[scCurrent].classList.add('active');
+    
+    // Smooth scroll the active tab pill into view on mobile
+    try {
+      scTabs[scCurrent].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    } catch(e) {}
+
+    const newProg = scTabs[scCurrent].querySelector('.sc-tab-progress');
+    if (newProg) {
+      newProg.style.animation = 'none';
+      newProg.offsetHeight;
+      newProg.style.animation = 'tab-fill 5s linear forwards';
+    }
+  }
+
+  function scNext() { scGoTo(scCurrent + 1); }
+
+  scTabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => {
+      clearInterval(scTimer);
+      scGoTo(i);
+      scTimer = setInterval(scNext, 5000);
+    });
+  });
+
+  scTimer = setInterval(scNext, 5000);
+</script>
+</body>
+</html>

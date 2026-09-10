@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      'event': 'consent_default',
+      'consent_default_ad_storage': 'denied',
+      'consent_default_analytics': 'denied'
+    });
+
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied',
+      'functionality_storage': 'denied',
+      'personalization_storage': 'denied',
+      'security_storage': 'granted',
+      'wait_for_update': 1000
+    });
+  </script>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-TVKFC4P6');</script>
+  <!-- End Google Tag Manager -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log in – DataProvido Console</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #f26f26;
+      --orange-dark: #d85c18;
+      --bg-light: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --input-border: #cbd5e1;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    body {
+      background-color: var(--bg-light);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(242, 111, 38, 0.08) 0%, rgba(248, 250, 252, 0) 70%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      color: var(--text-main);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .top-nav {
+      position: absolute;
+      top: 24px;
+      left: 28px;
+      z-index: 10;
+    }
+    .back-home-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      padding: 8px 14px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .back-home-link:hover {
+      color: var(--orange);
+      border-color: var(--orange);
+      transform: translateX(-2px);
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-color);
+      border-radius: 28px;
+      padding: 44px 38px;
+      box-shadow: 
+        0 20px 50px -10px rgba(15, 23, 42, 0.08),
+        0 1px 3px rgba(0, 0, 0, 0.04);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3.5px;
+      background: linear-gradient(90deg, #f26f26 0%, #d85c18 100%);
+    }
+
+    .brand-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo-wrapper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      width: 52px;
+      height: 52px;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      margin-bottom: 16px;
+      padding: 6px;
+    }
+    .logo-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .brand-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 21px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .brand-name-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--orange);
+    }
+
+    .card-title {
+      font-size: 23px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .card-subtitle {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Alert Banners */
+    .alert-banner {
+      display: none;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+    .alert-banner.success {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+    }
+    .alert-banner.error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    /* Google Button */
+    .btn-google {
+      width: 100%;
+      background: #ffffff;
+      border: 1.5px solid var(--input-border);
+      color: #0f172a;
+      padding: 13.5px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      transition: all 0.2s ease;
+    }
+    .btn-google:hover {
+      background: #f8fafc;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    .btn-google:active {
+      transform: translateY(0);
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 24px 0;
+      color: #94a3b8;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e2e8f0;
+    }
+
+    /* Form Elements */
+    .input-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+    .input-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .input-group label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 800;
+      color: #334155;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .forgot-link {
+      font-size: 12px;
+      color: var(--orange);
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.15s ease;
+    }
+    .forgot-link:hover {
+      color: var(--orange-dark);
+      text-decoration: underline;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 13px 16px;
+      background: #ffffff;
+      border: 1.5px solid var(--input-border);
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #0f172a;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .input-group input::placeholder {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+    .input-group input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 4px rgba(242, 111, 38, 0.12);
+    }
+
+    /* Primary Login Button */
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, var(--orange) 0%, var(--orange-dark) 100%);
+      color: #ffffff;
+      border: none;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: 14.5px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(242, 111, 38, 0.30);
+      transition: all 0.2s ease;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(242, 111, 38, 0.40);
+      background: linear-gradient(135deg, #ff7e38 0%, #e05e1a 100%);
+    }
+    .btn-login:active {
+      transform: translateY(0);
+    }
+
+    /* Reset Form Box */
+    .forgot-box {
+      display: none;
+      margin-top: 16px;
+      padding: 18px;
+      background: #fff7ed;
+      border: 1.5px solid #ffedd5;
+      border-radius: 16px;
+      text-align: left;
+    }
+    .forgot-box strong {
+      display: block;
+      font-size: 13.5px;
+      color: #ea580c;
+      margin-bottom: 6px;
+    }
+    .forgot-box p {
+      font-size: 12px;
+      color: #9a3412;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+    .forgot-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn-cancel {
+      background: transparent;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-cancel:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .btn-reset-submit {
+      background: #ea580c;
+      border: none;
+      color: #ffffff;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      flex: 1;
+    }
+    .btn-reset-submit:hover {
+      background: #c2410c;
+    }
+
+    /* Footer Note */
+    .footer-note {
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .footer-note a {
+      color: var(--orange);
+      text-decoration: none;
+      font-weight: 700;
+      transition: color 0.15s ease;
+    }
+    .footer-note a:hover {
+      color: var(--orange-dark);
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TVKFC4P6"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+
+  <div class="top-nav">
+    <a href="/" class="back-home-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to Home
+    </a>
+  </div>
+
+  <div class="login-container">
+    <div class="login-card">
+      
+      <div class="brand-header">
+        <a href="/" class="logo-wrapper" title="DataProvido Home">
+          <img src="/logo.png" alt="DataProvido">
+        </a>
+        <div class="brand-name">
+          DataProvido <span class="brand-name-dot"></span>
+        </div>
+        <h1 class="card-title">Welcome Back</h1>
+        <p class="card-subtitle">Log in to your retail intelligence console</p>
+      </div>
+
+      <!-- Alert Banners -->
+      <div id="noticeBanner" class="alert-banner success">
+        ✓ Password reset link has been sent to your email inbox.
+      </div>
+      <div id="errorBanner" class="alert-banner error">
+        ✕ Invalid email or password. Please try again.
+      </div>
+
+      <!-- Google Sign In Button -->
+      <a href="/api/auth/google" class="btn-google">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+        <span>Continue with Google</span>
+      </a>
+
+      <div class="divider">or log in with email</div>
+
+      <!-- Email / Password Form -->
+      <form action="/api/auth/login" method="POST">
+        <div class="input-group">
+          <label for="loginEmail">Email Address</label>
+          <input type="email" id="loginEmail" name="email" placeholder="name@company.com" required autocomplete="email">
+        </div>
+        
+        <div class="input-group">
+          <div class="input-header">
+            <label for="loginPassword">Password</label>
+            <a href="javascript:void(0)" onclick="toggleForgotForm()" class="forgot-link">Forgot?</a>
+          </div>
+          <input type="password" id="loginPassword" name="password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        
+        <button type="submit" class="btn-login">
+          Log In to Console
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </form>
+
+      <!-- Forgot Password Form Box -->
+      <form id="forgotPasswordForm" class="forgot-box" action="/api/auth/forgot-password" method="POST">
+        <strong>Reset Password</strong>
+        <p>Enter your registered email address to receive a secure password reset link.</p>
+        <div class="input-group" style="margin-bottom: 12px;">
+          <input type="email" id="forgotEmail" name="email" placeholder="name@company.com" required style="padding: 10px 14px; font-size: 13px;">
+        </div>
+        <div class="forgot-actions">
+          <button type="button" class="btn-cancel" onclick="toggleForgotForm()">Cancel</button>
+          <button type="submit" class="btn-reset-submit">Send Reset Link →</button>
+        </div>
+      </form>
+
+      <div class="footer-note">
+        Don't have an account? <a href="/pricing">View Plans &amp; Subscribe →</a>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Handle URL parameters for notice/error banners
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('notice') === 'password_reset_sent') {
+      const banner = document.getElementById('noticeBanner');
+      if (banner) banner.style.display = 'block';
+    }
+    if (urlParams.get('error') === 'invalid_credentials') {
+      const banner = document.getElementById('errorBanner');
+      if (banner) banner.style.display = 'block';
+    }
+
+    function toggleForgotForm() {
+      const form = document.getElementById('forgotPasswordForm');
+      if (form) {
+        if (form.style.display === 'block') {
+          form.style.display = 'none';
+        } else {
+          form.style.display = 'block';
+          const mainEmail = document.getElementById('loginEmail');
+          const forgotEmail = document.getElementById('forgotEmail');
+          if (mainEmail && forgotEmail && mainEmail.value) {
+            forgotEmail.value = mainEmail.value;
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
