@@ -2870,8 +2870,10 @@ async def google_disconnect():
     return response
 
 @app.get("/logout")
+@app.post("/logout")
 @app.get("/api/auth/logout")
-def logout():
+@app.post("/api/auth/logout")
+def logout(request: Request = None):
     """Log out user and clear auth cookie."""
     from fastapi.responses import RedirectResponse
     response = RedirectResponse(url="/login?notice=logged_out", status_code=303)
@@ -4832,7 +4834,6 @@ def privacy():
     )
 
 
-@app.get("/login", response_class=HTMLResponse)
 @app.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
