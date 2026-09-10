@@ -4612,10 +4612,10 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
     nav_how_cls     = "nav-link active" if active_nav == "how-works" else "nav-link"
     nav_privacy_cls = "nav-link active" if active_nav == "privacy" else "nav-link"
 
-    cta_url = "/login"
-    cta_label = "Login &nbsp;→"
+    cta_url = "/pricing"
+    cta_label = "Start Journey &nbsp;→"
     bottom_cta_url = "/login" if active_nav == "pricing" else "/pricing"
-    bottom_cta_label = "Login to Console &nbsp;→" if active_nav == "pricing" else "View Plans &amp; Subscribe &nbsp;→"
+    bottom_cta_label = "Login to Console &nbsp;→" if active_nav == "pricing" else "Start Journey &nbsp;→"
 
     template = templates.env.get_template("base_page.html")
     return template.render(
@@ -4936,34 +4936,34 @@ def pricing():
               Included Features:
             </div>
             
-            <ul style="list-style: none; padding: 0; margin: 0 0 12px 0; font-size: 13.5px; color: var(--text-700); line-height: 2.1; flex: 1;">
+            <ul style="list-style: none; padding: 0; margin: 0 0 12px 0; font-size: 13px; color: var(--text-700); line-height: 1.8; flex: 1; display: flex; flex-direction: column; gap: 9px;">
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>100% Offline Local LLaMA 3.1 LLM:</strong> Zero data transmitted to third-party clouds</span>
+                <span><strong>6 Core Commercial Analytics Suites:</strong> Category Insights, Stock Risk &amp; Price Benchmark, Funnel Analysis, Heatmap UX, Digital Marketing, and Excel Wizard</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>15+ Analytical Engines:</strong> Stock Risk, Funnel Master, Price Radar, Category &amp; Sector Intelligence</span>
+                <span><strong>Heatmap &amp; Financial Attribution Layer:</strong> Dynamic click, scroll &amp; rage maps with element-by-element revenue and revenue loss tracking</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Natural Language Business Querying:</strong> No SQL, Python, or data analyst queue required</span>
+                <span><strong>Session Replay (rrweb Engine):</strong> High-fidelity video playback of real visitor sessions, checkout friction &amp; rage click events</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Automated Ingestion:</strong> Excel (.xlsx), CSV, and local flat file ingestion</span>
+                <span><strong>Voice &amp; Text Excel Wizard:</strong> English &amp; Turkish voice commands, automatic calculation breakdowns &amp; 1-click formatted Excel export</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>1-Click Excel Export:</strong> Download formatted reports with styles &amp; KPI summaries</span>
+                <span><strong>100% Offline Local LLaMA 3.1 LLM:</strong> Zero enterprise data transmitted to third-party clouds; full GDPR &amp; KVKK compliance</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>On-Premise Container Deployment:</strong> Runs locally on your hardware via Docker / Ollama</span>
+                <span><strong>Live Connectors:</strong> Direct Google Analytics 4 (GA4), Merchant Center, Google Ads API &amp; Excel/CSV auto-sync</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span>Standard technical setup documentation &amp; email onboarding support</span>
+                <span><strong>On-Premise Container Deployment:</strong> Runs locally on your hardware via Docker / Ollama in minutes</span>
               </li>
             </ul>
 
@@ -5005,30 +5005,34 @@ def pricing():
               Everything in Standard, plus:
             </div>
             
-            <ul style="list-style: none; padding: 0; margin: 0 0 12px 0; font-size: 13.5px; color: var(--text-700); line-height: 2.1; flex: 1;">
-              <li style="display: flex; align-items: flex-start; gap: 10px; background: #fff8f4; padding: 10px 12px; border-radius: 10px; border: 1px dashed var(--border-orange); margin-bottom: 8px;">
+            <ul style="list-style: none; padding: 0; margin: 0 0 12px 0; font-size: 13px; color: var(--text-700); line-height: 1.8; flex: 1; display: flex; flex-direction: column; gap: 9px;">
+              <li style="display: flex; align-items: flex-start; gap: 10px; background: #fff8f4; padding: 10px 12px; border-radius: 10px; border: 1px dashed var(--border-orange);">
                 <span style="color: var(--orange); font-weight: 800; font-size: 16px;">🔥</span>
-                <span><strong style="color: var(--orange-dark);">Weekly 1.5 hours of dedicated live online technical &amp; analytical support:</strong> Direct 1-on-1 screen share and data strategy session with lead specialist</span>
+                <span><strong style="color: var(--orange-dark);">Weekly 1.5h Dedicated Live 1-on-1 Consulting:</strong> Direct screen-share, conversion strategy &amp; retail data audit with lead CRO specialist</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Custom Prompt &amp; Sector Metric Tuning:</strong> Tailored to your company's proprietary retail schema and KPIs</span>
+                <span><strong>A/B Test &amp; Revenue Impact Simulator:</strong> Model design variants &amp; project exact financial revenue uplift before launching experiments</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Priority SLA Support:</strong> Direct Slack / WhatsApp / VIP dedicated channel</span>
+                <span><strong>Form &amp; Checkout Friction Analytics:</strong> Field-by-field drop-off rates, hesitation timers &amp; checkout friction diagnostics</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Advanced Cross-Dataset Modules:</strong> Stock vs Funnel vs Price Elasticity correlation</span>
+                <span><strong>Core Web Vitals Speed-to-Revenue Correlation:</strong> Discover how millisecond page latency directly reduces your GMV</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Multi-User Intranet Deployment:</strong> Access for cross-functional commercial teams</span>
+                <span><strong>Automated AI CRO Action Roadmap:</strong> Algorithmic, prioritized list of high-ROI site fixes with revenue impact estimates</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span>Quarterly model optimization &amp; new analytical module updates</span>
+                <span><strong>Multi-Brand / Multi-Store Workspace Sync:</strong> Cross-property GA4, Ads, and e-commerce store management</span>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 10px;">
+                <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
+                <span><strong>Priority VIP SLA Support:</strong> Direct Slack / WhatsApp VIP channel with dedicated support engineering</span>
               </li>
             </ul>
 
