@@ -1,0 +1,106 @@
+<section id="appBenchmarkWorkspaceContainer" class="ab-workspace" aria-label="Mobile app comparison">
+  <div class="ab-topline">
+    <span class="ab-eyebrow"><span class="ab-dot" aria-hidden="true"></span> COMPETITIVE LANDSCAPE</span>
+    <div class="ab-market-controls">
+      <span class="ab-store-pill"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M10 18h4"/></svg> App Store</span>
+      <label class="ab-country-label" for="abCountry">Market</label>
+      <select id="abCountry" class="ab-country">
+        <option value="tr" selected>Türkiye</option><option value="us">United States</option><option value="gb">United Kingdom</option><option value="de">Germany</option><option value="fr">France</option><option value="it">Italy</option><option value="es">Spain</option><option value="nl">Netherlands</option><option value="ae">United Arab Emirates</option><option value="sa">Saudi Arabia</option><option value="ca">Canada</option><option value="au">Australia</option><option value="br">Brazil</option><option value="in">India</option><option value="jp">Japan</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="ab-builder">
+    <div class="ab-selection-grid">
+      <section class="ab-picker ab-picker-own" aria-labelledby="abOwnHeading">
+        <div class="ab-section-heading"><span class="ab-step ab-step-own">01</span><div><h3 id="abOwnHeading">Your app</h3><p>The starting point for your comparison</p></div><span class="ab-badge ab-badge-own">BASELINE</span></div>
+        <div id="abOwnSelection" class="ab-selected-own"></div>
+        <div class="ab-search-wrap">
+          <label class="ab-input-label" for="abOwnSearch">Find your app</label>
+          <div class="ab-search-field"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="abOwnSearch" class="ab-search-input" type="search" autocomplete="off" placeholder="Search an app or publisher" aria-describedby="abOwnHint abOwnStatus" aria-controls="abOwnResults"></div>
+          <p id="abOwnHint" class="ab-input-hint">Try Trendyol, Hepsiburada, or Amazon.</p>
+          <p id="abOwnStatus" class="ab-search-status" role="status" aria-live="polite"></p>
+          <div id="abOwnResults" class="ab-search-results" aria-label="Your app search results" hidden></div>
+        </div>
+      </section>
+
+      <section class="ab-picker" aria-labelledby="abRivalHeading">
+        <div class="ab-section-heading"><span class="ab-step">02</span><div><h3 id="abRivalHeading">Competitors</h3><p>Choose the apps you want to benchmark</p></div><span id="abRivalCount" class="ab-badge">0 / 4</span></div>
+        <div id="abRivalSelections" class="ab-selected-rivals"></div>
+        <div class="ab-search-wrap">
+          <label class="ab-input-label" for="abRivalSearch">Add a competitor</label>
+          <div class="ab-search-field"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="abRivalSearch" class="ab-search-input" type="search" autocomplete="off" placeholder="Search competing apps" aria-describedby="abRivalHint abRivalStatus" aria-controls="abRivalResults" disabled></div>
+          <p id="abRivalHint" class="ab-input-hint">Choose your app first, then add up to 4 competitors.</p>
+          <p id="abRivalStatus" class="ab-search-status" role="status" aria-live="polite"></p>
+          <div id="abRivalResults" class="ab-search-results" aria-label="Competitor search results" hidden></div>
+        </div>
+      </section>
+    </div>
+    <div class="ab-builder-footer"><p id="abSelectionSummary"><span class="ab-summary-icon" aria-hidden="true">↗</span> Choose your app and at least one competitor to get started.</p><button id="abCompareButton" class="ab-button ab-button-primary" type="button" disabled>Compare apps <span aria-hidden="true">→</span></button></div>
+  </div>
+
+  <p id="abMainStatus" class="ab-main-status" role="status" aria-live="polite" hidden></p>
+  <div class="ab-results-topline">
+    <div class="ab-tabs" role="tablist" aria-label="Comparison data">
+      <button id="abPublicTab" class="ab-tab ab-tab-active" type="button" role="tab" aria-selected="true" aria-controls="abPublicPanel">Store comparison <span class="ab-tab-tag">PUBLIC</span></button>
+      <button id="abSignalsTab" class="ab-tab" type="button" role="tab" aria-selected="false" aria-controls="abSignalsPanel" tabindex="-1">Public signals <span class="ab-tab-tag ab-tab-tag-live">LIVE</span></button>
+      <button id="abReviewsTab" class="ab-tab" type="button" role="tab" aria-selected="false" aria-controls="abReviewsPanel" tabindex="-1">Review sentiment <span class="ab-tab-tag ab-tab-tag-sentiment">PUBLIC</span></button>
+    </div>
+    <button id="abExportButton" class="ab-button ab-button-secondary" type="button" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5"/></svg> Export CSV</button>
+  </div>
+
+  <div id="abPublicPanel" class="ab-tab-panel" role="tabpanel" aria-labelledby="abPublicTab">
+    <div id="abEmptyState" class="ab-empty-state">
+      <div class="ab-empty-icon" aria-hidden="true"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect x="4" y="16" width="5" height="11" rx="2" fill="#fdba74"/><rect x="13" y="6" width="5" height="21" rx="2" fill="#f26f26"/><rect x="22" y="11" width="5" height="16" rx="2" fill="#2563eb"/></svg></div>
+      <h3>Your competitive landscape starts here</h3>
+      <p>Select your apps above to see a side-by-side view of what customers see in the store.</p>
+      <div class="ab-capabilities"><span>★ Ratings &amp; rating counts</span><span>↻ Versions &amp; updates</span><span>◇ Pricing</span><span>▤ App details</span></div>
+    </div>
+    <div id="abComparisonResults" hidden>
+      <div id="abSnapshotMeta" class="ab-snapshot-meta"></div>
+      <div id="abAppCards" class="ab-app-cards"></div>
+      <div class="ab-chart-grid">
+        <section class="ab-chart-card" aria-labelledby="abRatingsTitle"><div class="ab-chart-heading"><h3 id="abRatingsTitle">Store rating</h3><span>OUT OF 5</span></div><p class="ab-chart-subtitle">All-version customer ratings in this market</p><div id="abRatingChart" class="ab-bars"></div></section>
+        <section class="ab-chart-card" aria-labelledby="abShareTitle"><div class="ab-chart-heading"><h3 id="abShareTitle">Rating share</h3><span>SELECTED APPS ONLY</span></div><p class="ab-chart-subtitle">Share of rating counts, not installs or market share</p><div id="abShareChart" class="ab-bars"></div></section>
+      </div>
+      <section class="ab-table-card" aria-labelledby="abTableTitle"><div class="ab-table-heading"><div><h3 id="abTableTitle">The details, side by side</h3><p>A current store snapshot. Historical trends are not included.</p></div><span class="ab-badge">PUBLIC STORE DATA</span></div><div id="abComparisonTable" class="ab-table-scroll" tabindex="0" role="region" aria-label="App comparison table, scroll horizontally for more apps"></div></section>
+    </div>
+  </div>
+
+  <div id="abSignalsPanel" class="ab-tab-panel" role="tabpanel" aria-labelledby="abSignalsTab" hidden>
+    <div class="ab-proxy-intro">
+      <div>
+        <span class="ab-proxy-kicker">OBSERVED STORE SIGNALS</span>
+        <h3>Compare public store performance</h3>
+        <p>Every value below comes directly from the selected App Store storefront. Ratios compare each competitor with your baseline app; no active-user, install or uninstall estimates are included.</p>
+      </div>
+      <span class="ab-proxy-badge">PUBLIC DATA</span>
+    </div>
+    <div id="abSignalsResults" class="ab-proxy-results">
+      <div class="ab-proxy-empty">Compare at least two apps to see public store signals.</div>
+    </div>
+    <details class="ab-proxy-method">
+      <summary>How to read these comparisons</summary>
+      <div><p><strong>Customer rating</strong> and <strong>rating footprint</strong> use the storefront’s current rating and rating count. <strong>Update recency</strong> is the number of days since the latest version. <strong>Localization reach</strong> is the number of languages listed by the store.</p><p>A 1.20× ratio means the observed value is 20% higher than your baseline. Rating footprint is not an install count, and language count does not measure usage.</p></div>
+    </details>
+  </div>
+
+  <div id="abReviewsPanel" class="ab-tab-panel" role="tabpanel" aria-labelledby="abReviewsTab" hidden>
+    <div class="ab-review-intro">
+      <div>
+        <span class="ab-review-kicker">PUBLIC CUSTOMER REVIEWS</span>
+        <h3>Compare review sentiment</h3>
+        <p>See the latest written reviews available in the selected storefront and compare their positive, neutral and negative distribution.</p>
+      </div>
+      <span class="ab-review-badge">RATING-BASED</span>
+    </div>
+    <p id="abReviewsStatus" class="ab-review-status" role="status" aria-live="polite">Compare at least two apps, then open this tab to load public reviews.</p>
+    <div id="abReviewsResults" class="ab-review-results"></div>
+    <details class="ab-proxy-method">
+      <summary>How sentiment and review counts are calculated</summary>
+      <div><p>Each public written review is classified from its star rating: <strong>4–5 stars positive</strong>, <strong>3 stars neutral</strong>, and <strong>1–2 stars negative</strong>. This keeps the comparison consistent across languages.</p><p>The review count shown here is the number of recent written reviews available in Apple’s public feed, up to 50 per app. It is a sample and will usually be lower than the storefront’s total rating count.</p></div>
+    </details>
+  </div>
+
+  <details class="ab-sources"><summary><span>Sources &amp; data availability</span><span class="ab-source-summary">Apple App Store public APIs</span></summary><div class="ab-sources-content"><p>Search and comparisons use Apple’s public Search / Lookup API. Written reviews use Apple’s public customer-review feed for the selected storefront. Availability varies by app and country; missing values are shown as “Not available”. Ratings count ratings, while the review sentiment section counts only written reviews in the retrieved sample.</p><p>Exact installs, uninstalls, active users, sessions, retention and revenue are not public store data and are intentionally excluded. Google Play does not provide an official public competitor API; its public listing fields require a separate store-page integration.</p><a href="https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/index.html" target="_blank" rel="noopener noreferrer">Apple API documentation <span aria-hidden="true">↗</span></a></div></details>
+</section>

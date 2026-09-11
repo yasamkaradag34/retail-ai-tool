@@ -5926,3 +5926,21 @@ def how_works():
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse("landing.html", {"request": request})
+
+
+# Public store data uses the same authenticated console session as /journey.
+from fastapi import Depends
+from functions.app_benchmark import router as app_benchmark_router
+
+def require_app_benchmark_user(request: Request):
+    signed = request.cookies.get("gauth", "")
+    decoded = _decrypt_token(signed) if signed else None
+    try:
+        user = json.loads(decoded) if decoded else None
+    except (ValueError, TypeError):
+        user = None
+    if not isinstance(user, dict) or not isinstance(user.get("email"), str) or user["email"].strip().lower() not in ALLOWED_LOGIN_EMAILS:
+        raise HTTPException(status_code=401, detail="Please sign in to use App Benchmark.")
+    return user
+
+app.include_router(app_benchmark_router, dependencies=[Depends(require_app_benchmark_user)])

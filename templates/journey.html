@@ -1019,6 +1019,8 @@
       .topbar { flex-direction: row; justify-content: space-between; align-items: center; gap: 10px; width: 100%; }
     }
   </style>
+  <link rel="stylesheet" href="/static/app-benchmark.css?v=1">
+  <script src="/static/app-benchmark.js?v=1" defer></script>
 </head>
 <body>
   <!-- Google Tag Manager (noscript) -->
@@ -1058,6 +1060,13 @@
               <span id="sub_funnel_analysis">Conversion funnel &amp; drop anomalies</span>
             </span>
           </button>
+          <button class="menu-btn" data-key="digital_marketing" onclick="renderModule('digital_marketing')">
+            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+            <span class="menu-btn-text">
+              <strong>Digital Marketing</strong>
+              <span id="sub_digital_marketing">ROAS, CAC &amp; Campaign Analytics</span>
+            </span>
+          </button>
           <button class="menu-btn" data-key="heatmap_analytics" onclick="renderModule('heatmap_analytics')">
             <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             <span class="menu-btn-text">
@@ -1065,11 +1074,11 @@
               <span id="sub_heatmap_analytics">Click, scroll &amp; rage maps</span>
             </span>
           </button>
-          <button class="menu-btn" data-key="digital_marketing" onclick="renderModule('digital_marketing')">
-            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+          <button class="menu-btn" id="appBenchmarkMenuBtn" data-key="app_benchmark" onclick="renderModule('app_benchmark')">
+            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="18" rx="2"/><rect x="14" y="3" width="7" height="18" rx="2"/><path d="M6 17h1m10 0h1"/></svg>
             <span class="menu-btn-text">
-              <strong>Digital Marketing</strong>
-              <span id="sub_digital_marketing">ROAS, CAC &amp; Campaign Analytics</span>
+              <strong>App Benchmark</strong>
+              <span id="sub_app_benchmark">Mobile App Comparision</span>
             </span>
           </button>
           <button class="menu-btn" data-key="business_calculator" onclick="renderModule('business_calculator')">
@@ -1171,7 +1180,7 @@
               <p class="module-desc" id="moduleDesc" style="font-size: 13.5px; color: #475569; line-height: 1.6; font-weight: 400; max-width: 760px;">Execute advanced mathematical calculations, average, sum, filters, and brand/category breakdowns on all your retail &amp; e-commerce Excel data using English or Turkish voice commands.</p>
             </div>
             <!-- TOP RIGHT LANGUAGE SWITCHER PILLS & UX TOAST BADGE -->
-            <div style="position: relative; flex-shrink: 0;">
+            <div id="voiceModeControls" style="position: relative; flex-shrink: 0;">
               <div id="langToastBadge" style="display: none; position: absolute; top: -38px; right: 0; background: #0f172a; color: #ffffff; font-size: 11.5px; font-weight: 700; padding: 6px 14px; border-radius: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.18); transition: all 0.25s ease; z-index: 99; white-space: nowrap; pointer-events: none;">🌐 Voice Mode Switched</div>
               <div style="display: flex; gap: 4px; background: #f8fafc; padding: 4px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,0.03);">
                 <button id="langBtnEN" onclick="setLanguage('en')" type="button" style="border: 1px solid #2563eb; background: #2563eb; color: #ffffff; padding: 7px 16px; border-radius: 9px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.18s; box-shadow: 0 2px 6px rgba(37,99,235,0.20);">English Voice</button>
@@ -1223,6 +1232,8 @@
               </select>
             </div>
           </div>
+
+          {% include "app_benchmark.html" %}
 
           <!-- CATEGORY & PRODUCT ANALYSIS INTERACTIVE WORKSPACE CONTAINER -->
           <div id="categoryWorkspaceContainer" style="display: none; margin-bottom: 22px; flex-direction: column; gap: 18px;">
@@ -3531,8 +3542,21 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     window.renderHowToUse = renderHowToUse;
     window.toggleHowToUse = toggleHowToUse;
 
+    howToUseGuide.app_benchmark = {
+      tr: "Ülkeyi seçin, kendi uygulamanızı ve en fazla dört rakibi ekleyin. Mağaza verilerini karşılaştırın veya CSV olarak indirin.",
+      en: "Choose a country, your app and up to four competitors. Compare store data or download the comparison as CSV."
+    };
     /* ── Module configs (Bilingual Support) ── */
     const modules = {
+      app_benchmark: {
+        title: "App Benchmark",
+        desc: {
+          tr: "Uygulamanızı ve rakiplerinizi seçin; aynı ülkedeki güncel App Store verilerini karşılaştırın.",
+          en: "Choose your app and competitors. Compare current App Store data in the same country."
+        },
+        placeholder: {tr: "", en: ""},
+        suggestions: {tr: [], en: []}
+      },
       business_calculator: {
         title: "Excel Wizard",
         desc: {
@@ -3816,6 +3840,11 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
 
     function renderModule(key) {
       currentModule = key;
+      const isAppBenchmark = key === "app_benchmark";
+      document.body.classList.toggle("app-benchmark-active", isAppBenchmark);
+      const benchmarkWorkspace = document.getElementById("appBenchmarkWorkspaceContainer");
+      if (benchmarkWorkspace) benchmarkWorkspace.classList.toggle("active", isAppBenchmark);
+      if (isAppBenchmark && window.AppBenchmark) window.AppBenchmark.init();
       const menuBtns = document.querySelectorAll(".menu-btn");
       menuBtns.forEach(btn => {
         if (btn.dataset.key === key) {
@@ -7062,6 +7091,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     /* ── Live Interactive Excel Spreadsheet Data Engine ── */
 
     async function runModule() {
+      if (currentModule === "app_benchmark") return;
       const questionInput = document.getElementById("questionInput");
       const resultBox = document.getElementById("resultBox");
       if (!questionInput || !resultBox) return;
@@ -7324,7 +7354,10 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       }
     }
 
-    renderModule("category_insights");
+    document.addEventListener("DOMContentLoaded", function() {
+      if (currentModule === "app_benchmark" && window.AppBenchmark) window.AppBenchmark.init();
+    });
+    renderModule(urlParams.get("module") === "app_benchmark" ? "app_benchmark" : "category_insights");
   </script>
 </body>
 </html>
