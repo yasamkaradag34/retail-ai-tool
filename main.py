@@ -2697,14 +2697,18 @@ async def sst_event_collector(request: Request):
 
 # ─────────────────────────────────────────────────────────────
 #  GOOGLE OAUTH 2.0 — Single consent for GA4 + Merchant Center
-#  Zero-storage architecture: only encrypted token in cookie
+#  Analytics data is not stored; OAuth tokens use the signed HttpOnly cookie
 # ─────────────────────────────────────────────────────────────
-import hashlib, hmac, base64, urllib.parse, time as _time
+import hashlib, hmac, base64, urllib.parse, time as _time, secrets
+from functions.account_access import has_paid_subscription
+from functions.ga4_commerce import GoogleAnalytics, commerce_report, property_id as validate_ga4_property_id, problem as ga4_problem
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback").strip()
-COOKIE_SECRET = os.getenv("COOKIE_SECRET", "dataprovido-secret-key-change-in-prod").strip()
+COOKIE_SECRET = os.getenv("COOKIE_SECRET", "").strip()
+if not COOKIE_SECRET or COOKIE_SECRET in {"dataprovido-secret-key-change-in-prod", "dataprovido-secure-secret-key-prod-2026"}:
+    COOKIE_SECRET = secrets.token_urlsafe(48)  # Local-only fallback; configure a stable production secret.
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://hqocolyxpvpkxohhjxvz.supabase.co").strip()
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "").strip()
 
@@ -2736,117 +2740,145 @@ def _decrypt_token(signed: str) -> Optional[str]:
     except Exception:
         return None
 
-@app.get("/login/google")
-@app.get("/api/auth/google")
-def google_auth_redirect():
-    """Redirect user to Google OAuth consent screen."""
-    if not GOOGLE_CLIENT_ID:
-        return JSONResponse({"error": "Google OAuth not configured. Set GOOGLE_CLIENT_ID env var."}, status_code=500)
-    
-    params = {
-        "client_id": GOOGLE_CLIENT_ID,
-        "redirect_uri": GOOGLE_REDIRECT_URI,
-        "response_type": "code",
-        "scope": " ".join(GOOGLE_SCOPES),
-        "access_type": "offline",
-        "prompt": "consent",
-        "state": "dataprovido_funnel"
-    }
-    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}"
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url=auth_url)
+def _session_payload(request: Request):
+    decoded = _decrypt_token(request.cookies.get("gauth", ""))
+    try:
+        data = json.loads(decoded) if decoded else None
+    except (ValueError, TypeError):
+        return None
+    return data if isinstance(data, dict) else None
 
-@app.get("/api/auth/google/callback")
-async def google_auth_callback(code: str = None, error: str = None, state: str = None):
-    """Handle OAuth callback — exchange code for tokens, store in encrypted cookie."""
-    if error:
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/journey?activated=true&auth_error=" + error)
-    
-    if not code:
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/journey?activated=true&auth_error=no_code")
-    
-    # Exchange authorization code for tokens
-    token_response = requests.post("https://oauth2.googleapis.com/token", data={
-        "code": code,
-        "client_id": GOOGLE_CLIENT_ID,
-        "client_secret": GOOGLE_CLIENT_SECRET,
-        "redirect_uri": GOOGLE_REDIRECT_URI,
-        "grant_type": "authorization_code"
-    })
-    
-    if token_response.status_code != 200:
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/journey?activated=true&auth_error=token_exchange_failed")
-    
-    tokens = token_response.json()
-    
-    # Get user profile info
-    user_info = {}
-    if tokens.get("access_token"):
-        profile_resp = requests.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {tokens['access_token']}"}
-        )
-        if profile_resp.status_code == 200:
-            user_info = profile_resp.json()
-    
-    user_email = user_info.get("email", "").strip().lower()
-    if user_email and user_email not in ALLOWED_LOGIN_EMAILS:
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/login?error=unauthorized_email", status_code=303)
-    
-    # Build cookie payload (tokens + user info, NO analytics data)
-    cookie_data = json.dumps({
-        "access_token": tokens.get("access_token", ""),
-        "refresh_token": tokens.get("refresh_token", ""),
-        "expires_at": int(_time.time()) + tokens.get("expires_in", 3600),
-        "email": user_info.get("email", ""),
-        "name": user_info.get("name", ""),
-        "picture": user_info.get("picture", "")
-    })
-    
-    encrypted = _encrypt_token(cookie_data)
-    
-    from fastapi.responses import RedirectResponse
-    response = RedirectResponse(url="/journey?activated=true&google_connected=true")
-    response.set_cookie(
-        key="gauth",
-        value=encrypted,
-        httponly=True,
-        secure=True,
-        samesite="lax",
-        max_age=30 * 24 * 3600,  # 30 days
-        path="/"
-    )
+
+def require_console_user(request: Request):
+    if hasattr(request.state, "console_user"):
+        return request.state.console_user
+    user = _session_payload(request)
+    if not user or not isinstance(user.get("email"), str) or not user["email"].strip():
+        raise ga4_problem(401, "login_required", "Sign in to DataProvido to continue.")
+    email = user["email"].strip().lower()
+    if email not in ALLOWED_LOGIN_EMAILS:
+        if user.get("google_verified") is not True or not has_paid_subscription(email):
+            raise ga4_problem(403, "subscription_required", "No active DataProvido subscription was found for this Google email. Sign in with the email used at checkout.")
+    request.state.console_user = user
+    return user
+
+
+def _set_auth_cookie(response, request, data):
+    response.set_cookie("gauth", _encrypt_token(json.dumps(data)), httponly=True,
+                        secure=request.url.hostname not in ("localhost", "127.0.0.1", "::1"),
+                        samesite="lax", max_age=30 * 24 * 3600, path="/")
+
+
+@app.middleware("http")
+async def persist_refreshed_google_session(request: Request, call_next):
+    response = await call_next(request)
+    refreshed = getattr(request.state, "google_cookie_update", None)
+    if refreshed is not None and not any(header.lower() == b"set-cookie" and value.startswith(b"gauth=") for header, value in response.raw_headers):
+        _set_auth_cookie(response, request, refreshed)
+    if request.url.path.startswith(("/api/ga4/", "/api/auth/", "/api/google/")) or request.url.path == "/journey":
+        response.headers["Cache-Control"] = "private, no-store"
     return response
 
+
+@app.get("/login/google")
+@app.get("/api/auth/google")
+def google_auth_redirect(request: Request, integration: str = ""):
+    """Bind OAuth consent to a short-lived browser state; analytics-only on demand."""
+    from fastapi.responses import RedirectResponse
+    if not GOOGLE_CLIENT_ID:
+        return RedirectResponse("/login?error=google_not_configured", status_code=303)
+    nonce = secrets.token_urlsafe(32)
+    scopes = GOOGLE_SCOPES if integration != "analytics" else [s for s in GOOGLE_SCOPES if s not in ("https://www.googleapis.com/auth/content", "https://www.googleapis.com/auth/adwords")]
+    params = {"client_id": GOOGLE_CLIENT_ID, "redirect_uri": GOOGLE_REDIRECT_URI,
+              "response_type": "code", "scope": " ".join(scopes), "access_type": "offline",
+              "prompt": "consent select_account", "state": nonce}
+    response = RedirectResponse("https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params))
+    response.set_cookie("google_oauth_state", _encrypt_token(json.dumps({"nonce": nonce, "expires_at": int(_time.time()) + 600})),
+                        httponly=True, secure=request.url.hostname not in ("localhost", "127.0.0.1", "::1"), samesite="lax", max_age=600, path="/api/auth/google/callback")
+    return response
+
+
+@app.get("/api/auth/google/callback")
+def google_auth_callback(request: Request, code: str = None, error: str = None, state: str = None):
+    from fastapi.responses import RedirectResponse
+    def fail(reason):
+        response = RedirectResponse("/login?error=" + reason, status_code=303)
+        response.delete_cookie("google_oauth_state", path="/api/auth/google/callback")
+        return response
+    decoded = _decrypt_token(request.cookies.get("google_oauth_state", ""))
+    try:
+        saved = json.loads(decoded) if decoded else {}
+        valid = isinstance(saved, dict) and isinstance(saved.get("nonce"), str) and isinstance(saved.get("expires_at"), (int, float)) and saved["expires_at"] > _time.time() and isinstance(state, str) and hmac.compare_digest(saved["nonce"], state)
+    except (ValueError, TypeError):
+        valid = False
+    if not valid:
+        return fail("oauth_state_expired")
+    if error or not code:
+        return fail("google_consent_cancelled")
+    try:
+        token_response = requests.post("https://oauth2.googleapis.com/token", data={
+            "code": code, "client_id": GOOGLE_CLIENT_ID, "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": GOOGLE_REDIRECT_URI, "grant_type": "authorization_code"}, timeout=(5, 20))
+        if token_response.status_code != 200:
+            return fail("google_connection_failed")
+        tokens = token_response.json()
+        if not tokens.get("access_token"):
+            return fail("google_connection_failed")
+        profile = requests.get("https://www.googleapis.com/oauth2/v2/userinfo", headers={"Authorization": "Bearer " + tokens["access_token"]}, timeout=(5, 15))
+        if profile.status_code != 200:
+            return fail("google_connection_failed")
+        user_info = profile.json()
+        email = user_info.get("email", "").strip().lower()
+        if not email or user_info.get("verified_email") is not True:
+            return fail("google_email_unverified")
+        if email not in ALLOWED_LOGIN_EMAILS and not has_paid_subscription(email):
+            return fail("subscription_required")
+    except HTTPException:
+        return fail("subscription_unavailable")
+    except (requests.RequestException, ValueError, TypeError, AttributeError):
+        return fail("google_connection_failed")
+    prior = _session_payload(request) or {}
+    same_account = prior.get("email", "").strip().lower() == email
+    cookie_data = {"access_token": tokens["access_token"],
+                   "refresh_token": tokens.get("refresh_token") or (prior.get("refresh_token", "") if same_account else ""),
+                   "expires_at": int(_time.time()) + int(tokens.get("expires_in", 3600)),
+                   "email": email, "name": user_info.get("name", ""), "picture": user_info.get("picture", ""), "google_verified": True}
+    if same_account and prior.get("selected_ga4"):
+        cookie_data["selected_ga4"] = prior["selected_ga4"]
+    response = RedirectResponse("/journey?module=category_insights&google_connected=true", status_code=303)
+    _set_auth_cookie(response, request, cookie_data)
+    response.delete_cookie("google_oauth_state", path="/api/auth/google/callback")
+    return response
+
+
 def _get_google_tokens(request: Request) -> Optional[dict]:
-    """Extract and validate Google tokens from cookie."""
-    cookie = request.cookies.get("gauth")
-    if not cookie:
-        return None
-    decrypted = _decrypt_token(cookie)
-    if not decrypted:
+    if hasattr(request.state, "google_tokens"):
+        return request.state.google_tokens
+    data = _session_payload(request)
+    if data is None:
         return None
     try:
-        data = json.loads(decrypted)
-        # Refresh if expired
-        if data.get("expires_at", 0) < int(_time.time()) and data.get("refresh_token"):
-            refreshed = requests.post("https://oauth2.googleapis.com/token", data={
-                "client_id": GOOGLE_CLIENT_ID,
-                "client_secret": GOOGLE_CLIENT_SECRET,
-                "refresh_token": data["refresh_token"],
-                "grant_type": "refresh_token"
-            })
-            if refreshed.status_code == 200:
-                new_tokens = refreshed.json()
-                data["access_token"] = new_tokens.get("access_token", data["access_token"])
-                data["expires_at"] = int(_time.time()) + new_tokens.get("expires_in", 3600)
-        return data
-    except Exception:
-        return None
+        expired = float(data.get("expires_at", 0)) < _time.time() + 60
+    except (ValueError, TypeError):
+        expired = True
+    if data.get("access_token") and expired:
+        if data.get("refresh_token"):
+            try:
+                response = requests.post("https://oauth2.googleapis.com/token", data={"client_id": GOOGLE_CLIENT_ID,
+                    "client_secret": GOOGLE_CLIENT_SECRET, "refresh_token": data["refresh_token"], "grant_type": "refresh_token"}, timeout=(5, 15))
+                if response.status_code == 200 and response.json().get("access_token"):
+                    tokens = response.json()
+                    data["access_token"] = tokens["access_token"]
+                    data["expires_at"] = int(_time.time()) + int(tokens.get("expires_in", 3600))
+                    request.state.google_cookie_update = data
+                else:
+                    data["access_token"] = ""
+            except (requests.RequestException, ValueError, TypeError):
+                data["access_token"] = ""
+        else:
+            data["access_token"] = ""
+    request.state.google_tokens = data
+    return data
 
 @app.get("/api/auth/google/status")
 async def google_auth_status(request: Request):
@@ -2883,6 +2915,7 @@ def logout(request: Request = None):
 @app.get("/api/google/accounts")
 async def google_get_accounts(request: Request):
     """Fetch accessible GA4 properties, Merchant Center accounts, and Google Ads Customer IDs for connected user."""
+    user = require_console_user(request)
     tokens = _get_google_tokens(request) or {}
     is_authenticated = bool(tokens and tokens.get("access_token"))
     
@@ -2894,25 +2927,11 @@ async def google_get_accounts(request: Request):
         access_token = tokens["access_token"]
         headers = {"Authorization": f"Bearer {access_token}"}
         
-        # 1. GA4 Admin API - Account Summaries
+        # Real accessible properties only; no synthetic choices for connected users.
         try:
-            ga_resp = requests.get(
-                "https://analyticsadmin.googleapis.com/v1beta/accountSummaries",
-                headers=headers,
-                timeout=4
-            )
-            if ga_resp.status_code == 200:
-                for acc in ga_resp.json().get("accountSummaries", []):
-                    acc_name = acc.get("displayName", "Analytics Account")
-                    for prop in acc.get("propertySummaries", []):
-                        pid = prop.get("property", "").replace("properties/", "")
-                        pname = prop.get("displayName", "Property")
-                        ga4_properties.append({
-                            "id": pid,
-                            "name": f"{acc_name} — {pname} (ID: {pid})"
-                        })
-        except Exception as e:
-            print("Error fetching GA4 accounts:", e)
+            ga4_properties = GoogleAnalytics(access_token).properties()
+        except HTTPException:
+            ga4_properties = []
 
         # 2. Content API for Shopping (Merchant Center)
         try:
@@ -2949,14 +2968,6 @@ async def google_get_accounts(request: Request):
         except Exception as e:
             print("Error fetching Ads accounts:", e)
 
-    # Provide selectable fallback/default choices if empty or demo
-    if not ga4_properties:
-        ga4_properties = [
-            {"id": "310492815", "name": "DataProvido E-Commerce GA4 Property (ID: 310492815)"},
-            {"id": "981240121", "name": "Retail Web Store — Main Property (ID: 981240121)"},
-            {"id": "841029411", "name": "Retail Mobile App — iOS & Android (ID: 841029411)"}
-        ]
-
     if not merchant_accounts:
         merchant_accounts = [
             {"id": "109823412", "name": "DataProvido Retail Merchant Store (ID: 109823412)"},
@@ -2971,9 +2982,9 @@ async def google_get_accounts(request: Request):
 
     return JSONResponse({
         "authenticated": is_authenticated,
-        "user_email": tokens.get("email", "myasamkaradag@gmail.com"),
-        "user_name": tokens.get("name", "Yasam Karadag"),
-        "selected_ga4": tokens.get("selected_ga4", ga4_properties[0]["id"]),
+        "user_email": user.get("email", ""),
+        "user_name": user.get("name", ""),
+        "selected_ga4": tokens.get("selected_ga4", ga4_properties[0]["id"] if len(ga4_properties) == 1 else ""),
         "selected_merchant": tokens.get("selected_merchant", merchant_accounts[0]["id"]),
         "selected_google_ads": tokens.get("selected_google_ads", google_ads_accounts[0]["id"]),
         "ga4_properties": ga4_properties,
@@ -2984,24 +2995,23 @@ async def google_get_accounts(request: Request):
 @app.post("/api/google/save-selection")
 async def save_google_account_selection(request: Request):
     """Save user account selections into session cookie."""
+    require_console_user(request)
     data = await request.json()
     tokens = _get_google_tokens(request) or {}
-    
-    tokens["selected_ga4"] = data.get("ga4_property_id", "")
+    origin = request.headers.get("origin")
+    if origin and origin != str(request.base_url).rstrip("/"):
+        raise ga4_problem(403, "invalid_origin", "Save account selections from your DataProvido console.")
+    pid = data.get("ga4_property_id", "")
+    if pid:
+        if not tokens.get("access_token"):
+            raise ga4_problem(401, "google_reconnect", "Connect Google Analytics before selecting a property.")
+        GoogleAnalytics(tokens["access_token"]).property(validate_ga4_property_id(pid))
+    tokens["selected_ga4"] = pid
     tokens["selected_merchant"] = data.get("merchant_account_id", "")
     tokens["selected_google_ads"] = data.get("google_ads_account_id", "")
     
-    encrypted = _encrypt_token(json.dumps(tokens))
     response = JSONResponse({"status": "success", "selection": data})
-    response.set_cookie(
-        key="gauth",
-        value=encrypted,
-        httponly=True,
-        secure=True,
-        samesite="lax",
-        max_age=30 * 24 * 3600,
-        path="/"
-    )
+    _set_auth_cookie(response, request, tokens)
     return response
 
 def _get_demo_funnel_payload(days: int = 30, source: str = "demo"):
@@ -3205,106 +3215,50 @@ async def funnel_report(request: Request, days: int = 30, start_date: str = None
             "period": f"Last {days} days"
         })
 
-@app.get("/api/ga4/category-report")
-async def ga4_category_report(request: Request, property_id: str = "", days: int = 30, start_date: str = None, end_date: str = None):
-    """Fetch real-time GA4 Category report breakdown with custom date range support."""
-    scale = 1.0
-    if start_date and end_date:
-        try:
-            d1 = datetime.strptime(start_date, "%Y-%m-%d")
-            d2 = datetime.strptime(end_date, "%Y-%m-%d")
-            days = max(1, (d2 - d1).days + 1)
-            scale = days / 30.0
-        except Exception:
-            pass
-
+def _commerce_provider(request):
+    require_console_user(request)
     tokens = _get_google_tokens(request)
-    
-    demo_categories = [
-        {"category": "Tüketici Elektroniği", "pdp": int(4820 * scale), "pdp_change": 12.4, "a2c": int(1240 * scale), "a2c_change": 8.1, "trans": int(320 * scale), "trans_change": 15.2, "c2d": 25.72, "c2d_change": -1.2, "b2d": 6.64, "b2d_change": 2.4},
-        {"category": "Bilgisayar & Tablet", "pdp": int(2600 * scale), "pdp_change": 5.8, "a2c": int(780 * scale), "a2c_change": 3.4, "trans": int(195 * scale), "trans_change": 4.1, "c2d": 30.00, "c2d_change": 0.5, "b2d": 7.50, "b2d_change": 1.1},
-        {"category": "Küçük Ev Aletleri", "pdp": int(1850 * scale), "pdp_change": -3.2, "a2c": int(520 * scale), "a2c_change": -1.8, "trans": int(138 * scale), "trans_change": -2.5, "c2d": 28.11, "c2d_change": 1.4, "b2d": 7.46, "b2d_change": 0.8},
-        {"category": "Akıllı Ev & Ses", "pdp": int(1240 * scale), "pdp_change": 18.9, "a2c": int(310 * scale), "a2c_change": 14.2, "trans": int(82 * scale), "trans_change": 22.0, "c2d": 25.00, "c2d_change": -3.1, "b2d": 6.61, "b2d_change": 1.8},
-        {"category": "Aksesuar & Kablo", "pdp": int(820 * scale), "pdp_change": 2.1, "a2c": int(190 * scale), "a2c_change": 0.5, "trans": int(45 * scale), "trans_change": 1.2, "c2d": 23.17, "c2d_change": -0.8, "b2d": 5.49, "b2d_change": -0.4}
-    ]
-
     if not tokens or not tokens.get("access_token"):
-        return JSONResponse({"source": "demo", "ga4Categories": demo_categories, "period": f"Last {days} days", "start_date": start_date, "end_date": end_date})
+        raise ga4_problem(401, "google_reconnect", "Connect Google Analytics to load your store’s report.")
+    return GoogleAnalytics(tokens["access_token"]), tokens
 
-    try:
-        access_token = tokens["access_token"]
-        headers = {"Authorization": f"Bearer {access_token}"}
 
-        if not property_id:
-            admin_resp = requests.get("https://analyticsadmin.googleapis.com/v1beta/accountSummaries", headers=headers)
-            if admin_resp.status_code == 200:
-                accounts = admin_resp.json()
-                for acc in accounts.get("accountSummaries", []):
-                    for prop in acc.get("propertySummaries", []):
-                        property_id = prop.get("property", "").replace("properties/", "")
-                        if property_id:
-                            break
-                    if property_id:
-                        break
+@app.get("/api/ga4/properties")
+def ga4_properties(request: Request):
+    user = require_console_user(request)
+    tokens = _get_google_tokens(request)
+    if not tokens or not tokens.get("access_token"):
+        return {"connected": False, "properties": [], "selected_property": ""}
+    properties = GoogleAnalytics(tokens["access_token"]).properties()
+    valid_ids = {p["id"] for p in properties}
+    selected = tokens.get("selected_ga4", "")
+    return {"connected": True, "email": user["email"], "properties": properties,
+            "selected_property": selected if selected in valid_ids else ""}
 
-        if not property_id:
-            return JSONResponse({"source": "demo", "ga4Categories": demo_categories, "error": "No GA4 property found."})
 
-        report_body = {
-            "dateRanges": [{"startDate": f"{days}daysAgo", "endDate": "yesterday"}],
-            "dimensions": [{"name": "itemCategory"}],
-            "metrics": [
-                {"name": "itemsViewed"},
-                {"name": "itemsAddedToCart"},
-                {"name": "itemsPurchased"},
-                {"name": "cartToViewRate"},
-                {"name": "purchaseToViewRate"}
-            ],
-            "limit": 20
-        }
+class GA4PropertySelection(BaseModel):
+    property_id: str
 
-        report_resp = requests.post(
-            f"https://analyticsdata.googleapis.com/v1beta/properties/{property_id}:runReport",
-            headers={**headers, "Content-Type": "application/json"},
-            json=report_body
-        )
 
-        if report_resp.status_code == 200:
-            rep_data = report_resp.json()
-            rows = rep_data.get("rows", [])
-            categories = []
-            for r in rows:
-                cat_name = r["dimensionValues"][0]["value"]
-                if not cat_name or cat_name in ["(not set)", "(unset)"]:
-                    continue
-                mv = r["metricValues"]
-                pdp = int(float(mv[0]["value"])) if len(mv) > 0 else 0
-                a2c = int(float(mv[1]["value"])) if len(mv) > 1 else 0
-                trans = int(float(mv[2]["value"])) if len(mv) > 2 else 0
-                c2d = round(float(mv[3]["value"]) * 100, 2) if len(mv) > 3 else (round(a2c/pdp*100, 2) if pdp else 0)
-                b2d = round(float(mv[4]["value"]) * 100, 2) if len(mv) > 4 else (round(trans/pdp*100, 2) if pdp else 0)
-                
-                categories.append({
-                    "category": cat_name,
-                    "pdp": pdp,
-                    "pdp_change": 0.0,
-                    "a2c": a2c,
-                    "a2c_change": 0.0,
-                    "trans": trans,
-                    "trans_change": 0.0,
-                    "c2d": c2d,
-                    "c2d_change": 0.0,
-                    "b2d": b2d,
-                    "b2d_change": 0.0
-                })
+@app.post("/api/ga4/selection")
+def ga4_save_property(selection: GA4PropertySelection, request: Request):
+    provider, tokens = _commerce_provider(request)
+    origin = request.headers.get("origin")
+    if origin and origin != str(request.base_url).rstrip("/"):
+        raise ga4_problem(403, "invalid_origin", "Select your property from the DataProvido console.")
+    pid = validate_ga4_property_id(selection.property_id)
+    provider.property(pid)  # Google checks access before saving.
+    tokens["selected_ga4"] = pid
+    response = JSONResponse({"selected_property": pid})
+    _set_auth_cookie(response, request, tokens)
+    return response
 
-            if categories:
-                return JSONResponse({"source": "live", "property_id": property_id, "ga4Categories": categories, "period": f"Last {days} days"})
 
-        return JSONResponse({"source": "demo", "ga4Categories": demo_categories, "error": f"GA4 property {property_id} returned no ecommerce items."})
-
-    except Exception as e:
-        return JSONResponse({"source": "demo", "ga4Categories": demo_categories, "error": str(e)})
+@app.get("/api/ga4/category-report")
+@app.get("/api/ga4/commerce-report")
+def ga4_commerce_report(request: Request, property_id: str, view: str = "categories", category: str = "", days: int = 30, start_date: str = None, end_date: str = None):
+    provider, _ = _commerce_provider(request)
+    return commerce_report(provider, property_id, view, category, days, start_date, end_date)
 
 @app.get("/api/merchant/price-competitiveness")
 async def merchant_price_competitiveness(request: Request):
@@ -4581,20 +4535,12 @@ async def heatmap_friction_insights():
 
 @app.get("/journey", response_class=HTMLResponse)
 def journey(request: Request, activated: str = None, plan: str = None, demo: str = None):
-    # Only allow console access if user is authenticated via cookie
-    cookie = request.cookies.get("gauth")
-    user_data = None
-    if cookie:
-        decrypted = _decrypt_token(cookie)
-        if decrypted:
-            try:
-                user_data = json.loads(decrypted)
-            except Exception:
-                user_data = None
-
-    if not user_data or not user_data.get("email") or user_data.get("email", "").strip().lower() not in ALLOWED_LOGIN_EMAILS:
+    try:
+        user_data = require_console_user(request)
+    except HTTPException as error:
         from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/login?notice=login_required", status_code=303)
+        reason = "subscription_unavailable" if error.status_code == 503 else "subscription_required" if error.status_code == 403 else "login_required"
+        return RedirectResponse(url="/login?error=" + reason, status_code=303)
 
     return templates.TemplateResponse("journey.html", {
         "request": request,
@@ -4857,17 +4803,8 @@ async def email_password_login(request: Request):
         "login_type": "email",
         "role": "admin"
     })
-    encrypted = _encrypt_token(cookie_data)
     response = RedirectResponse(url="/journey?activated=true", status_code=303)
-    response.set_cookie(
-        key="gauth",
-        value=encrypted,
-        httponly=True,
-        secure=True,
-        samesite="lax",
-        max_age=30 * 24 * 3600,
-        path="/"
-    )
+    _set_auth_cookie(response, request, json.loads(cookie_data))
     return response
 
 @app.post("/api/auth/forgot-password")
@@ -5126,6 +5063,8 @@ def checkout(plan: str = "standard"):
                 "line_items": line_items,
                 "mode": "subscription",
                 "allow_promotion_codes": True,
+                "metadata": {"app": "dataprovido", "plan": "pro" if is_pro else "standard"},
+                "subscription_data": {"metadata": {"app": "dataprovido", "plan": "pro" if is_pro else "standard"}},
                 "success_url": f"{base_url}/checkout/success?plan={'pro' if is_pro else 'standard'}&session_id={{CHECKOUT_SESSION_ID}}",
                 "cancel_url": f"{base_url}/pricing",
                 "managed_payments": {"enabled": False}
@@ -5478,29 +5417,29 @@ def checkout_success(plan: str = "standard", session_id: str = ""):
   <!-- End Google Tag Manager (noscript) -->
   <div class="success-card">
     <div class="success-badge">✓</div>
-    <h1>Payment Successful!</h1>
-    <p>Your DataProvido license is active and ready to use. Your on-premise local AI environment has been granted full analytical access.</p>
+    <h1>Connect your subscription</h1>
+    <p>Continue with the Google email you used at checkout. We will verify your active subscription and connect your Google Analytics properties.</p>
 
     <div class="plan-box">
       <div class="plan-row">
-        <span style="color: #64748b;">Subscribed Plan:</span>
+        <span style="color: #64748b;">Selected Plan:</span>
         <strong style="color: #0f172a;">{plan_title}</strong>
       </div>
       <div class="plan-row">
         <span style="color: #64748b;">License Status:</span>
-        <strong style="color: #10b981;">● Active (Unlimited Offline Queries)</strong>
+        <strong style="color: #10b981;">Verified after Google sign-in</strong>
       </div>
       <div class="plan-row">
         <span style="color: #64748b;">Session Reference:</span>
-        <span style="font-family: monospace; color: #64748b;">{session_id or 'cs_live_active'}</span>
+        <span style="font-family: monospace; color: #64748b;">{'Complete Google sign-in to verify'}</span>
       </div>
     </div>
 
     {"<div class='support-box'><div><strong>📅 Weekly 1.5h Support Included:</strong><div style='font-size: 12px; color: #9a3412;'>Book your dedicated weekly 1-on-1 strategy &amp; technical consultation.</div></div><a href='mailto:info@dataprovido.com?subject=Schedule%20Weekly%201.5h%20Live%20Support%20Session' style='background: #f26f26; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 12px; white-space: nowrap;'>Book Session →</a></div><br>" if is_pro else ""}
 
     <div style="margin-top: 16px;">
-      <a href="/journey?activated=true&plan={plan}" class="btn-launch">
-        🚀 Launch Analytics Console &nbsp;→
+      <a href="/api/auth/google?integration=analytics" class="btn-launch">
+        Continue with Google &nbsp;→
       </a>
     </div>
   </div>
@@ -5933,14 +5872,12 @@ from fastapi import Depends
 from functions.app_benchmark import router as app_benchmark_router
 
 def require_app_benchmark_user(request: Request):
-    signed = request.cookies.get("gauth", "")
-    decoded = _decrypt_token(signed) if signed else None
     try:
-        user = json.loads(decoded) if decoded else None
-    except (ValueError, TypeError):
-        user = None
-    if not isinstance(user, dict) or not isinstance(user.get("email"), str) or user["email"].strip().lower() not in ALLOWED_LOGIN_EMAILS:
-        raise HTTPException(status_code=401, detail="Please sign in to use App Benchmark.")
-    return user
+        return require_console_user(request)
+    except HTTPException as error:
+        if error.status_code == 403:
+            raise HTTPException(401, detail="Sign in with an active DataProvido account.")
+        raise
+
 
 app.include_router(app_benchmark_router, dependencies=[Depends(require_app_benchmark_user)])

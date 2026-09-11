@@ -1021,6 +1021,8 @@
   </style>
   <link rel="stylesheet" href="/static/app-benchmark.css?v=1">
   <script src="/static/app-benchmark.js?v=1" defer></script>
+  <link rel="stylesheet" href="/static/category-analysis.css?v=1">
+  <script src="/static/category-analysis.js?v=1" defer></script>
 </head>
 <body>
   <!-- Google Tag Manager (noscript) -->
@@ -1149,8 +1151,8 @@
         <div style="display: flex; align-items: center; gap: 10px;">
           <span style="font-size: 20px;">🎉</span>
           <div>
-            <strong style="color: #065f46; font-size: 13.5px;" id="activationTitle">License Active: Welcome to DataProvido Console!</strong>
-            <div style="font-size: 12px; color: #047857;" id="activationSubtitle">Your 100% offline local AI environment is fully unlocked with unlimited query execution.</div>
+            <strong style="color: #065f46; font-size: 13.5px;" id="activationTitle">Welcome to your DataProvido workspace!</strong>
+            <div style="font-size: 12px; color: #047857;" id="activationSubtitle">Connect your data sources to start analysing your store.</div>
           </div>
         </div>
         <button onclick="document.getElementById('activationBanner').style.display='none'" style="background: transparent; border: none; color: #065f46; font-weight: 700; cursor: pointer; font-size: 16px;">✕</button>
@@ -1236,88 +1238,7 @@
           {% include "app_benchmark.html" %}
 
           <!-- CATEGORY & PRODUCT ANALYSIS INTERACTIVE WORKSPACE CONTAINER -->
-          <div id="categoryWorkspaceContainer" style="display: none; margin-bottom: 22px; flex-direction: column; gap: 18px;">
-            
-            <!-- GA4 PROPERTY SELECTOR & CATEGORY DATA TABLE -->
-            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 22px 24px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <span style="font-size: 20px;">📊</span>
-                  <div>
-                    <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 0;">Category Performance Table</h4>
-                    <span style="font-size: 12px; color: #64748b;" id="ga4CategorySourceLabel">Select a GA4 property to load real-time data</span>
-                  </div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <span class="data-source-pill demo" id="ga4CategoryBadge">📋 Demo Data</span>
-                  <select id="ga4PropertySelect" onchange="loadGA4CategoryData()" style="padding: 7px 14px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 12px; font-weight: 700; color: #0f172a; background: #ffffff; cursor: pointer; max-width: 260px;">
-                    <option value="">— Select GA4 Property —</option>
-                  </select>
-                  <select id="ga4CategoryDays" onchange="loadGA4CategoryData()" style="padding: 7px 12px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 12px; font-weight: 700; color: #0f172a; background: #ffffff; cursor: pointer;">
-                    <option value="7">Last 7 Days</option>
-                    <option value="30" selected>Last 30 Days</option>
-                    <option value="90">Last 90 Days</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- REALTIME GA4 CATEGORY TABLE -->
-              <div style="overflow-x: auto; max-height: 380px; border: 1px solid #e2e8f0; border-radius: 12px;">
-                <table class="insights-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                  <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 2;">
-                    <tr style="border-bottom: 2px solid #e2e8f0; text-align: left;">
-                      <th style="padding: 10px 12px; font-weight: 800; color: #475569; cursor: pointer;" onclick="sortGA4Table('category')">Item Category ↕</th>
-                      <th style="padding: 10px 12px; font-weight: 800; color: #2563eb; text-align: right; cursor: pointer;" onclick="sortGA4Table('pdp')">PDP Views (Viewed) ↕</th>
-                      <th style="padding: 10px 12px; font-weight: 700; color: #64748b; text-align: right;">%Δ</th>
-                      <th style="padding: 10px 12px; font-weight: 800; color: #059669; text-align: right; cursor: pointer;" onclick="sortGA4Table('a2c')">Add to Cart (A2C) ↕</th>
-                      <th style="padding: 10px 12px; font-weight: 700; color: #64748b; text-align: right;">%Δ</th>
-                      <th style="padding: 10px 12px; font-weight: 800; color: #d97706; text-align: right; cursor: pointer;" onclick="sortGA4Table('trans')">Transactions (Purchased) ↕</th>
-                      <th style="padding: 10px 12px; font-weight: 700; color: #64748b; text-align: right;">%Δ</th>
-                      <th style="padding: 10px 12px; font-weight: 800; color: #7c3aed; text-align: right; cursor: pointer;" onclick="sortGA4Table('c2d')">Cart to Detail (C2D%) ↕</th>
-                      <th style="padding: 10px 12px; font-weight: 700; color: #64748b; text-align: right;">%Δ</th>
-                      <th style="padding: 10px 12px; font-weight: 800; color: #7c3aed; text-align: right; cursor: pointer;" onclick="sortGA4Table('b2d')">Buy to Detail (B2D%) ↕</th>
-                      <th style="padding: 10px 12px; font-weight: 700; color: #64748b; text-align: right;">%Δ</th>
-                    </tr>
-                  </thead>
-                  <tbody id="ga4CategoryTableBody">
-                    <!-- Loaded dynamically via JS -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- INTERACTIVE CHARTING DASHBOARD GRID -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
-              
-              <!-- CHART 1: CATEGORY & BRAND SHARE (BAR CHART) -->
-              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                  <div>
-                    <span style="font-size: 10.5px; font-weight: 800; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Visual Analytics · Revenue &amp; Share</span>
-                    <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px;">Category Revenue &amp; Market Share</h4>
-                  </div>
-                  <span style="font-size: 11px; background: #f1f5f9; color: #475569; padding: 3px 8px; border-radius: 6px; font-weight: 700;">Bar Chart</span>
-                </div>
-                <div style="height: 240px; position: relative;">
-                  <canvas id="categoryShareChartCanvas"></canvas>
-                </div>
-              </div>
-
-              <!-- CHART 2: CONVERSION & PDP MATRIX (SCATTER PLOT) -->
-              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                  <div>
-                    <span style="font-size: 10.5px; font-weight: 800; color: #059669; letter-spacing: 0.08em; text-transform: uppercase;">Performance Matrix · PDP vs Conversion</span>
-                    <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px;">Category C2D &amp; B2D Conversion Rates</h4>
-                  </div>
-                  <span style="font-size: 11px; background: #ecfdf5; color: #047857; padding: 3px 8px; border-radius: 6px; font-weight: 700;">Matrix View</span>
-                </div>
-                <div style="height: 240px; position: relative;">
-                  <canvas id="categoryConversionChartCanvas"></canvas>
-                </div>
-              </div>
-            </div> <!-- Close Dashboard Grid -->
-          </div> <!-- Close categoryWorkspaceContainer -->
+          {% include "category_analysis.html" %}
 
             <!-- DATA CONNECTORS & IMPLEMENTATION GUIDE CONTAINER -->
           <div id="dataConnectorsWorkspaceContainer" style="display: none; margin-bottom: 22px; flex-direction: column; gap: 18px;">
@@ -3469,14 +3390,14 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         4. Click <b>Result Preview</b> to preview calculation results and summary data.`
       },
       category_insights: {
-        tr: `<strong>Category Insights Kullanım Rehberi:</strong><br>
-        1. İncelemek istediğiniz e-ticaret kategorisini veya markasını seçin.<br>
-        2. Pazarda kazanan/kaybeden SKU'ları, fiyat kırılımlarını ve riskleri tek tıkla analiz ettirin.<br>
-        3. Yönetici özetini görüntüleyin ve raporu Excel olarak indirin.`,
-        en: `<strong>Category Insights User Guide:</strong><br>
-        1. Select the e-commerce category or brand you want to analyze.<br>
-        2. Evaluate winning/losing SKUs, pricing segments, and market risks.<br>
-        3. View executive summary and export the final report to Excel.`
+        tr: `<strong>Kategori ve Ürün Analizi:</strong><br>
+        1. Google ile bağlanın ve erişebildiğiniz GA4 mülkünü seçin; ilk rapor otomatik yüklenir.<br>
+        2. Tarih aralığını seçin. Kategorilere tıklayarak ürünlerini, dönüşüm ve etkileşim metriklerini inceleyin.<br>
+        3. Measurement sekmesinden ölçüm kapsamını kontrol edin; tabloyu CSV olarak indirin.`,
+        en: `<strong>Category & Product Analysis:</strong><br>
+        1. Connect Google and choose an accessible GA4 property; the first report loads automatically.<br>
+        2. Choose your dates. Open a category to inspect its products, conversion and engagement metrics.<br>
+        3. Check event coverage in Measurement and export the table as CSV.`
       },
       price_competition: {
         tr: `<strong>Price Competition Kullanım Rehberi:</strong><br>
@@ -3572,8 +3493,8 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       category_insights: {
         title: "Category & Product Analysis",
         desc: {
-          tr: "Seçilen kategori ve ürünler için performans, kazanan segmentler, riskler ve yönetici özeti çıkarır.",
-          en: "Generates category & product performance metrics, winning segments, risk analysis, and executive summaries."
+          tr: "Google Analytics 4 ile kategori, ürün performansı ve ziyaret kalitesini birlikte analiz edin.",
+          en: "Explore your store’s categories, products and visit quality with Google Analytics 4."
         },
         placeholder: {
           tr: "Örn: Tablet kategorisinin ve ürünlerinin detaylı analizini ver",
@@ -3863,26 +3784,10 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       if (descEl) descEl.textContent = config.desc[currentLang] || config.desc.en;
       if (inputEl) inputEl.placeholder = config.placeholder[currentLang] || config.placeholder.en;
 
-      // Handle Category Workspace & Onboarding Modal
+      document.body.classList.toggle("category-analysis-active", key === "category_insights");
       const catWorkspace = document.getElementById("categoryWorkspaceContainer");
-      if (catWorkspace) {
-        if (key === "category_insights") {
-          catWorkspace.style.display = "flex";
-          try {
-            if (!localStorage.getItem("hasSeenCatOnboarding")) {
-              setTimeout(() => { openCategoryOnboardingModal(); }, 300);
-            }
-          } catch(e) {}
-          try {
-            const savedMode = localStorage.getItem("category_pipeline_mode") || "always_on";
-            selectCategoryPipelineMode(savedMode);
-          } catch(e) {}
-          setTimeout(() => { renderCategoryCharts(); }, 150);
-          setTimeout(() => { loadGA4Properties(); }, 300);
-        } else {
-          catWorkspace.style.display = "none";
-        }
-      }
+      if (catWorkspace) catWorkspace.style.display = key === "category_insights" ? "flex" : "none";
+      if (key === "category_insights" && window.CategoryAnalysis) window.CategoryAnalysis.init();
 
       // Handle Funnel Workspace
       const funnelWorkspace = document.getElementById("funnelWorkspaceContainer");
@@ -4047,12 +3952,10 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
             initialsEl.textContent = parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : parts[0][0].toUpperCase();
           }
 
-          if (typeof loadFunnelData === 'function') loadFunnelData();
-          if (typeof loadPriceData === 'function') loadPriceData();
-
           if (window.location.search.includes('google_connected=true')) {
-            openGoogleAccountModal();
-            window.history.replaceState({}, document.title, window.location.pathname);
+            const clean = new URL(window.location.href);
+            clean.searchParams.delete('google_connected');
+            window.history.replaceState({}, document.title, clean.pathname + clean.search);
           }
         } else {
           // If not Google connected, preserve the active authenticated session email
@@ -5761,19 +5664,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     // Check Google Auth Status & Populate Property Panels immediately on page load
     document.addEventListener('DOMContentLoaded', () => {
       checkGoogleAuthStatus();
-      if (typeof fetchGoogleAccountsAndPopulatePanels === 'function') fetchGoogleAccountsAndPopulatePanels();
     });
-    // Fallback immediate check
-    checkGoogleAuthStatus();
-    if (typeof fetchGoogleAccountsAndPopulatePanels === 'function') fetchGoogleAccountsAndPopulatePanels();
-
-    // Auto-check if redirected with google_connected param
-    if (window.location.search.includes('google_connected=true')) {
-      setTimeout(() => {
-        const funnelBtn = document.querySelector('.menu-btn[data-key="funnel_analysis"]');
-        if (funnelBtn) funnelBtn.click();
-      }, 500);
-    }
 
     function autoExpandPrompt(textarea) {
       if (!textarea) return;
@@ -6340,7 +6231,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           // Update Summary Pills & Panel Selects
           await fetchGoogleAccountsAndPopulatePanels();
 
-          if (typeof loadGA4CategoryData === 'function') loadGA4CategoryData();
+          if (window.CategoryAnalysis) window.CategoryAnalysis.reconnect();
           if (typeof loadFunnelData === 'function') loadFunnelData();
           if (typeof loadPriceData === 'function') loadPriceData();
 
@@ -6372,7 +6263,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
             ga4PropSel.value = ga4Val;
           }
           await fetchGoogleAccountsAndPopulatePanels();
-          if (typeof loadGA4CategoryData === 'function') loadGA4CategoryData();
+          if (window.CategoryAnalysis) window.CategoryAnalysis.reconnect();
           if (typeof loadFunnelData === 'function') loadFunnelData();
           if (typeof loadPriceData === 'function') loadPriceData();
 
@@ -6698,194 +6589,9 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       });
     }
 
-    /* ── GA4 Category Data Integration ── */
-    var ga4CategoryDataCache = [];
-    var ga4SortField = 'pdp';
-    var ga4SortDesc = true;
-
-    async function loadGA4Properties() {
-      try {
-        const resp = await fetch('/api/google/accounts');
-        if (!resp.ok) {
-          loadGA4CategoryData();
-          return;
-        }
-        const data = await resp.json();
-        const sel = document.getElementById('ga4PropertySelect');
-        if (!sel || !data.ga4_properties) {
-          loadGA4CategoryData();
-          return;
-        }
-        
-        sel.innerHTML = '';
-        if (!data.authenticated) {
-          const authOpt = document.createElement('option');
-          authOpt.value = '__SIGN_IN_GOOGLE__';
-          authOpt.textContent = '🔑 Sign in with Google (Connect myasamkaradag@gmail.com)...';
-          authOpt.style.fontWeight = 'bold';
-          authOpt.style.color = '#2563eb';
-          sel.appendChild(authOpt);
-        } else {
-          sel.innerHTML = '<option value="">— Select GA4 Property —</option>';
-        }
-
-        data.ga4_properties.forEach(prop => {
-          const opt = document.createElement('option');
-          opt.value = prop.id;
-          opt.textContent = data.authenticated ? prop.name : ('[DEMO PREVIEW] ' + prop.name);
-          if (data.selected_ga4 && prop.id === data.selected_ga4) {
-            opt.selected = true;
-          }
-          sel.appendChild(opt);
-        });
-
-        if (data.selected_ga4 && data.authenticated) {
-          sel.value = data.selected_ga4;
-        } else if (data.ga4_properties.length > 0) {
-          sel.value = data.ga4_properties[0].id;
-        }
-        loadGA4CategoryData();
-      } catch(e) {
-        console.log('GA4 properties load error:', e);
-        loadGA4CategoryData();
-      }
-    }
-
-    async function loadGA4CategoryData() {
-      const propSel = document.getElementById('ga4PropertySelect');
-      const daysSel = document.getElementById('ga4CategoryDays');
-      const badge = document.getElementById('ga4CategoryBadge');
-      const srcLabel = document.getElementById('ga4CategorySourceLabel');
-      
-      const propVal = propSel ? propSel.value : '';
-      if (propVal === '__SIGN_IN_GOOGLE__') {
-        window.location.href = '/api/auth/google';
-        return;
-      }
-      
-      if (badge) {
-        badge.style.background = '#fef3c7';
-        badge.style.color = '#92400e';
-        badge.textContent = '⏳ Loading...';
-      }
-      
-      try {
-        const days = daysSel ? daysSel.value : '30';
-        const mStart = document.getElementById('masterStartDate') ? document.getElementById('masterStartDate').value : '';
-        const mEnd = document.getElementById('masterEndDate') ? document.getElementById('masterEndDate').value : '';
-        let endpoint = propVal 
-          ? `/api/ga4/category-report?property_id=${propVal}&days=${days}`
-          : `/api/ga4/category-report?days=${days}`;
-        if (mStart && mEnd) {
-          endpoint += `&start_date=${encodeURIComponent(mStart)}&end_date=${encodeURIComponent(mEnd)}`;
-        }
-        const resp = await fetch(endpoint);
-        const data = await resp.json();
-        
-        if (data.source === 'live') {
-          if (badge) {
-            badge.style.background = '#ecfdf5';
-            badge.style.color = '#047857';
-            badge.textContent = '🟢 GA4 Live Data';
-          }
-          if (srcLabel) srcLabel.textContent = `Live data loaded from property (${data.period || 'Last 30 Days'})`;
-        } else {
-          if (badge) {
-            badge.style.background = '#fff7ed';
-            badge.style.color = '#c2410c';
-            badge.textContent = '📋 Demo Data';
-          }
-          if (srcLabel) srcLabel.textContent = data.error ? `${data.error} (showing demo data)` : 'Demo E-Commerce Data';
-        }
-        
-        renderGA4CategoryTable(data.ga4Categories || []);
-        renderCategoryCharts(data);
-      } catch(e) {
-        console.log('Error loading GA4 category data:', e);
-      }
-    }
-
-    function renderGA4CategoryTable(cats) {
-      ga4CategoryDataCache = cats;
-      const tbody = document.getElementById('ga4CategoryTableBody');
-      if (!tbody) return;
-
-      if (!cats || cats.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:24px;color:#94a3b8;">No category data found.</td></tr>';
-        return;
-      }
-
-      cats.sort((a, b) => {
-        let valA = a[ga4SortField];
-        let valB = b[ga4SortField];
-        if (typeof valA === 'string') valA = valA.toLowerCase();
-        if (typeof valB === 'string') valB = valB.toLowerCase();
-        if (valA < valB) return ga4SortDesc ? 1 : -1;
-        if (valA > valB) return ga4SortDesc ? -1 : 1;
-        return 0;
-      });
-
-      let html = '';
-      let sumPdp = 0, sumA2c = 0, sumTrans = 0;
-
-      cats.forEach((c, idx) => {
-        sumPdp += (c.pdp || 0);
-        sumA2c += (c.a2c || 0);
-        sumTrans += (c.trans || 0);
-
-        const pdpChg = c.pdp_change ? (c.pdp_change > 0 ? `<span style="color:#059669;">+${c.pdp_change}%</span>` : `<span style="color:#dc2626;">${c.pdp_change}%</span>`) : `<span style="color:#94a3b8;">-</span>`;
-        const a2cChg = c.a2c_change ? (c.a2c_change > 0 ? `<span style="color:#059669;">+${c.a2c_change}%</span>` : `<span style="color:#dc2626;">${c.a2c_change}%</span>`) : `<span style="color:#94a3b8;">-</span>`;
-        const transChg = c.trans_change ? (c.trans_change > 0 ? `<span style="color:#059669;">+${c.trans_change}%</span>` : `<span style="color:#dc2626;">${c.trans_change}%</span>`) : `<span style="color:#94a3b8;">-</span>`;
-        const c2dChg = c.c2d_change ? (c.c2d_change > 0 ? `<span style="color:#059669;">+${c.c2d_change}%</span>` : `<span style="color:#dc2626;">${c.c2d_change}%</span>`) : `<span style="color:#94a3b8;">-</span>`;
-        const b2dChg = c.b2d_change ? (c.b2d_change > 0 ? `<span style="color:#059669;">+${c.b2d_change}%</span>` : `<span style="color:#dc2626;">${c.b2d_change}%</span>`) : `<span style="color:#94a3b8;">-</span>`;
-
-        html += `
-        <tr style="border-bottom: 1px solid #f1f5f9; ${idx % 2 === 1 ? 'background:#f8fafc;' : ''}">
-          <td style="padding:10px 12px;font-weight:700;color:#0f172a;">${c.category}</td>
-          <td style="text-align:right;padding:10px 12px;font-weight:700;color:#2563eb;">${(c.pdp || 0).toLocaleString('tr-TR')}</td>
-          <td style="text-align:right;padding:10px 12px;font-size:11px;">${pdpChg}</td>
-          <td style="text-align:right;padding:10px 12px;font-weight:700;color:#059669;">${(c.a2c || 0).toLocaleString('tr-TR')}</td>
-          <td style="text-align:right;padding:10px 12px;font-size:11px;">${a2cChg}</td>
-          <td style="text-align:right;padding:10px 12px;font-weight:700;color:#d97706;">${(c.trans || 0).toLocaleString('tr-TR')}</td>
-          <td style="text-align:right;padding:10px 12px;font-size:11px;">${transChg}</td>
-          <td style="text-align:right;padding:10px 12px;font-weight:700;color:#7c3aed;">${(c.c2d || 0).toFixed(2)}%</td>
-          <td style="text-align:right;padding:10px 12px;font-size:11px;">${c2dChg}</td>
-          <td style="text-align:right;padding:10px 12px;font-weight:700;color:#7c3aed;">${(c.b2d || 0).toFixed(2)}%</td>
-          <td style="text-align:right;padding:10px 12px;font-size:11px;">${b2dChg}</td>
-        </tr>`;
-      });
-
-      const avgC2d = sumPdp > 0 ? (sumA2c / sumPdp * 100) : 0;
-      const avgB2d = sumPdp > 0 ? (sumTrans / sumPdp * 100) : 0;
-
-      html += `
-      <tr style="background:#eff6ff;font-weight:800;border-top:2px solid #93c5fd;">
-        <td style="padding:10px 12px;color:#1d4ed8;">Toplam / Ortalama</td>
-        <td style="text-align:right;padding:10px 12px;color:#1d4ed8;">${sumPdp.toLocaleString('tr-TR')}</td>
-        <td></td>
-        <td style="text-align:right;padding:10px 12px;color:#047857;">${sumA2c.toLocaleString('tr-TR')}</td>
-        <td></td>
-        <td style="text-align:right;padding:10px 12px;color:#b45309;">${sumTrans.toLocaleString('tr-TR')}</td>
-        <td></td>
-        <td style="text-align:right;padding:10px 12px;color:#6d28d9;">${avgC2d.toFixed(2)}%</td>
-        <td></td>
-        <td style="text-align:right;padding:10px 12px;color:#6d28d9;">${avgB2d.toFixed(2)}%</td>
-        <td></td>
-      </tr>`;
-
-      tbody.innerHTML = html;
-    }
-
-    function sortGA4Table(field) {
-      if (ga4SortField === field) {
-        ga4SortDesc = !ga4SortDesc;
-      } else {
-        ga4SortField = field;
-        ga4SortDesc = true;
-      }
-      renderGA4CategoryTable(ga4CategoryDataCache);
-    }
-
+    // Compatibility hooks for the shared Google-account selector.
+    function loadGA4Properties() { if (window.CategoryAnalysis) window.CategoryAnalysis.reconnect(); }
+    function loadGA4CategoryData() { if (window.CategoryAnalysis) window.CategoryAnalysis.refresh(); }
     window.openCategoryOnboardingModal = openCategoryOnboardingModal;
     window.closeCategoryOnboardingModal = closeCategoryOnboardingModal;
     window.setCategoryObStep = setCategoryObStep;
@@ -6895,7 +6601,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     window.renderCategoryCharts = renderCategoryCharts;
     window.loadGA4Properties = loadGA4Properties;
     window.loadGA4CategoryData = loadGA4CategoryData;
-    window.sortGA4Table = sortGA4Table;
 
     /* ── Interactive Pulsing Hotspot Beacon & Tooltip Tour Engine ── */
     var tourCurrentIndex = 0;
@@ -7347,10 +7052,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       const plan = urlParams.get('plan');
       if (banner) {
         banner.style.display = 'flex';
-        if (plan === 'pro') {
-          document.getElementById('activationTitle').textContent = 'Pro License Active: Welcome to DataProvido Console!';
-          document.getElementById('activationSubtitle').textContent = 'Your Pro on-premise AI environment is active with Weekly 1.5h Live Support included.';
-        }
+
       }
     }
 
