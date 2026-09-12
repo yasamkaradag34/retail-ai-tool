@@ -92,8 +92,8 @@ jobs:
           codex --version
           codex exec --help > "$RUNNER_TEMP/codex-exec-help.txt"
           codex sandbox --help > "$RUNNER_TEMP/codex-sandbox-help.txt"
-          rg --quiet -- '--ephemeral' "$RUNNER_TEMP/codex-exec-help.txt"
-          rg --quiet -- '--output-schema' "$RUNNER_TEMP/codex-exec-help.txt"
+          grep -q -- '--ephemeral' "$RUNNER_TEMP/codex-exec-help.txt"
+          grep -q -- '--output-schema' "$RUNNER_TEMP/codex-exec-help.txt"
       - name: Verify the Codex sandbox keeps sibling control files read-only
         shell: bash
         run: |
