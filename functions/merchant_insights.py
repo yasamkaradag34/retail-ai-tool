@@ -81,6 +81,24 @@ def _availability(value):
     return normalized or "unknown"
 
 
+def _google_error_markers(response):
+    """Return normalized provider error markers without exposing its payload."""
+    try:
+        payload = response.json()
+    except (ValueError, TypeError, AttributeError):
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    error = payload.get("error", payload)
+    if not isinstance(error, dict):
+        return ""
+    values = [error.get("status"), error.get("message")]
+    for detail in error.get("details", []):
+        if isinstance(detail, dict):
+            values.extend((detail.get("reason"), detail.get("metadata", {}).get("reason") if isinstance(detail.get("metadata"), dict) else None))
+    return " ".join(str(value) for value in values if value).upper()
+
+
 class GoogleMerchant:
     def __init__(self, token):
         self.headers = {"Authorization": "Bearer " + token, "Content-Type": "application/json"}
@@ -90,9 +108,18 @@ class GoogleMerchant:
             response = requests.request(method, url, headers=self.headers, timeout=(5, 30), **kwargs)
         except requests.RequestException:
             raise problem(503, "merchant_unavailable", "Google Merchant Center could not be reached. Please try again.")
+        markers = _google_error_markers(response)
         if response.status_code == 401:
-            raise problem(401, "google_reconnect", "Your Google connection has expired. Reconnect Merchant Center.")
+            raise problem(401, "google_reconnect", "Google did not accept this authorization. Reconnect Merchant Center and choose a Google account that has Merchant Center access.")
         if response.status_code == 403:
+            if "ACCESS_TOKEN_SCOPE_INSUFFICIENT" in markers or "INSUFFICIENT AUTHENTICATION SCOPES" in markers:
+                raise problem(403, "merchant_scope_required", "Your current Google connection does not include Merchant Center permission. Reconnect Merchant Center and approve the requested access.")
+            if "GCP_NOT_REGISTERED" in markers or "REGISTER_GCP" in markers:
+                raise problem(403, "merchant_developer_registration", "DataProvido's Merchant API developer registration is incomplete. Register the Google Cloud project with the primary Merchant Center account, then retry.")
+            if "SERVICE_DISABLED" in markers or "API HAS NOT BEEN USED" in markers:
+                raise problem(403, "merchant_api_disabled", "Merchant API is not enabled for DataProvido's Google Cloud project. Enable it in Google Cloud, then retry.")
+            if "REPORTING_MANAGER" in markers:
+                raise problem(403, "merchant_reporting_permission", "This Google account needs Performance reporting access in Merchant Center.")
             raise problem(403, "merchant_permission", "Google denied Merchant Center access. Reconnect with Merchant Center permission and check your account role.")
         if response.status_code == 429:
             raise problem(429, "merchant_quota", "The Merchant API request quota has been reached. Wait a few minutes and refresh.")

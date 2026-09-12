@@ -112,6 +112,21 @@ class ProviderTests(unittest.TestCase):
             self.assertEqual(raised.exception.status_code, expected)
             self.assertNotIn("private provider response", str(raised.exception.detail))
 
+    @patch("functions.merchant_insights.requests.request")
+    def test_provider_explains_registration_and_scope_errors(self, request):
+        cases = [
+            ("GCP_NOT_REGISTERED_NO_CONTACT", "merchant_developer_registration"),
+            ("ACCESS_TOKEN_SCOPE_INSUFFICIENT", "merchant_scope_required"),
+            ("PERMISSION_DENIED_REPORTING_MANAGER", "merchant_reporting_permission"),
+        ]
+        for reason, expected in cases:
+            request.return_value = Mock(status_code=403, json=lambda reason=reason: {
+                "error": {"status": "PERMISSION_DENIED", "details": [{"reason": reason}]}
+            })
+            with self.subTest(reason=reason), self.assertRaises(HTTPException) as raised:
+                GoogleMerchant("secret").accounts()
+            self.assertEqual(raised.exception.detail["code"], expected)
+
 
 if __name__ == "__main__":
     unittest.main()

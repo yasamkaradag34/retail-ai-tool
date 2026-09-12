@@ -2721,6 +2721,7 @@ GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/userinfo.profile",
     "openid"
 ]
+MERCHANT_SCOPE = "https://www.googleapis.com/auth/content"
 
 ALLOWED_LOGIN_EMAILS = {"dataprovido@gmail.com", "myasamkaradag@gmail.com"}
 
@@ -3272,6 +3273,8 @@ def _merchant_provider(request: Request):
     tokens = _get_google_tokens(request) or {}
     if not tokens.get("access_token"):
         raise ga4_problem(401, "google_reconnect", "Connect Google Merchant Center to continue.")
+    if MERCHANT_SCOPE not in set(str(tokens.get("scope") or "").split()):
+        raise ga4_problem(403, "merchant_scope_required", "Your current Google connection does not include Merchant Center permission. Reconnect Merchant Center and approve the requested access.")
     return GoogleMerchant(tokens["access_token"]), tokens
 
 
@@ -3281,6 +3284,8 @@ def merchant_accounts(request: Request):
     tokens = _get_google_tokens(request) or {}
     if not tokens.get("access_token"):
         return {"connected": False, "accounts": [], "selected_account": ""}
+    if MERCHANT_SCOPE not in set(str(tokens.get("scope") or "").split()):
+        raise ga4_problem(403, "merchant_scope_required", "Your current Google connection does not include Merchant Center permission. Reconnect Merchant Center and approve the requested access.")
     provider = GoogleMerchant(tokens["access_token"])
     accounts = provider.accounts()
     selected = str(tokens.get("selected_merchant") or "")

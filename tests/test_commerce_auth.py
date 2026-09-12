@@ -138,8 +138,16 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertEqual(self.client.get('/api/merchant/insights?account_id=123').status_code,401)
 
     @patch.object(main,'GoogleMerchant')
+    def test_merchant_route_requires_content_scope_before_provider_call(self,provider):
+        self.sign_in(access_token='test',expires_at=time.time()+3600,scope='https://www.googleapis.com/auth/analytics.readonly')
+        response=self.client.get('/api/merchant/accounts')
+        self.assertEqual(response.status_code,403)
+        self.assertEqual(response.json()['detail']['code'],'merchant_scope_required')
+        provider.assert_not_called()
+
+    @patch.object(main,'GoogleMerchant')
     def test_merchant_selection_rechecks_access_and_origin(self,provider):
-        self.sign_in(access_token='test',expires_at=time.time()+3600)
+        self.sign_in(access_token='test',expires_at=time.time()+3600,scope=main.MERCHANT_SCOPE)
         denied=self.client.post('/api/merchant/selection',json={'account_id':'123'},headers={'Origin':'https://evil.example'})
         self.assertEqual(denied.status_code,403)
         provider.return_value.account.assert_not_called()

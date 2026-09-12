@@ -13,7 +13,11 @@
   async function api(url, options={}) {
     const response = await fetch(url,{headers:{'Accept':'application/json','Content-Type':'application/json'},...options});
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.detail?.message || data.message || 'Merchant Center could not return this request.');
+    if (!response.ok) {
+      const error=new Error(data.detail?.message || data.message || 'Merchant Center could not return this request.');
+      error.code=data.detail?.code || data.code || 'merchant_error'; error.status=response.status;
+      throw error;
+    }
     return data;
   }
   function status(message,type='') { $('spStatus').textContent=message; $('spStatus').className='sp-status'+(type?` ${type}`:''); }
@@ -46,13 +50,15 @@
       $('spAccount').innerHTML='<option value="">'+(data.connected?'Select a Merchant Center account':'Connect an account first')+'</option>'+(data.accounts||[]).map(item=>`<option value="${esc(item.id)}">${esc(item.name)} · ${esc(item.id)}</option>`).join('');
       $('spAccount').disabled=!(data.accounts||[]).length; $('spRefresh').disabled=false;
       if(!data.connected){status('Sign in with Google to load Merchant Center reports, or explore the clearly labelled sample.');return;}
-      if(!data.accounts?.length){status('No Merchant Center accounts were returned. Reconnect with Merchant Center permission and confirm your account access role.','error');return;}
+      if(!data.accounts?.length){$('spAccount').innerHTML='<option value="">No accessible Merchant Center account</option>';status('Google sign-in succeeded, but this Google account has no accessible Merchant Center account. Choose Change Google account, or add this email under Merchant Center → People and access.','error');return;}
       const selected=data.accounts.some(item=>item.id===data.selected_account)?data.selected_account:data.accounts.length===1?data.accounts[0].id:'';
       $('spAccount').value=selected;
       if(selected) await load(); else status('Choose a Merchant Center account above. Its report will load automatically.');
     } catch(error) {
       if(request!==state.request)return;
-      $('spAccount').innerHTML='<option value="">Merchant permission required</option>'; $('spRefresh').disabled=false;
+      const labels={merchant_scope_required:'Merchant permission required',merchant_developer_registration:'Developer registration required',merchant_api_disabled:'Merchant API setup required',merchant_reporting_permission:'Reporting permission required',google_reconnect:'Reconnect Google account'};
+      $('spSource').textContent='NOT CONNECTED'; $('spSource').className='sp-badge';
+      $('spAccount').innerHTML=`<option value="">${labels[error.code]||'Merchant connection required'}</option>`; $('spRefresh').disabled=false;
       status(error.message,'error');
     }
   }
