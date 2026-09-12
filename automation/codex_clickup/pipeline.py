@@ -136,6 +136,11 @@ class Task:
     description: str
     url: str
     status: str
+    priority: int | None = None
+
+    def is_queued(self, status: str) -> bool:
+        """Only ClickUp Urgent tasks in the configured queue may be claimed."""
+        return self.status.casefold() == status.casefold() and self.priority == 1
 
     @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> "Task":
@@ -152,7 +157,11 @@ class Task:
         status = payload.get("status") or {}
         if isinstance(status, dict):
             status = status.get("status") or ""
-        return cls(task_id, name, description[:50000], compact(str(payload.get("url") or ""), 1000), compact(str(status), 100))
+        priority = payload.get("priority")
+        if isinstance(priority, dict):
+            priority = priority.get("id")
+        priority = int(priority) if str(priority) in {"1", "2", "3", "4"} else None
+        return cls(task_id, name, description[:50000], compact(str(payload.get("url") or ""), 1000), compact(str(status), 100), priority)
 
 
 @dataclass(frozen=True)
@@ -275,12 +284,26 @@ class ClickUpClient:
 
     def list_tasks(self, list_id: str, status: str) -> list[Task]:
         list_id = clickup_path_id(list_id, "list id", digits_only=True)
-        payload = self._request(
-            "GET",
-            f"/list/{list_id}/task",
-            query=[("archived", "false"), ("include_markdown_description", "true"), ("order_by", "created"), ("reverse", "false"), ("statuses[]", status)],
-        )
-        return [Task.from_payload(item) for item in payload.get("tasks", [])]
+        tasks: list[Task] = []
+        seen: set[str] = set()
+        page = 0
+        # Get Tasks has no documented priority filter and returns at most 100
+        # tasks per page. An older non-Urgent page must not hide eligible work.
+        while True:
+            payload = self._request(
+                "GET",
+                f"/list/{list_id}/task",
+                query=[("archived", "false"), ("include_markdown_description", "true"), ("order_by", "created"), ("reverse", "false"), ("statuses[]", status), ("page", str(page))],
+            )
+            items = payload.get("tasks", [])
+            for item in items:
+                task = Task.from_payload(item)
+                if task.is_queued(status) and task.id not in seen:
+                    tasks.append(task)
+                    seen.add(task.id)
+            if not items or payload.get("last_page") is True or (payload.get("last_page") is not False and len(items) < 100):
+                return tasks
+            page += 1
 
     def get_task(self, task_id: str) -> Task:
         task_id = clickup_path_id(task_id, "task id")
@@ -556,6 +579,11 @@ def execute_task(settings: Settings, client: ClickUpClient | None, task: Task, d
         raise PipelineError("A ClickUp client is required for a live run.")
     if not settings.isolated_runner:
         raise PipelineError("Live runs require AGENT_ISOLATED_RUNNER=true on a dedicated disposable runner with no user credential stores.")
+    # Keep this outside failure recovery: an ineligible task must not be moved
+    # to blocked or receive pipeline comments.
+    task = client.get_task(task.id)
+    if not task.is_queued(settings.queue_status):
+        raise PipelineError("Task status or Urgent priority changed before it could be claimed.")
     run_dir = task_run_dir(settings, task)
     (run_dir / "task.json").write_text(json.dumps(task.__dict__, indent=2, ensure_ascii=False))
     worktree: Path | None = None
@@ -682,8 +710,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--repo", type=Path, default=REPO_ROOT)
     commands = result.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor", help="Check local commands and required settings.")
-    commands.add_parser("list", help="List queued ClickUp tasks without changing them.")
-    run = commands.add_parser("run", help="Run one task, or the oldest queued task.")
+    commands.add_parser("list", help="List Urgent queued ClickUp tasks without changing them.")
+    run = commands.add_parser("run", help="Run one Urgent task, or the oldest Urgent queued task.")
     run.add_argument("--task-id")
     run.add_argument("--task-file", type=Path)
     run.add_argument("--dry-run", action="store_true")
@@ -705,22 +733,24 @@ def main(argv: list[str] | None = None) -> int:
             client = ClickUpClient(settings.clickup_token)
 
         if args.command == "list":
-            tasks = client.list_tasks(settings.clickup_list_id, settings.queue_status) if client else []
+            tasks = [task for task in client.list_tasks(settings.clickup_list_id, settings.queue_status) if task.is_queued(settings.queue_status)] if client else []
             print(json.dumps([task.__dict__ for task in tasks], indent=2, ensure_ascii=False))
             return 0
 
         if args.task_file:
+            if not args.dry_run:
+                raise PipelineError("Task files are only supported with --dry-run; live tasks must belong to the Urgent ClickUp queue.")
             task = load_task_file(args.task_file)
         elif args.task_id:
-            tasks = client.list_tasks(settings.clickup_list_id, settings.queue_status) if client else []
+            tasks = [task for task in client.list_tasks(settings.clickup_list_id, settings.queue_status) if task.is_queued(settings.queue_status)] if client else []
             task = next((item for item in tasks if item.id == args.task_id), None)
             if task is None:
-                raise PipelineError("The requested task is not in the configured ClickUp queue/status.")
+                raise PipelineError("The requested task is not Urgent in the configured ClickUp queue/status.")
         else:
-            tasks = client.list_tasks(settings.clickup_list_id, settings.queue_status) if client else []
+            tasks = [task for task in client.list_tasks(settings.clickup_list_id, settings.queue_status) if task.is_queued(settings.queue_status)] if client else []
             task = tasks[0] if tasks else None
         if task is None:
-            print(json.dumps({"status": "idle", "message": "No queued ClickUp task was found."}))
+            print(json.dumps({"status": "idle", "message": "No Urgent queued ClickUp task was found."}))
             return 0
         with pipeline_lock(settings):
             result = execute_task(settings, client, task, args.dry_run)

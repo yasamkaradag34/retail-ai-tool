@@ -1,4 +1,6 @@
 import json
+import io
+from dataclasses import replace
 from pathlib import Path
 import tempfile
 import unittest
@@ -15,6 +17,7 @@ from automation.codex_clickup.pipeline import (
     create_pull_request,
     execute_task,
     filtered_agent_environment,
+    main,
     clickup_path_id,
     assert_candidate_unchanged,
     reject_control_plane_changes,
@@ -72,6 +75,13 @@ class AgentPipelineTests(unittest.TestCase):
         self.assertEqual(task.description, "**acceptance**")
         self.assertEqual(task.status, "to do")
         self.assertEqual(safe_slug(task.name), "improve-checkout")
+
+    def test_priority_accepts_api_and_saved_values_and_defaults_to_ineligible(self):
+        for value, expected in [({"id": "1", "priority": "urgent"}, 1), (1, 1), ("1", 1), ({"id": "2"}, 2), (None, None), ({}, None), (True, None)]:
+            with self.subTest(priority=value):
+                task = Task.from_payload({"id": "x1", "name": "Task", "status": "TO DO", "priority": value})
+                self.assertEqual(task.priority, expected)
+                self.assertEqual(task.is_queued("to do"), expected == 1)
 
     def test_agent_environment_does_not_receive_orchestrator_secrets(self):
         source = {"PATH": "/bin", "CLICKUP_API_TOKEN": "clickup", "CLICKUP_LIST_ID": "list", "GH_TOKEN": "github", "GITHUB_TOKEN": "github-2", "STRIPE_SECRET_KEY": "stripe", "CODEX_API_KEY": "codex"}
@@ -202,7 +212,7 @@ class AgentPipelineTests(unittest.TestCase):
             seen["url"] = request.full_url
             seen["authorization"] = request.get_header("Authorization")
             seen["timeout"] = timeout
-            return FakeResponse({"tasks": [{"id": "x1", "name": "Task", "status": {"status": "to do"}}]})
+            return FakeResponse({"tasks": [{"id": "x1", "name": "Task", "status": {"status": "to do"}, "priority": {"id": "1"}}]})
 
         tasks = ClickUpClient("token", opener).list_tasks("55", "to do")
         self.assertEqual(tasks[0].id, "x1")
@@ -210,6 +220,44 @@ class AgentPipelineTests(unittest.TestCase):
         self.assertIn("statuses%5B%5D=to+do", seen["url"])
         self.assertEqual(seen["authorization"], "token")
         self.assertEqual(seen["timeout"], 25)
+
+    def test_queue_finds_urgent_tasks_beyond_a_full_nonurgent_page(self):
+        normal = [{"id": f"n{i}", "name": "Normal", "status": "to do", "priority": {"id": "3"}} for i in range(100)]
+        urgent = {"id": "urgent", "name": "Urgent", "status": "to do", "priority": {"id": "1"}}
+        wrong_status = {**urgent, "id": "already-working", "status": "in progress"}
+        no_priority = {**urgent, "id": "unprioritized", "priority": None}
+        responses = iter([{"tasks": normal, "last_page": False}, {"tasks": [urgent, wrong_status, no_priority], "last_page": True}])
+        urls = []
+
+        def opener(request, timeout):
+            urls.append(request.full_url)
+            return FakeResponse(next(responses))
+
+        self.assertEqual([task.id for task in ClickUpClient("token", opener).list_tasks("55", "to do")], ["urgent"])
+        self.assertEqual(len(urls), 2)
+        self.assertIn("page=0", urls[0])
+        self.assertIn("page=1", urls[1])
+
+    def test_legacy_claim_rechecks_urgent_priority_without_mutating_task(self):
+        with tempfile.TemporaryDirectory() as folder:
+            config = settings(Path(folder))
+            task = Task("x1", "Urgent task", "", "", "to do", 1)
+            client = Mock()
+            client.get_task.return_value = replace(task, priority=2)
+            with self.assertRaisesRegex(PipelineError, "Urgent priority changed"):
+                execute_task(config, client, task)
+            client.set_status.assert_not_called()
+            client.comment.assert_not_called()
+            self.assertFalse(config.runs_dir.exists())
+
+    def test_manual_task_id_cannot_bypass_urgent_queue(self):
+        with tempfile.TemporaryDirectory() as folder:
+            client = Mock()
+            client.list_tasks.return_value = [Task("x1", "Normal task", "", "", "to do", 3)]
+            with patch("automation.codex_clickup.pipeline.Settings.from_env", return_value=settings(Path(folder))), patch("automation.codex_clickup.pipeline.ClickUpClient", return_value=client), patch("sys.stderr", new_callable=io.StringIO), patch("automation.codex_clickup.pipeline.execute_task") as execute:
+                self.assertEqual(main(["run", "--task-id", "x1"]), 1)
+            execute.assert_not_called()
+            client.set_status.assert_not_called()
 
     def test_clickup_path_ids_reject_path_injection(self):
         self.assertEqual(clickup_path_id("abc_123", "task id"), "abc_123")

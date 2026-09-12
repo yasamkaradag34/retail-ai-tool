@@ -29,6 +29,7 @@ flowchart LR
 - Only a passing test result plus an `approve` reviewer verdict can commit that exact staged tree, push a branch, and open a pull request.
 - The pipeline never merges a pull request or deploys production.
 - One process lock prevents overlapping queue consumers. The task moves out of the queue status before Codex starts.
+- Only tasks with ClickUp priority **Urgent** (`1`) and the configured queue status (`to do`) are eligible. Priority and status are checked again before claiming; a manual task ID cannot bypass this rule. Other tasks are preserved.
 - Per-task audit files are written under `.agent-runs/`; failed worktrees remain under `.agent-worktrees/` for inspection. Both paths are ignored by Git.
 
 The Codex settings follow the official configuration values for `approval_policy` and `sandbox_mode`, and the automation uses the documented non-interactive `codex exec` mode with structured output. See [Codex configuration](https://learn.chatgpt.com/docs/config-file/config-reference) and [Codex non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode).
@@ -87,13 +88,13 @@ gh auth status
 
 Use a dedicated disposable VM/container account for this runner, load ClickUp and GitHub credentials only into the orchestrator, and then set `AGENT_ISOLATED_RUNNER=true`. Do not set this flag on a personal workstation account that holds unrelated credentials.
 
-Run the oldest queued task:
+Set a task's priority to **Urgent** and status to `to do`. Run the oldest eligible task:
 
 ```bash
 ./scripts/agent-pipeline.sh run
 ```
 
-Run one known ClickUp task:
+Run one known Urgent ClickUp task:
 
 ```bash
 ./scripts/agent-pipeline.sh run --task-id TASK_ID
@@ -125,17 +126,17 @@ gh workflow run clickup-agent.yml --ref main -f mode=preflight
 
 This verifies ClickUp access/statuses and reports missing configuration. A separate credential-free job installs the pinned Codex CLI and proxy, checks sandbox boundaries, builds the test image, and runs the base suite without network. It makes no model request and claims no task. A successful preflight workflow does **not** mean model authentication is configured; inspect the readiness checks.
 
-To activate, add `OPENAI_API_KEY` to Actions secrets, enable `CLICKUP_AGENT_ENABLED`, and manually run a small dedicated queue task using `mode=run` and `task_id`. Confirm its actual Executor, tests, Reviewer, PR, and ClickUp transition before resuming the scheduler. Presence checks cannot establish that an API key has credit or model permissions; this first real run verifies them. The Actions repository setting allowing workflow-created pull requests must remain enabled.
+To activate, add `OPENAI_API_KEY` to Actions secrets, enable `CLICKUP_AGENT_ENABLED`, and manually run a small dedicated Urgent queue task using `mode=run` and `task_id`. Confirm its actual Executor, tests, Reviewer, PR, and ClickUp transition before processing further tasks. Presence checks cannot establish that an API key has credit or model permissions; this first real run verifies them. The Actions repository setting allowing workflow-created pull requests must remain enabled.
 
 The repository is public: workflow logs and development artifacts must be treated as public. Do not put credentials, customer data, or confidential material in queued tasks; artifacts are retained for one day. Use a private repository for confidential automation. The Mac's ChatGPT login is not uploaded. The [official Codex Action documentation](https://learn.chatgpt.com/docs/github-action) describes API-key authentication for this workflow.
 
 ## Scheduling and recovery
 
-The Codex app heartbeat **ClickUp görev kuyruğu** is configured every 15 minutes and initially paused until the model credential and first real run are verified. When resumed, it checks readiness and dispatches at most one queued task through the GitHub workflow. The Codex app and its host must be available to dispatch; an already dispatched GitHub job continues independently. The workflow itself has no cron trigger. Workflow concurrency prevents overlapping queue consumers.
+Periodic polling is disabled. Start the workflow manually with `mode=run` to process the oldest Urgent task in `to do`, or provide `task_id` for a particular eligible task. The GitHub runner executes independently of the Mac and Codex app. Workflow concurrency prevents overlapping queue consumers. Changing a task to Urgent does not itself trigger a run yet.
 
 Recovery moves a claimed task to `blocked` when execution, tests, review, or publishing fails. A user-moved task is preserved. Recovery is best effort: a runner interruption before the claim artifact uploads or a ClickUp outage can leave a task `in progress`. Inspect the GitHub run before manually returning it to `to do`; do not blindly retry a task that may already have a branch or PR.
 
-ClickUp webhooks can replace polling later. Their receiver must verify ClickUp's signature before submitting work to this same queue. See [ClickUp webhooks](https://developer.clickup.com/docs/webhooks).
+Automatic dispatch on a priority change requires a ClickUp webhook receiver; it is not installed. The receiver must verify ClickUp's signature and submit work through this same Urgent queue. See [ClickUp webhooks](https://developer.clickup.com/docs/webhooks).
 
 ## Operational flow
 

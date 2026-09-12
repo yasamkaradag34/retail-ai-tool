@@ -31,7 +31,7 @@ class AgentCiTests(unittest.TestCase):
             Settings.from_env(self.repo), clickup_token="test-token", clickup_list_id="123",
             isolated_runner=True,
         )
-        self.task = Task("task1", "Change example", "Test acceptance criteria", "", "to do")
+        self.task = Task("task1", "Change example", "Test acceptance criteria", "", "to do", 1)
         self.git("init", "-q")
         self.git("config", "user.name", "Test")
         self.git("config", "user.email", "test@example.com")
@@ -215,6 +215,34 @@ class AgentCiTests(unittest.TestCase):
                 ci.claim(self.settings, args)
         client.set_status.assert_not_called()
         client.comment.assert_not_called()
+
+    def test_claim_priority_race_does_not_mutate_task(self):
+        client = Mock()
+        client.list_tasks.return_value = [self.task]
+        client.get_task.return_value = replace(self.task, priority=2)
+        args = argparse.Namespace(task_id="", run_id="123", output_dir=self.claim_dir)
+        with patch.dict(os.environ, {"CLICKUP_AGENT_ENABLED": "true", "CODEX_AUTH_CONFIGURED": "true"}), patch.object(ci, "ClickUpClient", return_value=client):
+            with self.assertRaisesRegex(PipelineError, "Urgent priority changed"):
+                ci.claim(self.settings, args)
+        client.set_status.assert_not_called()
+        client.comment.assert_not_called()
+        self.assertFalse(self.claim_dir.exists())
+
+    def test_claim_only_urgent_and_manual_id_cannot_bypass_filter(self):
+        for task_id in ("", self.task.id):
+            with self.subTest(task_id=task_id):
+                client = Mock()
+                client.list_tasks.return_value = [replace(self.task, priority=3)]
+                args = argparse.Namespace(task_id=task_id, run_id="123", output_dir=self.claim_dir)
+                with patch.dict(os.environ, {"CLICKUP_AGENT_ENABLED": "true", "CODEX_AUTH_CONFIGURED": "true"}), patch.object(ci, "ClickUpClient", return_value=client):
+                    if task_id:
+                        with self.assertRaisesRegex(PipelineError, "not Urgent"):
+                            ci.claim(self.settings, args)
+                    else:
+                        self.assertEqual(ci.claim(self.settings, args), {"status": "idle"})
+                client.get_task.assert_not_called()
+                client.set_status.assert_not_called()
+                client.comment.assert_not_called()
 
     def test_failure_recovery_preserves_a_task_moved_by_the_user(self):
         self.make_claim()

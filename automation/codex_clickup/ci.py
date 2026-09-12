@@ -140,17 +140,18 @@ def claim(settings: Settings, args: argparse.Namespace) -> dict:
     if os.getenv("CODEX_AUTH_CONFIGURED") != "true":
         raise PipelineError("Codex authentication preflight has not passed.")
     client = ClickUpClient(settings.clickup_token)
-    tasks = client.list_tasks(settings.clickup_list_id, settings.queue_status)
+    tasks = [task for task in client.list_tasks(settings.clickup_list_id, settings.queue_status) if task.is_queued(settings.queue_status)]
     task = next((item for item in tasks if item.id == args.task_id), None) if args.task_id else next(iter(tasks), None)
     if args.task_id and task is None:
-        raise PipelineError("Requested task is not in the configured queue.")
+        raise PipelineError("Requested task is not Urgent in the configured queue.")
     if task is None:
         output("has_task", "false")
         return {"status": "idle"}
     clickup_path_id(task.id, "task id")
-    # Verify the current status again just before claiming it.
-    if client.get_task(task.id).status.casefold() != settings.queue_status.casefold():
-        raise PipelineError("Task status changed before it could be claimed.")
+    # Refresh both eligibility and task content before claiming it.
+    task = client.get_task(task.id)
+    if not task.is_queued(settings.queue_status):
+        raise PipelineError("Task status or Urgent priority changed before it could be claimed.")
     base_sha = current_sha(settings.repo)
     run_id = args.run_id
     if not re.fullmatch(r"[0-9]+", run_id):
