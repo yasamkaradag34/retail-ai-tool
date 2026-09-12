@@ -1023,6 +1023,8 @@
   <script src="/static/app-benchmark.js?v=1" defer></script>
   <link rel="stylesheet" href="/static/category-analysis.css?v=1">
   <script src="/static/category-analysis.js?v=1" defer></script>
+  <link rel="stylesheet" href="/static/stock-price-analysis.css?v=1">
+  <script src="/static/stock-price-analysis.js?v=1" defer></script>
 </head>
 <body>
   <!-- Google Tag Manager (noscript) -->
@@ -1052,7 +1054,7 @@
             <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
             <span class="menu-btn-text">
               <strong>Stock &amp; Price Comp.</strong>
-              <span id="sub_stock_price_comp">Stock risk &amp; price benchmark</span>
+              <span id="sub_stock_price_comp">Availability &amp; market pricing</span>
             </span>
           </button>
           <button class="menu-btn" data-key="funnel_analysis" onclick="renderModule('funnel_analysis')">
@@ -1239,6 +1241,9 @@
 
           <!-- CATEGORY & PRODUCT ANALYSIS INTERACTIVE WORKSPACE CONTAINER -->
           {% include "category_analysis.html" %}
+
+          <!-- STOCK & PRICE COMPETITIVENESS INTERACTIVE WORKSPACE CONTAINER -->
+          {% include "stock_price_analysis.html" %}
 
             <!-- DATA CONNECTORS & IMPLEMENTATION GUIDE CONTAINER -->
           <div id="dataConnectorsWorkspaceContainer" style="display: none; margin-bottom: 22px; flex-direction: column; gap: 18px;">
@@ -1530,7 +1535,7 @@ print(res.json())
           <!-- END FUNNEL WORKSPACE -->
 
           <!-- STOCK & AVAILABILITY WORKSPACE CONTAINER -->
-          <div id="stockWorkspaceContainer" class="funnel-workspace">
+          <div id="stockWorkspaceLegacyContainer" class="funnel-workspace" aria-hidden="true">
             
             <!-- 1. STOCK AVAILABILITY KPI CARDS -->
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
@@ -3582,8 +3587,8 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       stock_price_comp: {
         title: "Stock & Price Comp.",
         desc: {
-          tr: "Fiyat rekabeti benchmark verilerini, stok bulunabilirlik durumunu ve stok riski taşıyan ürünleri analiz eder.",
-          en: "Analyzes price competitiveness benchmarks, item availability status, and stock risk SKUs."
+          tr: "Merchant Center ürün bulunabilirliğini, Shopping talebini, pazar fiyatlarını ve fiyat önerilerini analiz eder.",
+          en: "Analyses Merchant Center availability, Shopping demand, market pricing and eligible price suggestions."
         },
         placeholder: {
           tr: "Örn: Stok ve fiyat rekabeti analizi yap",
@@ -3663,7 +3668,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
 
         if (subBusiness) subBusiness.textContent = "Voice & text Excel commands";
         if (subCategory) subCategory.textContent = "Category & product deep-dive";
-        if (subStockPrice) subStockPrice.textContent = "Stock risk & price benchmark";
+        if (subStockPrice) subStockPrice.textContent = "Availability & market pricing";
         if (subFunnel) subFunnel.textContent = "Conversion funnel & drop anomalies";
         if (subDigital) subDigital.textContent = "ROAS, CAC & Campaign Analytics";
 
@@ -3722,7 +3727,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
 
         if (subBusiness) subBusiness.textContent = "Sesli & yazılı Excel komutları";
         if (subCategory) subCategory.textContent = "Kategori & ürün analizi";
-        if (subStockPrice) subStockPrice.textContent = "Stok riski & fiyat benchmark'ı";
+        if (subStockPrice) subStockPrice.textContent = "Bulunabilirlik & pazar fiyatları";
         if (subFunnel) subFunnel.textContent = "Dönüşüm hunisi & anomali analizi";
         if (subDigital) subDigital.textContent = "ROAS, CAC & kampanya analizi";
 
@@ -3785,6 +3790,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       if (inputEl) inputEl.placeholder = config.placeholder[currentLang] || config.placeholder.en;
 
       document.body.classList.toggle("category-analysis-active", key === "category_insights");
+      document.body.classList.toggle("stock-price-active", key === "stock_price_comp");
       const catWorkspace = document.getElementById("categoryWorkspaceContainer");
       if (catWorkspace) catWorkspace.style.display = key === "category_insights" ? "flex" : "none";
       if (key === "category_insights" && window.CategoryAnalysis) window.CategoryAnalysis.init();
@@ -3819,9 +3825,11 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       if (stockWorkspace) {
         if (key === "stock_price_comp") {
           stockWorkspace.classList.add("active");
-          setTimeout(() => { initStockWorkspace(); }, 200);
+          stockWorkspace.style.display = "flex";
+          if (window.StockPriceAnalysis) window.StockPriceAnalysis.init();
         } else {
           stockWorkspace.classList.remove("active");
+          stockWorkspace.style.display = "none";
         }
       }
 
@@ -7059,7 +7067,8 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     document.addEventListener("DOMContentLoaded", function() {
       if (currentModule === "app_benchmark" && window.AppBenchmark) window.AppBenchmark.init();
     });
-    renderModule(urlParams.get("module") === "app_benchmark" ? "app_benchmark" : "category_insights");
+    const requestedModule = urlParams.get("module");
+    renderModule(modules[requestedModule] ? requestedModule : "category_insights");
   </script>
 </body>
 </html>

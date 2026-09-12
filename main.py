@@ -2702,6 +2702,7 @@ async def sst_event_collector(request: Request):
 import hashlib, hmac, base64, urllib.parse, time as _time, secrets
 from functions.account_access import has_paid_subscription
 from functions.ga4_commerce import GoogleAnalytics, commerce_report, property_id as validate_ga4_property_id, problem as ga4_problem
+from functions.merchant_insights import GoogleMerchant, account_id as validate_merchant_account_id, merchant_report, sample_report as merchant_sample_report
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
@@ -2775,7 +2776,7 @@ async def persist_refreshed_google_session(request: Request, call_next):
     refreshed = getattr(request.state, "google_cookie_update", None)
     if refreshed is not None and not any(header.lower() == b"set-cookie" and value.startswith(b"gauth=") for header, value in response.raw_headers):
         _set_auth_cookie(response, request, refreshed)
-    if request.url.path.startswith(("/api/ga4/", "/api/auth/", "/api/google/")) or request.url.path == "/journey":
+    if request.url.path.startswith(("/api/ga4/", "/api/merchant/", "/api/auth/", "/api/google/")) or request.url.path == "/journey":
         response.headers["Cache-Control"] = "private, no-store"
     return response
 
@@ -2783,17 +2784,25 @@ async def persist_refreshed_google_session(request: Request, call_next):
 @app.get("/login/google")
 @app.get("/api/auth/google")
 def google_auth_redirect(request: Request, integration: str = ""):
-    """Bind OAuth consent to a short-lived browser state; analytics-only on demand."""
+    """Bind OAuth consent to a short-lived browser state and request only the selected integration."""
     from fastapi.responses import RedirectResponse
     if not GOOGLE_CLIENT_ID:
         return RedirectResponse("/login?error=google_not_configured", status_code=303)
     nonce = secrets.token_urlsafe(32)
-    scopes = GOOGLE_SCOPES if integration != "analytics" else [s for s in GOOGLE_SCOPES if s not in ("https://www.googleapis.com/auth/content", "https://www.googleapis.com/auth/adwords")]
+    integration = integration if integration in {"analytics", "merchant", "ads"} else "all"
+    identity_scopes = [s for s in GOOGLE_SCOPES if s in ("https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile", "openid")]
+    integration_scopes = {
+        "analytics": ["https://www.googleapis.com/auth/analytics.readonly"],
+        "merchant": ["https://www.googleapis.com/auth/content"],
+        "ads": ["https://www.googleapis.com/auth/adwords"],
+        "all": GOOGLE_SCOPES[:3],
+    }
+    scopes = integration_scopes[integration] + identity_scopes
     params = {"client_id": GOOGLE_CLIENT_ID, "redirect_uri": GOOGLE_REDIRECT_URI,
               "response_type": "code", "scope": " ".join(scopes), "access_type": "offline",
-              "prompt": "consent select_account", "state": nonce}
+              "prompt": "consent select_account", "include_granted_scopes": "true", "state": nonce}
     response = RedirectResponse("https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params))
-    response.set_cookie("google_oauth_state", _encrypt_token(json.dumps({"nonce": nonce, "expires_at": int(_time.time()) + 600})),
+    response.set_cookie("google_oauth_state", _encrypt_token(json.dumps({"nonce": nonce, "integration": integration, "expires_at": int(_time.time()) + 600})),
                         httponly=True, secure=request.url.hostname not in ("localhost", "127.0.0.1", "::1"), samesite="lax", max_age=600, path="/api/auth/google/callback")
     return response
 
@@ -2839,13 +2848,18 @@ def google_auth_callback(request: Request, code: str = None, error: str = None, 
         return fail("google_connection_failed")
     prior = _session_payload(request) or {}
     same_account = prior.get("email", "").strip().lower() == email
+    integration = saved.get("integration") if saved.get("integration") in {"analytics", "merchant", "ads", "all"} else "analytics"
     cookie_data = {"access_token": tokens["access_token"],
                    "refresh_token": tokens.get("refresh_token") or (prior.get("refresh_token", "") if same_account else ""),
                    "expires_at": int(_time.time()) + int(tokens.get("expires_in", 3600)),
-                   "email": email, "name": user_info.get("name", ""), "picture": user_info.get("picture", ""), "google_verified": True}
-    if same_account and prior.get("selected_ga4"):
-        cookie_data["selected_ga4"] = prior["selected_ga4"]
-    response = RedirectResponse("/journey?module=category_insights&google_connected=true", status_code=303)
+                   "scope": tokens.get("scope", ""), "email": email, "name": user_info.get("name", ""),
+                   "picture": user_info.get("picture", ""), "google_verified": True}
+    if same_account:
+        for selection in ("selected_ga4", "selected_merchant", "selected_google_ads"):
+            if prior.get(selection):
+                cookie_data[selection] = prior[selection]
+    target = {"merchant": "stock_price_comp", "ads": "digital_marketing"}.get(integration, "category_insights")
+    response = RedirectResponse(f"/journey?module={target}&google_connected=true", status_code=303)
     _set_auth_cookie(response, request, cookie_data)
     response.delete_cookie("google_oauth_state", path="/api/auth/google/callback")
     return response
@@ -2933,23 +2947,12 @@ async def google_get_accounts(request: Request):
         except HTTPException:
             ga4_properties = []
 
-        # 2. Content API for Shopping (Merchant Center)
+        # 2. Merchant API accounts. Permission or consent failures stay empty;
+        # the Merchant workspace explains how to reconnect with the right scope.
         try:
-            mc_resp = requests.get(
-                "https://shoppingcontent.googleapis.com/content/v2.1/accounts/authinfo",
-                headers=headers,
-                timeout=4
-            )
-            if mc_resp.status_code == 200:
-                for acc_info in mc_resp.json().get("accountIdentifiers", []):
-                    mid = acc_info.get("merchantId") or acc_info.get("aggregatorId")
-                    if mid:
-                        merchant_accounts.append({
-                            "id": str(mid),
-                            "name": f"Google Merchant Center Account (ID: {mid})"
-                        })
-        except Exception as e:
-            print("Error fetching Merchant accounts:", e)
+            merchant_accounts = GoogleMerchant(access_token).accounts()
+        except HTTPException:
+            merchant_accounts = []
 
         # 3. Google Ads Accessible Customers
         try:
@@ -2968,24 +2971,22 @@ async def google_get_accounts(request: Request):
         except Exception as e:
             print("Error fetching Ads accounts:", e)
 
-    if not merchant_accounts:
-        merchant_accounts = [
-            {"id": "109823412", "name": "DataProvido Retail Merchant Store (ID: 109823412)"},
-            {"id": "204819201", "name": "Google Shopping EU Merchant Feed (ID: 204819201)"}
-        ]
-
     if not google_ads_accounts:
         google_ads_accounts = [
             {"id": "481-902-1142", "name": "DataProvido Digital Performance Ads (ID: 481-902-1142)"},
             {"id": "912-304-5819", "name": "Google Search & Performance Max (ID: 912-304-5819)"}
         ]
 
+    selected_merchant = str(tokens.get("selected_merchant") or "")
+    if selected_merchant not in {account["id"] for account in merchant_accounts}:
+        selected_merchant = merchant_accounts[0]["id"] if len(merchant_accounts) == 1 else ""
+
     return JSONResponse({
         "authenticated": is_authenticated,
         "user_email": user.get("email", ""),
         "user_name": user.get("name", ""),
         "selected_ga4": tokens.get("selected_ga4", ga4_properties[0]["id"] if len(ga4_properties) == 1 else ""),
-        "selected_merchant": tokens.get("selected_merchant", merchant_accounts[0]["id"]),
+        "selected_merchant": selected_merchant,
         "selected_google_ads": tokens.get("selected_google_ads", google_ads_accounts[0]["id"]),
         "ga4_properties": ga4_properties,
         "merchant_accounts": merchant_accounts,
@@ -3006,8 +3007,13 @@ async def save_google_account_selection(request: Request):
         if not tokens.get("access_token"):
             raise ga4_problem(401, "google_reconnect", "Connect Google Analytics before selecting a property.")
         GoogleAnalytics(tokens["access_token"]).property(validate_ga4_property_id(pid))
+    merchant_id = data.get("merchant_account_id", "")
+    if merchant_id:
+        if not tokens.get("access_token"):
+            raise ga4_problem(401, "google_reconnect", "Connect Merchant Center before selecting an account.")
+        GoogleMerchant(tokens["access_token"]).account(validate_merchant_account_id(merchant_id))
     tokens["selected_ga4"] = pid
-    tokens["selected_merchant"] = data.get("merchant_account_id", "")
+    tokens["selected_merchant"] = merchant_id
     tokens["selected_google_ads"] = data.get("google_ads_account_id", "")
     
     response = JSONResponse({"status": "success", "selection": data})
@@ -3260,9 +3266,67 @@ def ga4_commerce_report(request: Request, property_id: str, view: str = "categor
     provider, _ = _commerce_provider(request)
     return commerce_report(provider, property_id, view, category, days, start_date, end_date)
 
+
+def _merchant_provider(request: Request):
+    require_console_user(request)
+    tokens = _get_google_tokens(request) or {}
+    if not tokens.get("access_token"):
+        raise ga4_problem(401, "google_reconnect", "Connect Google Merchant Center to continue.")
+    return GoogleMerchant(tokens["access_token"]), tokens
+
+
+@app.get("/api/merchant/accounts")
+def merchant_accounts(request: Request):
+    require_console_user(request)
+    tokens = _get_google_tokens(request) or {}
+    if not tokens.get("access_token"):
+        return {"connected": False, "accounts": [], "selected_account": ""}
+    provider = GoogleMerchant(tokens["access_token"])
+    accounts = provider.accounts()
+    selected = str(tokens.get("selected_merchant") or "")
+    if selected not in {item["id"] for item in accounts}:
+        selected = accounts[0]["id"] if len(accounts) == 1 else ""
+    return {"connected": True, "email": tokens.get("email", ""), "accounts": accounts, "selected_account": selected}
+
+
+@app.post("/api/merchant/selection")
+async def merchant_selection(request: Request):
+    provider, tokens = _merchant_provider(request)
+    origin = request.headers.get("origin")
+    if origin and origin != str(request.base_url).rstrip("/"):
+        raise ga4_problem(403, "invalid_origin", "Save Merchant Center selections from your DataProvido console.")
+    data = await request.json()
+    selected = validate_merchant_account_id(data.get("account_id"))
+    provider.account(selected)
+    tokens["selected_merchant"] = selected
+    response = JSONResponse({"selected_account": selected})
+    _set_auth_cookie(response, request, tokens)
+    return response
+
+
+@app.get("/api/merchant/insights")
+def merchant_insights(request: Request, account_id: str = "", days: int = 30, start_date: str = None, end_date: str = None, sample: bool = False):
+    require_console_user(request)
+    if sample:
+        return merchant_sample_report(days, start_date, end_date)
+    provider, tokens = _merchant_provider(request)
+    selected = validate_merchant_account_id(account_id or tokens.get("selected_merchant"))
+    return merchant_report(provider, selected, days, start_date, end_date)
+
 @app.get("/api/merchant/price-competitiveness")
 async def merchant_price_competitiveness(request: Request):
     """Fetch Merchant Center price benchmark data. Zero storage."""
+    provider, tokens = _merchant_provider(request)
+    selected = validate_merchant_account_id(tokens.get("selected_merchant"))
+    report = merchant_report(provider, selected, 30)
+    positions = report["summary"]["price_positions"]
+    return JSONResponse({"source": "merchant_api", "summary": {
+        "below_benchmark": {"count": positions["below"]["count"], "avg_diff": positions["below"]["average_gap_percent"]},
+        "at_market": {"count": positions["at_market"]["count"], "avg_diff": positions["at_market"]["average_gap_percent"]},
+        "above_benchmark": {"count": positions["above"]["count"], "avg_diff": positions["above"]["average_gap_percent"]}},
+        "total_products": report["summary"]["benchmark_products"], "products": report["rows"]})
+
+    # Legacy implementation retained below for source compatibility; unreachable.
     tokens = _get_google_tokens(request)
     if not tokens or not tokens.get("access_token"):
         return JSONResponse({
@@ -3399,6 +3463,16 @@ async def merchant_price_competitiveness(request: Request):
 @app.get("/api/merchant/availability")
 async def merchant_availability(request: Request):
     """Fetch item availability from Merchant Center. Zero storage."""
+    provider, tokens = _merchant_provider(request)
+    selected = validate_merchant_account_id(tokens.get("selected_merchant"))
+    report = merchant_report(provider, selected, 30)
+    summary = report["summary"]
+    return JSONResponse({"source": "merchant_api", "summary": {"in_stock": summary["in_stock"],
+        "out_of_stock": summary["out_of_stock"], "preorder": summary["preorder"], "backorder": summary["backorder"]},
+        "total": summary["catalog_products"],
+        "out_of_stock_items": [row for row in report["rows"] if row["availability"] == "out_of_stock"]})
+
+    # Legacy implementation retained below for source compatibility; unreachable.
     tokens = _get_google_tokens(request)
     if not tokens or not tokens.get("access_token"):
         return JSONResponse({
@@ -3423,6 +3497,14 @@ async def merchant_availability(request: Request):
 @app.get("/api/merchant/brand-price-comparison")
 async def merchant_brand_price_comparison(request: Request, type: str = "brands", start_date: str = None, end_date: str = None):
     """Fetch brand/product level price comparison benchmark data with dynamic date range support. Zero storage."""
+    provider, tokens = _merchant_provider(request)
+    selected = validate_merchant_account_id(tokens.get("selected_merchant"))
+    report = merchant_report(provider, selected, start_date=start_date, end_date=end_date)
+    return JSONResponse({"source": "merchant_api", "merchant_account_id": selected,
+        "merchant_account_name": report["account"]["name"], "time_period": f"{report['start_date']} – {report['end_date']}",
+        "type": type, "brands": report["brands"], "products": report["rows"]})
+
+    # Legacy implementation retained below for source compatibility; unreachable.
     scale = 1.0
     period_label = "Last 28 days"
     if start_date and end_date:
@@ -3492,6 +3574,10 @@ async def merchant_brand_price_comparison(request: Request, type: str = "brands"
 @app.get("/api/merchant/competitor-visibility")
 async def merchant_competitor_visibility(request: Request):
     """Fetch competitor visibility and auction overlap metrics. Zero storage."""
+    _merchant_provider(request)
+    raise ga4_problem(422, "visibility_filters_required", "Competitive visibility requires a country, Google product category and traffic source. Use the new Merchant workspace reports until those filters are selected.")
+
+    # Legacy implementation retained below for source compatibility; unreachable.
     competitors = [
         {"rank": 1, "domain": "hepsiburada.com", "page_overlap_rate": "65%", "higher_position": "79%", "ads_vs_free": "2", "is_self": False},
         {"rank": 2, "domain": "trendyol.com", "page_overlap_rate": "57%", "higher_position": "36%", "ads_vs_free": "< 0.1", "is_self": False},

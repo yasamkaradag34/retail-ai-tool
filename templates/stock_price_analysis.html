@@ -1,0 +1,54 @@
+<section id="stockWorkspaceContainer" class="sp-workspace" aria-label="Stock and price competitiveness" style="display:none">
+  <div class="sp-connection">
+    <div class="sp-connection-copy"><span class="sp-source-icon" aria-hidden="true">M</span><div><strong>Google Merchant Center</strong><p id="spConnectionText">Connect your Merchant Center account to analyse product availability, Shopping performance and market pricing.</p></div></div>
+    <div class="sp-actions"><span id="spSource" class="sp-badge">NOT CONNECTED</span><a id="spConnect" class="sp-button sp-primary" href="/api/auth/google?integration=merchant">Connect Merchant Center <span aria-hidden="true">↗</span></a><button id="spDemo" class="sp-button" type="button">Explore sample data</button></div>
+  </div>
+
+  <div class="sp-controls">
+    <label class="sp-account">Merchant Center account<select id="spAccount" disabled><option value="">Connect an account first</option></select></label>
+    <label>Date range<select id="spPeriod"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="custom">Custom range</option></select></label>
+    <div id="spCustomDates" class="sp-custom-dates" hidden><label>From<input id="spStart" type="date"></label><label>To<input id="spEnd" type="date"></label></div>
+    <button id="spRefresh" class="sp-button sp-refresh" type="button" disabled>↻ Refresh data</button>
+  </div>
+  <p id="spStatus" class="sp-status" role="status" aria-live="polite">Your first report loads automatically after connecting Merchant Center.</p>
+
+  <div id="spWelcome" class="sp-welcome">
+    <div><span class="sp-eyebrow">MERCHANDISING INTELLIGENCE</span><h3>Protect availability.<br><span>Price with context.</span></h3><p>Bring live catalog status, Shopping demand, market benchmarks and Google price suggestions into one decision workspace.</p><a class="sp-button sp-primary" href="/api/auth/google?integration=merchant">Connect your Merchant Center <span aria-hidden="true">→</span></a></div>
+    <ol class="sp-steps"><li><span>01</span><div><strong>Connect Merchant Center</strong><p>Sign in with a Google user who has access to the Merchant Center account.</p></div></li><li><span>02</span><div><strong>Select the store</strong><p>A single accessible account loads automatically; otherwise choose one once.</p></div></li><li><span>03</span><div><strong>Prioritise action</strong><p>Review price position, out-of-stock demand and Google’s eligible price suggestions.</p></div></li></ol>
+  </div>
+
+  <div id="spReport" hidden>
+    <div class="sp-report-meta"><span id="spReportScope"></span><span id="spFreshness"></span></div>
+    <div id="spKpis" class="sp-kpis"></div>
+
+    <div class="sp-position-grid" aria-label="Price position summary">
+      <article class="sp-position below"><span>BELOW MARKET BENCHMARK</span><strong id="spBelowCount">—</strong><small id="spBelowGap">Your price is lower</small></article>
+      <article class="sp-position at"><span>COMPETITIVELY PRICED</span><strong id="spAtCount">—</strong><small>Within ±3% of benchmark</small></article>
+      <article class="sp-position above"><span>ABOVE MARKET BENCHMARK</span><strong id="spAboveCount">—</strong><small id="spAboveGap">Your price is higher</small></article>
+    </div>
+
+    <div class="sp-section-bar"><div class="sp-tabs" role="tablist" aria-label="Merchant insights views"><button class="sp-tab active" role="tab" aria-selected="true" aria-controls="spProductsPanel" type="button" data-sp-tab="products">Product intelligence</button><button class="sp-tab" role="tab" aria-selected="false" aria-controls="spBrandsPanel" tabindex="-1" type="button" data-sp-tab="brands">Brand position</button><button class="sp-tab" role="tab" aria-selected="false" aria-controls="spActionsPanel" tabindex="-1" type="button" data-sp-tab="actions">Action centre <span id="spActionCount" class="sp-count"></span></button><button class="sp-tab" role="tab" aria-selected="false" aria-controls="spCoveragePanel" tabindex="-1" type="button" data-sp-tab="coverage">Data coverage</button></div><button id="spExport" class="sp-button" type="button">↓ Export CSV</button></div>
+
+    <div id="spProductsPanel" role="tabpanel">
+      <div class="sp-explorer-controls"><label class="sp-search"><span class="sr-only">Search products</span><input id="spSearch" type="search" placeholder="Search product, brand or offer ID…"></label><label><span class="sr-only">Filter price position</span><select id="spPriceFilter"><option value="">All price positions</option><option value="above">Above market benchmark</option><option value="at_market">Competitively priced</option><option value="below">Below market benchmark</option><option value="unavailable">No benchmark</option></select></label><label><span class="sr-only">Filter availability</span><select id="spStockFilter"><option value="">All availability</option><option value="in_stock">In stock</option><option value="out_of_stock">Out of stock</option><option value="preorder">Preorder</option><option value="backorder">Backorder</option></select></label></div>
+      <div class="sp-table-card"><div class="sp-table-caption"><div><h3>Product price &amp; availability</h3><p>Current catalog and benchmark snapshot enriched with performance for the selected period.</p></div><span id="spRowCount" class="sp-badge"></span></div><div class="sp-table-scroll" tabindex="0" role="region" aria-label="Merchant products table, scroll for more metrics"><table class="sp-table"><thead id="spProductHead"></thead><tbody id="spProductBody"></tbody></table></div><div class="sp-table-footer"><span id="spTableFootnote"></span><div><button id="spPrevious" class="sp-button" type="button">← Previous</button><span id="spPage"></span><button id="spNext" class="sp-button" type="button">Next →</button></div></div></div>
+    </div>
+
+    <div id="spBrandsPanel" role="tabpanel" hidden>
+      <div class="sp-panel-intro"><div><span class="sp-eyebrow">PRICE DISTRIBUTION</span><h3>Where each brand sits against the market</h3><p>Benchmark coverage and selected-period Shopping demand are aggregated from the loaded products.</p></div><span class="sp-badge">CURRENT BENCHMARK</span></div>
+      <div id="spBrandList" class="sp-brand-list"></div>
+    </div>
+
+    <div id="spActionsPanel" role="tabpanel" hidden>
+      <div class="sp-panel-intro"><div><span class="sp-eyebrow">DECISION QUEUE</span><h3>Turn price and availability signals into action</h3><p>Priorities use only Merchant Center facts returned for this account. They do not estimate physical inventory.</p></div></div>
+      <div id="spActions" class="sp-action-grid"></div>
+    </div>
+
+    <div id="spCoveragePanel" role="tabpanel" hidden>
+      <div class="sp-panel-intro"><div><span class="sp-eyebrow">SOURCE TRANSPARENCY</span><h3>Know what Merchant Center can measure</h3><p>Each tile reflects whether Google returned that report for this account.</p></div></div>
+      <div id="spCapabilities" class="sp-capabilities"></div>
+      <div id="spWarnings" class="sp-warnings"></div>
+      <details class="sp-method" open><summary>How this workspace uses Merchant Center data</summary><div><p><strong>Below market benchmark</strong> means your current price is more than 3% below Google’s benchmark price. <strong>Above market benchmark</strong> means it is more than 3% above. Products within ±3% are labelled <strong>competitively priced</strong>. The threshold is a DataProvido presentation rule; Google supplies the two prices.</p><p><strong>Catalog and benchmark values are snapshots.</strong> Date controls apply to Shopping clicks, impressions and performance. Changes compare the immediately preceding period of equal length. Merchant conversion metrics are available only for free listings, so conversion columns are labelled accordingly.</p><p><strong>Availability</strong> comes from product data in Merchant Center. It can identify in-stock, out-of-stock, preorder and backorder states, but it does not provide warehouse quantity, reorder points or days of cover. Those require an ERP or inventory feed.</p><p><strong>Price suggestions</strong> and predicted changes appear only when Google returns eligible Price Insights rows. Market Insights reports also depend on account eligibility, role permissions, sufficient market activity and Google’s reporting terms.</p><p><a href="https://developers.google.com/merchant/api/guides/reports/understand-the-market" target="_blank" rel="noopener noreferrer">Google Market Insights guide ↗</a> · <a href="https://developers.google.com/merchant/api/guides/reports/query-language" target="_blank" rel="noopener noreferrer">Merchant query language ↗</a></p></div></details>
+    </div>
+  </div>
+</section>

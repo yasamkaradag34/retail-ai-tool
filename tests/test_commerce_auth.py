@@ -89,6 +89,18 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertNotIn('adwords',params['scope'][0])
         self.assertNotIn('/content',params['scope'][0])
 
+    @patch.object(main,'GOOGLE_CLIENT_ID','test-client')
+    def test_merchant_consent_requests_only_content_and_identity(self):
+        response=self.client.get('/api/auth/google?integration=merchant',follow_redirects=False)
+        params=parse_qs(urlparse(response.headers['location']).query)
+        cookie=next(c for c in self.client.cookies.jar if c.name=='google_oauth_state')
+        payload=decoded_cookie(cookie.value)
+        self.assertEqual(payload['integration'],'merchant')
+        self.assertIn('/auth/content',params['scope'][0])
+        self.assertNotIn('analytics.readonly',params['scope'][0])
+        self.assertNotIn('adwords',params['scope'][0])
+        self.assertEqual(params['include_granted_scopes'],['true'])
+
     @patch.object(main,'has_paid_subscription',return_value=True)
     @patch.object(main.requests,'get')
     @patch.object(main.requests,'post')
@@ -105,6 +117,35 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertEqual(user['email'],'customer@example.com')
         self.assertIn('HttpOnly',response.headers['set-cookie'])
         self.assertEqual(self.client.get('/journey',follow_redirects=False).status_code,200)
+
+    @patch.object(main,'has_paid_subscription',return_value=True)
+    @patch.object(main.requests,'get')
+    @patch.object(main.requests,'post')
+    def test_merchant_oauth_callback_returns_to_stock_workspace(self,post,get,paid):
+        state={'nonce':'merchant-state','integration':'merchant','expires_at':time.time()+600}
+        self.client.cookies.set('google_oauth_state',main._encrypt_token(json.dumps(state)))
+        post.return_value=Mock(status_code=200,json=lambda:{'access_token':'new','refresh_token':'refresh','expires_in':3600,'scope':'https://www.googleapis.com/auth/content'})
+        get.return_value=Mock(status_code=200,json=lambda:{'email':'customer@example.com','verified_email':True,'name':'Customer'})
+        response=self.client.get('/api/auth/google/callback?code=code&state=merchant-state',follow_redirects=False)
+        self.assertIn('module=stock_price_comp',response.headers['location'])
+        cookie=next(c for c in self.client.cookies.jar if c.name=='gauth')
+        self.assertIn('/auth/content',decoded_cookie(cookie.value)['scope'])
+
+    def test_merchant_routes_require_console_and_connection(self):
+        self.assertEqual(self.client.get('/api/merchant/accounts').status_code,401)
+        self.sign_in()
+        self.assertEqual(self.client.get('/api/merchant/accounts').json()['accounts'],[])
+        self.assertEqual(self.client.get('/api/merchant/insights?account_id=123').status_code,401)
+
+    @patch.object(main,'GoogleMerchant')
+    def test_merchant_selection_rechecks_access_and_origin(self,provider):
+        self.sign_in(access_token='test',expires_at=time.time()+3600)
+        denied=self.client.post('/api/merchant/selection',json={'account_id':'123'},headers={'Origin':'https://evil.example'})
+        self.assertEqual(denied.status_code,403)
+        provider.return_value.account.assert_not_called()
+        saved=self.client.post('/api/merchant/selection',json={'account_id':'123'},headers={'Origin':'https://testserver'})
+        self.assertEqual(saved.status_code,200)
+        provider.return_value.account.assert_called_once_with('123')
 
     @patch.object(main,'has_paid_subscription')
     @patch.object(main.requests,'get')
