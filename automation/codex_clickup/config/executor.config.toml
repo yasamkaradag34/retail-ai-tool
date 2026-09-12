@@ -1,0 +1,12 @@
+# Reference profile. The orchestrator enforces the same values with CLI flags,
+# so this file does not need to be installed in the user's CODEX_HOME.
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+web_search = "disabled"
+
+[shell_environment_policy]
+inherit = "core"
+ignore_default_excludes = false
+
+[sandbox_workspace_write]
+network_access = false

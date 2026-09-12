@@ -38,6 +38,33 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertEqual(data['properties'],[])
         self.assertEqual(self.client.get('/api/ga4/commerce-report?property_id=123').status_code,401)
 
+    @patch.object(main, 'SUPABASE_ANON_KEY', 'anon-key')
+    @patch.object(main.requests, 'post')
+    def test_email_password_login_uses_supabase_without_local_password(self, post):
+        post.return_value = Mock(status_code=200, json=lambda: {
+            'access_token': 'provider-session-token',
+            'user': {'email': 'dataprovido@gmail.com', 'user_metadata': {'full_name': 'DataProvido'}}
+        })
+        response = self.client.post('/api/auth/login', data={
+            'email': 'dataprovido@gmail.com', 'password': 'provider-verified-value'
+        }, follow_redirects=False)
+        self.assertEqual(response.status_code, 303)
+        self.assertIn('/journey', response.headers['location'])
+        self.assertIn('gauth=', response.headers['set-cookie'])
+        request = post.call_args
+        self.assertIn('grant_type=password', request.args[0])
+        self.assertEqual(request.kwargs['json']['password'], 'provider-verified-value')
+
+    @patch.object(main, 'SUPABASE_ANON_KEY', 'anon-key')
+    @patch.object(main.requests, 'post')
+    def test_rejected_supabase_login_sets_no_session(self, post):
+        post.return_value = Mock(status_code=400, json=lambda: {})
+        response = self.client.post('/api/auth/login', data={
+            'email': 'dataprovido@gmail.com', 'password': 'wrong'
+        }, follow_redirects=False)
+        self.assertIn('invalid_credentials', response.headers['location'])
+        self.assertNotIn('gauth=', response.headers.get('set-cookie', ''))
+
     @patch.object(main,'GoogleAnalytics')
     def test_selected_property_belongs_to_returned_account(self,provider):
         self.sign_in(access_token="test",expires_at=time.time()+5000,selected_ga4="999")

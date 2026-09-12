@@ -1,0 +1,7 @@
+{
+  "id": "local-dry-run",
+  "name": "Add a health check assertion",
+  "markdown_description": "Confirm the existing health endpoint returns a successful response and add a focused regression test. Do not change production behavior unless the test exposes a real defect.",
+  "url": "https://app.clickup.com/t/local-dry-run",
+  "status": {"status": "to do"}
+}

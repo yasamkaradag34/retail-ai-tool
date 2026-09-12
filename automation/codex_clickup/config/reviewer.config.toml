@@ -1,0 +1,8 @@
+# Reference profile. Reviewer commands run in a read-only sandbox.
+approval_policy = "never"
+sandbox_mode = "read-only"
+web_search = "disabled"
+
+[shell_environment_policy]
+inherit = "core"
+ignore_default_excludes = false

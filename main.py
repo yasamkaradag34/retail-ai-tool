@@ -4689,20 +4689,42 @@ def login_page(request: Request):
 
 @app.post("/api/auth/login")
 async def email_password_login(request: Request):
-    """Handle email & password login. Only allow authorized user dataprovido@gmail.com with password 123456."""
+    """Authenticate email/password credentials with Supabase Auth."""
     form_data = await request.form()
     email = form_data.get("email", "").strip().lower()
     password = form_data.get("password", "").strip()
-    
+
     from fastapi.responses import RedirectResponse
 
-    # Strictly check credentials for dataprovido@gmail.com / 123456
-    if email != "dataprovido@gmail.com" or password != "123456":
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY or not email or not password:
         return RedirectResponse(url="/login?error=invalid_credentials", status_code=303)
 
+    try:
+        auth_response = requests.post(
+            f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
+            headers={
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={"email": email, "password": password},
+            timeout=(5, 15),
+        )
+        auth_payload = auth_response.json() if auth_response.status_code == 200 else {}
+        authenticated_email = str((auth_payload.get("user") or {}).get("email") or "").strip().lower()
+        authenticated = bool(auth_payload.get("access_token"))
+    except (requests.RequestException, ValueError, TypeError):
+        authenticated_email = ""
+        authenticated = False
+
+    if not authenticated or not authenticated_email or not hmac.compare_digest(authenticated_email, email):
+        return RedirectResponse(url="/login?error=invalid_credentials", status_code=303)
+    if email not in ALLOWED_LOGIN_EMAILS and not has_paid_subscription(email):
+        return RedirectResponse(url="/login?error=subscription_required", status_code=303)
+
     cookie_data = json.dumps({
-        "email": "dataprovido@gmail.com",
-        "name": "DataProvido",
+        "email": email,
+        "name": str((auth_payload.get("user") or {}).get("user_metadata", {}).get("full_name") or email.split("@", 1)[0]),
         "login_type": "email",
         "role": "admin"
     })

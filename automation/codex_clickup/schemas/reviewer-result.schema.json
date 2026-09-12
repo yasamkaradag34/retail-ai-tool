@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "verdict": {"type": "string", "enum": ["approve", "request_changes"]},
+    "summary": {"type": "string"},
+    "tests_assessment": {"type": "string"},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "severity": {"type": "string", "enum": ["critical", "high", "medium", "low"]},
+          "title": {"type": "string"},
+          "detail": {"type": "string"},
+          "file": {"type": ["string", "null"]},
+          "line": {"type": ["integer", "null"], "minimum": 1}
+        },
+        "required": ["severity", "title", "detail", "file", "line"]
+      }
+    }
+  },
+  "required": ["verdict", "summary", "tests_assessment", "findings"]
+}
