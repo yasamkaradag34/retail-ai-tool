@@ -84,6 +84,9 @@ class GoogleAnalytics:
     def report(self, pid, body):
         return self.request("POST", f"https://analyticsdata.googleapis.com/v1beta/properties/{property_id(pid)}:runReport", json=body)
 
+    def funnel(self, pid, body):
+        return self.request("POST", f"https://analyticsdata.googleapis.com/v1alpha/properties/{property_id(pid)}:runFunnelReport", json=body)
+
     def compatible_quality(self, pid, dimensions, dimension_filter=None):
         body = {"dimensions": [{"name": d} for d in dimensions], "compatibilityFilter": "COMPATIBLE"}
         if dimension_filter:

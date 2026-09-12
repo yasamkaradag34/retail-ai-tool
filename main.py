@@ -2702,6 +2702,7 @@ async def sst_event_collector(request: Request):
 import hashlib, hmac, base64, urllib.parse, time as _time, secrets
 from functions.account_access import has_paid_subscription
 from functions.ga4_commerce import GoogleAnalytics, commerce_report, property_id as validate_ga4_property_id, problem as ga4_problem
+from functions.ga4_funnel import funnel_report as ga4_funnel_report, sample_report as ga4_funnel_sample_report
 from functions.merchant_insights import GoogleMerchant, account_id as validate_merchant_account_id, merchant_report, sample_report as merchant_sample_report
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
@@ -3021,206 +3022,17 @@ async def save_google_account_selection(request: Request):
     _set_auth_cookie(response, request, tokens)
     return response
 
-def _get_demo_funnel_payload(days: int = 30, source: str = "demo"):
-    mult = round(days / 30.0, 2) if days else 1.0
-    mult = max(0.05, mult)
-    sessions = int(125000 * mult)
-    views = int(48200 * mult)
-    atc = int(12400 * mult)
-    checkout = int(5800 * mult)
-    purchase = int(3200 * mult)
-    rev = f"₺{round(4.82 * mult, 2)}M" if mult >= 0.5 else f"₺{int(4820 * mult)}K"
-
-    return {
-        "source": source,
-        "property_id": "418920145",
-        "property_name": "Injector Marketing — GA4 Main Property (ID: 418920145)",
-        "summary": {
-            "total_sessions": f"{sessions:,}",
-            "c2d_rate": "25.7%",
-            "cart_abandonment": "53.2%",
-            "checkout_abandonment": "44.8%",
-            "overall_conversion": "2.56%",
-            "total_revenue": rev,
-            "aov": "₺1,506"
-        },
-        "steps": [
-            {"name": "Sessions", "event": "session_start", "users": sessions, "rate": 100.0, "drop_rate": 61.4, "drop_users": sessions - views},
-            {"name": "Product Views", "event": "view_item", "users": views, "rate": round((views/sessions)*100, 1), "drop_rate": 74.3, "drop_users": views - atc},
-            {"name": "Add to Cart", "event": "add_to_cart", "users": atc, "rate": round((atc/views)*100, 1), "drop_rate": 53.2, "drop_users": atc - checkout},
-            {"name": "Begin Checkout", "event": "begin_checkout", "users": checkout, "rate": round((checkout/atc)*100, 1), "drop_rate": 44.8, "drop_users": checkout - purchase},
-            {"name": "Purchase", "event": "purchase", "users": purchase, "rate": round((purchase/checkout)*100, 1), "drop_rate": 0.0, "drop_users": 0}
-        ],
-        "channels": [
-            {"channel": "Organic Search", "sessions": int(48500 * mult), "pdp_views": int(21400 * mult), "add_to_cart": int(5820 * mult), "c2d": "27.2%", "checkouts": int(2910 * mult), "purchases": int(1650 * mult), "cvr": "3.40%", "revenue": f"₺{round(2.48 * mult, 2)}M"},
-            {"channel": "Paid Search (Google Ads)", "sessions": int(36200 * mult), "pdp_views": int(14800 * mult), "add_to_cart": int(3920 * mult), "c2d": "26.5%", "checkouts": int(1760 * mult), "purchases": int(920 * mult), "cvr": "2.54%", "revenue": f"₺{round(1.38 * mult, 2)}M"},
-            {"channel": "Paid Social (Meta Ads)", "sessions": int(22400 * mult), "pdp_views": int(7100 * mult), "add_to_cart": int(1420 * mult), "c2d": "20.0%", "checkouts": int(580 * mult), "purchases": int(290 * mult), "cvr": "1.29%", "revenue": f"₺{int(435 * mult)}K"},
-            {"channel": "Direct", "sessions": int(11800 * mult), "pdp_views": int(3600 * mult), "add_to_cart": int(920 * mult), "c2d": "25.6%", "checkouts": int(410 * mult), "purchases": int(240 * mult), "cvr": "2.03%", "revenue": f"₺{int(360 * mult)}K"},
-            {"channel": "Email Newsletter", "sessions": int(6100 * mult), "pdp_views": int(1300 * mult), "add_to_cart": int(320 * mult), "c2d": "24.6%", "checkouts": int(140 * mult), "purchases": int(100 * mult), "cvr": "1.64%", "revenue": f"₺{int(170 * mult)}K"}
-        ],
-        "devices": [
-            {"device": "Mobile", "icon": "📱", "sessions": int(85000 * mult), "share": "68%", "cvr": "1.88%", "purchases": int(1600 * mult), "revenue": f"₺{round(2.40 * mult, 2)}M", "friction": "Mobil PDP'de Add-to-Cart terk oranı masaüstüne göre %18 daha yüksek"},
-            {"device": "Desktop", "icon": "💻", "sessions": int(35000 * mult), "share": "28%", "cvr": "4.29%", "purchases": int(1500 * mult), "revenue": f"₺{round(2.25 * mult, 2)}M", "friction": "En yüksek dönüşüm kanalı (Masaüstü sepet tamamlama %58.2)"},
-            {"device": "Tablet", "icon": "📟", "sessions": int(5000 * mult), "share": "4%", "cvr": "2.00%", "purchases": int(100 * mult), "revenue": f"₺{int(170 * mult)}K", "friction": "Ödeme sayfasında form doldurma süresi ortalama 4.2 dakika"}
-        ],
-        "overall_conversion": 2.56,
-        "period": f"Last {days} days"
-    }
-
+@app.get("/api/ga4/funnel-report")
 @app.get("/api/funnel/report")
-async def funnel_report(request: Request, days: int = 30, start_date: str = None, end_date: str = None):
-    """Fetch GA4 funnel report data in real-time with custom date range support. Zero storage."""
-    if start_date and end_date:
-        try:
-            d1 = datetime.strptime(start_date, "%Y-%m-%d")
-            d2 = datetime.strptime(end_date, "%Y-%m-%d")
-            days = max(1, (d2 - d1).days + 1)
-        except Exception:
-            pass
+def funnel_report(request: Request, property_id: str = "", preset: str = "ecommerce", breakdown: str = "deviceCategory", open_funnel: bool = False, days: int = 30, start_date: str = None, end_date: str = None, sample: bool = False):
+    """Return an ordered GA4 funnel plus aggregate path and user exploration data."""
+    require_console_user(request)
+    if sample:
+        return ga4_funnel_sample_report(preset, breakdown, open_funnel, days, start_date, end_date)
+    provider, tokens = _commerce_provider(request)
+    selected = validate_ga4_property_id(property_id or tokens.get("selected_ga4"))
+    return ga4_funnel_report(provider, selected, preset, breakdown, open_funnel, days, start_date, end_date)
 
-    tokens = _get_google_tokens(request)
-    if not tokens or not tokens.get("access_token"):
-        # Return enriched demo data when not connected
-        return JSONResponse(_get_demo_funnel_payload(days, source="connected_account"))
-    
-    # Try to fetch real GA4 data
-    try:
-        # First get the user's GA4 properties
-        access_token = tokens["access_token"]
-        headers = {"Authorization": f"Bearer {access_token}"}
-        
-        # Use GA4 Admin API to list accessible properties
-        admin_resp = requests.get(
-            "https://analyticsadmin.googleapis.com/v1beta/accountSummaries",
-            headers=headers
-        )
-        
-        if admin_resp.status_code != 200:
-            return JSONResponse({
-                "source": "demo",
-                "error": "Could not fetch GA4 properties. Using demo data.",
-                "steps": [
-                    {"name": "Sessions", "users": 125000, "rate": 100.0},
-                    {"name": "Product Views", "users": 48200, "rate": 38.6},
-                    {"name": "Add to Cart", "users": 12400, "rate": 25.7},
-                    {"name": "Checkout", "users": 5800, "rate": 46.8},
-                    {"name": "Purchase", "users": 3200, "rate": 55.2}
-                ],
-                "overall_conversion": 2.56,
-                "period": f"Last {days} days"
-            })
-        
-        accounts = admin_resp.json()
-        properties = []
-        for acc in accounts.get("accountSummaries", []):
-            for prop in acc.get("propertySummaries", []):
-                properties.append({
-                    "property_id": prop.get("property", "").replace("properties/", ""),
-                    "display_name": prop.get("displayName", "Unknown"),
-                    "account_name": acc.get("displayName", "Unknown")
-                })
-        
-        if not properties:
-            return JSONResponse({
-                "source": "demo",
-                "error": "No GA4 properties found. Using demo data.",
-                "properties": [],
-                "steps": [
-                    {"name": "Sessions", "users": 125000, "rate": 100.0},
-                    {"name": "Product Views", "users": 48200, "rate": 38.6},
-                    {"name": "Add to Cart", "users": 12400, "rate": 25.7},
-                    {"name": "Checkout", "users": 5800, "rate": 46.8},
-                    {"name": "Purchase", "users": 3200, "rate": 55.2}
-                ],
-                "overall_conversion": 2.56,
-                "period": f"Last {days} days"
-            })
-        
-        # Use first property to get ecommerce funnel events
-        prop_id = properties[0]["property_id"]
-        
-        # Fetch key ecommerce metrics via GA4 Data API
-        report_body = {
-            "dateRanges": [{"startDate": f"{days}daysAgo", "endDate": "yesterday"}],
-            "metrics": [{"name": "eventCount"}],
-            "dimensions": [{"name": "eventName"}],
-            "dimensionFilter": {
-                "filter": {
-                    "fieldName": "eventName",
-                    "inListFilter": {
-                        "values": ["session_start", "view_item", "add_to_cart", "begin_checkout", "purchase"]
-                    }
-                }
-            }
-        }
-        
-        report_resp = requests.post(
-            f"https://analyticsdata.googleapis.com/v1beta/properties/{prop_id}:runReport",
-            headers={**headers, "Content-Type": "application/json"},
-            json=report_body
-        )
-        
-        if report_resp.status_code == 200:
-            report_data = report_resp.json()
-            event_counts = {}
-            for row in report_data.get("rows", []):
-                event_name = row["dimensionValues"][0]["value"]
-                count = int(row["metricValues"][0]["value"])
-                event_counts[event_name] = count
-            
-            sessions = event_counts.get("session_start", 0)
-            views = event_counts.get("view_item", 0)
-            atc = event_counts.get("add_to_cart", 0)
-            checkout = event_counts.get("begin_checkout", 0)
-            purchase = event_counts.get("purchase", 0)
-            
-            steps = [
-                {"name": "Sessions", "users": sessions, "rate": 100.0},
-                {"name": "Product Views", "users": views, "rate": round(views/sessions*100, 1) if sessions else 0},
-                {"name": "Add to Cart", "users": atc, "rate": round(atc/views*100, 1) if views else 0},
-                {"name": "Checkout", "users": checkout, "rate": round(checkout/atc*100, 1) if atc else 0},
-                {"name": "Purchase", "users": purchase, "rate": round(purchase/checkout*100, 1) if checkout else 0}
-            ]
-            
-            return JSONResponse({
-                "source": "live",
-                "property": properties[0],
-                "properties": properties,
-                "steps": steps,
-                "overall_conversion": round(purchase/sessions*100, 2) if sessions else 0,
-                "period": f"Last {days} days"
-            })
-        
-        # Fallback to demo
-        return JSONResponse({
-            "source": "demo",
-            "properties": properties,
-            "error": f"GA4 report failed (status {report_resp.status_code}). Using demo data.",
-            "steps": [
-                {"name": "Sessions", "users": 125000, "rate": 100.0},
-                {"name": "Product Views", "users": 48200, "rate": 38.6},
-                {"name": "Add to Cart", "users": 12400, "rate": 25.7},
-                {"name": "Checkout", "users": 5800, "rate": 46.8},
-                {"name": "Purchase", "users": 3200, "rate": 55.2}
-            ],
-            "overall_conversion": 2.56,
-            "period": f"Last {days} days"
-        })
-        
-    except Exception as e:
-        return JSONResponse({
-            "source": "demo",
-            "error": str(e),
-            "steps": [
-                {"name": "Sessions", "users": 125000, "rate": 100.0},
-                {"name": "Product Views", "users": 48200, "rate": 38.6},
-                {"name": "Add to Cart", "users": 12400, "rate": 25.7},
-                {"name": "Checkout", "users": 5800, "rate": 46.8},
-                {"name": "Purchase", "users": 3200, "rate": 55.2}
-            ],
-            "overall_conversion": 2.56,
-            "period": f"Last {days} days"
-        })
 
 def _commerce_provider(request):
     require_console_user(request)

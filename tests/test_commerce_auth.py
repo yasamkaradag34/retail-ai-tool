@@ -137,6 +137,26 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertEqual(self.client.get('/api/merchant/accounts').json()['accounts'],[])
         self.assertEqual(self.client.get('/api/merchant/insights?account_id=123').status_code,401)
 
+    def test_funnel_sample_is_explicit_and_requires_console_user(self):
+        self.assertEqual(self.client.get('/api/ga4/funnel-report?sample=true').status_code,401)
+        self.sign_in()
+        response=self.client.get('/api/ga4/funnel-report?sample=true')
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.json()['source'],'sample')
+        self.assertEqual(self.client.get('/api/ga4/funnel-report?property_id=123').status_code,401)
+
+    def test_journey_renders_new_funnel_workspace_and_assets(self):
+        self.sign_in()
+        response=self.client.get('/journey?module=funnel_analysis')
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.text.count('id="funnelWorkspaceContainer"'),1)
+        self.assertIn('id="funnelWorkspaceLegacyContainer"',response.text)
+        self.assertIn('/static/funnel-analysis.css?v=1',response.text)
+        self.assertIn('/static/funnel-analysis.js?v=1',response.text)
+        self.assertIn('Event funnel',response.text)
+        self.assertIn('Path exploration',response.text)
+        self.assertIn('User exploration',response.text)
+
     @patch.object(main,'GoogleMerchant')
     def test_merchant_route_requires_content_scope_before_provider_call(self,provider):
         self.sign_in(access_token='test',expires_at=time.time()+3600,scope='https://www.googleapis.com/auth/analytics.readonly')

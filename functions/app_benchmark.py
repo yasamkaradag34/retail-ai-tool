@@ -6,6 +6,8 @@ Provider reference: https://developer.apple.com/library/archive/documentation/
 AudioVideo/Conceptual/iTuneSearchAPI/Searching.html
 """
 
+from __future__ import annotations
+
 from collections import OrderedDict
 from copy import deepcopy
 from datetime import datetime, timezone

@@ -1,0 +1,57 @@
+<section id="funnelWorkspaceContainer" class="fa-workspace" aria-label="GA4 funnel analysis">
+  <div class="fa-connect-card">
+    <div class="fa-connect-copy"><span class="fa-source-icon" aria-hidden="true">F</span><div><strong>Google Analytics 4</strong><p id="faConnectionText">Connect a GA4 property to explore ordered event funnels, next actions and aggregate user quality.</p></div></div>
+    <div class="fa-actions"><span id="faSource" class="fa-badge">NOT CONNECTED</span><a id="faConnect" class="fa-button fa-primary" href="/api/auth/google?integration=analytics">Connect Google Analytics <span aria-hidden="true">↗</span></a><button id="faDemo" class="fa-button" type="button">Explore sample data</button></div>
+  </div>
+
+  <div class="fa-controls" aria-label="Funnel report controls">
+    <label class="fa-field fa-property">GA4 property<select id="faProperty" disabled><option value="">Connect an account first</option></select></label>
+    <label class="fa-field">Journey<select id="faPreset"><option value="ecommerce">Ecommerce purchase</option><option value="checkout">Checkout completion</option><option value="lead">Lead generation</option></select></label>
+    <label class="fa-field">Breakdown<select id="faBreakdown"><option value="deviceCategory">Device category</option><option value="sessionDefaultChannelGroup">Channel group</option><option value="country">Country</option><option value="platform">Platform</option></select></label>
+    <label class="fa-field">Funnel type<select id="faType"><option value="closed">Closed funnel</option><option value="open">Open funnel</option></select></label>
+    <label class="fa-field">Date range<select id="faPeriod"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="custom">Custom range</option></select></label>
+    <div id="faCustomDates" class="fa-custom-dates" hidden><label class="fa-field">Start<input id="faStart" type="date"></label><label class="fa-field">End<input id="faEnd" type="date"></label></div>
+    <button id="faRefresh" class="fa-button fa-refresh" type="button">↻ Refresh data</button>
+  </div>
+  <div id="faStatus" class="fa-status" role="status">Sign in with Google to load your funnel, or explore the clearly labelled sample.</div>
+
+  <div id="faWelcome" class="fa-welcome">
+    <div><span class="fa-eyebrow">BEHAVIOUR INTELLIGENCE</span><h3>See where intent builds.<br><span>Find where it breaks.</span></h3><p>Measure ordered event completion, inspect the next actions between steps and compare visitor quality in one GA4 workspace.</p><a class="fa-button fa-primary" href="/api/auth/google?integration=analytics">Connect your GA4 property <span aria-hidden="true">→</span></a></div>
+    <ol><li><span>01</span><div><strong>Choose the journey</strong><p>Start with ecommerce, checkout or lead-generation events.</p></div></li><li><span>02</span><div><strong>Follow the sequence</strong><p>Use a closed funnel for strict entry or an open funnel for step-level entry.</p></div></li><li><span>03</span><div><strong>Diagnose the loss</strong><p>Compare breakdowns, next actions, landing pages and aggregate user quality.</p></div></li></ol>
+  </div>
+
+  <div id="faReport" class="fa-report" hidden>
+    <div class="fa-report-meta"><span id="faPeriodLabel"></span><span id="faPropertyLabel"></span></div>
+    <div id="faKpis" class="fa-kpi-grid"></div>
+    <div class="fa-tabbar" role="tablist" aria-label="Funnel analysis views">
+      <button id="faEventTab" class="active" type="button" role="tab" aria-selected="true" aria-controls="faEventPanel" data-tab="event">Event funnel</button>
+      <button id="faPathTab" type="button" role="tab" aria-selected="false" aria-controls="faPathPanel" data-tab="path">Path exploration</button>
+      <button id="faUserTab" type="button" role="tab" aria-selected="false" aria-controls="faUserPanel" data-tab="user">User exploration</button>
+      <button id="faMethodTab" type="button" role="tab" aria-selected="false" aria-controls="faMethodPanel" data-tab="method">Measurement</button>
+    </div>
+
+    <section id="faEventPanel" class="fa-panel" role="tabpanel" aria-labelledby="faEventTab">
+      <div class="fa-section-heading"><div><span class="fa-eyebrow">ORDERED GA4 FUNNEL</span><h3>Journey completion and abandonment</h3><p id="faFunnelNote"></p></div><button id="faExport" class="fa-button" type="button">Export CSV</button></div>
+      <div class="fa-funnel-layout"><div id="faFunnelChart" class="fa-funnel-chart"></div><aside id="faDropInsight" class="fa-insight-card"></aside></div>
+      <div class="fa-table-card"><div class="fa-table-title"><div><span class="fa-eyebrow" id="faBreakdownEyebrow">BREAKDOWN</span><h3 id="faBreakdownTitle">Conversion by device category</h3></div><span class="fa-chip">Ordered active users</span></div><div class="fa-table-scroll" tabindex="0"><table class="fa-table"><thead><tr><th>Segment</th><th>Entry users</th><th>Completed</th><th>Conversion</th><th>Largest loss after</th></tr></thead><tbody id="faBreakdownBody"></tbody></table></div></div>
+    </section>
+
+    <section id="faPathPanel" class="fa-panel" role="tabpanel" aria-labelledby="faPathTab" hidden>
+      <div class="fa-section-heading"><div><span class="fa-eyebrow">NEXT ACTION EXPLORER</span><h3>What users do between funnel steps</h3><p>GA4 returns the first event after the selected step and before the next funnel step.</p></div><span class="fa-chip">Event name</span></div>
+      <div id="faPathSteps" class="fa-step-switcher" role="tablist" aria-label="Select funnel step"></div>
+      <div id="faPathFlow" class="fa-path-flow"></div>
+      <div class="fa-table-card"><div class="fa-table-title"><div><span class="fa-eyebrow">ENTRY QUALITY</span><h3>Top landing pages</h3></div><span class="fa-chip">Aggregate GA4 data</span></div><div class="fa-table-scroll" tabindex="0"><table class="fa-table"><thead><tr><th>Landing page</th><th>Sessions</th><th>Active users</th><th>Engagement</th><th>Bounce rate</th><th>Avg. session</th><th>Key events</th></tr></thead><tbody id="faLandingBody"></tbody></table></div></div>
+    </section>
+
+    <section id="faUserPanel" class="fa-panel" role="tabpanel" aria-labelledby="faUserTab" hidden>
+      <div class="fa-section-heading"><div><span class="fa-eyebrow">AGGREGATE USER EXPLORATION</span><h3>New and returning visitor quality</h3><p>Compare privacy-safe segments without exposing individual identities or event histories.</p></div><span class="fa-chip">GA4 reported segments</span></div>
+      <div id="faUserCards" class="fa-user-cards"></div>
+      <div class="fa-table-card"><div class="fa-table-scroll" tabindex="0"><table class="fa-table"><thead><tr><th>User segment</th><th>Active users</th><th>Sessions</th><th>Engaged sessions</th><th>Engagement</th><th>Bounce rate</th><th>Avg. session</th><th>Events / session</th><th>Purchases</th><th>Revenue</th></tr></thead><tbody id="faUserBody"></tbody></table></div></div>
+    </section>
+
+    <section id="faMethodPanel" class="fa-panel" role="tabpanel" aria-labelledby="faMethodTab" hidden>
+      <div class="fa-method-grid"><article><span>01</span><h3>Event funnel</h3><p>Uses GA4 Data API <code>runFunnelReport</code>. Users must complete the configured events in order. Open and closed funnels follow Google’s own definitions.</p></article><article><span>02</span><h3>Path exploration</h3><p>Shows GA4’s supported next-action dimension between funnel steps. It is not a reconstructed full session timeline.</p></article><article><span>03</span><h3>User exploration</h3><p>Shows aggregate new/returning segments, engagement and ecommerce metrics. Individual User Explorer identities are never returned by this report.</p></article><article><span>04</span><h3>Data quality</h3><p>Privacy thresholds, sampling and unavailable dimensions are disclosed below. Exact raw user paths require a separately configured BigQuery export.</p></article></div>
+      <div id="faWarnings" class="fa-warnings"></div>
+    </section>
+  </div>
+</section>

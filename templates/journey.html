@@ -1025,6 +1025,8 @@
   <script src="/static/category-analysis.js?v=1" defer></script>
   <link rel="stylesheet" href="/static/stock-price-analysis.css?v=1">
   <script src="/static/stock-price-analysis.js?v=1" defer></script>
+  <link rel="stylesheet" href="/static/funnel-analysis.css?v=1">
+  <script src="/static/funnel-analysis.js?v=1" defer></script>
 </head>
 <body>
   <!-- Google Tag Manager (noscript) -->
@@ -1061,7 +1063,7 @@
             <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
             <span class="menu-btn-text">
               <strong>Funnel Analysis</strong>
-              <span id="sub_funnel_analysis">Conversion funnel &amp; drop anomalies</span>
+              <span id="sub_funnel_analysis">Event, path &amp; user exploration</span>
             </span>
           </button>
           <button class="menu-btn" data-key="digital_marketing" onclick="renderModule('digital_marketing')">
@@ -1387,8 +1389,10 @@ print(res.json())
             </div>
           </div>
 
-          <!-- FUNNEL & CONVERSION WORKSPACE CONTAINER -->
-          <div id="funnelWorkspaceContainer" class="funnel-workspace">
+          {% include "funnel_analysis.html" %}
+
+          <!-- Legacy funnel markup retained temporarily for compatibility. -->
+          <div id="funnelWorkspaceLegacyContainer" class="funnel-workspace" aria-hidden="true">
 
             <!-- 1. FUNNEL MACRO KPI SCORECARDS -->
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
@@ -3551,8 +3555,8 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       funnel_analysis: {
         title: "Funnel Analysis",
         desc: {
-          tr: "E-ticaret dönüşüm hunisini, adım kırılımlarını ve haftalık anomali düşüşlerini gösterir.",
-          en: "Visualizes e-commerce conversion funnel, step breakdowns, and weekly drop anomalies."
+          tr: "Sıralı GA4 event hunilerini, sonraki aksiyonları ve toplu kullanıcı kalitesini analiz eder.",
+          en: "Explores ordered GA4 event funnels, next actions and aggregate user quality."
         },
         placeholder: {
           tr: "Örn: Dönüşüm hunisindeki darboğazları getir",
@@ -3669,7 +3673,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         if (subBusiness) subBusiness.textContent = "Voice & text Excel commands";
         if (subCategory) subCategory.textContent = "Category & product deep-dive";
         if (subStockPrice) subStockPrice.textContent = "Availability & market pricing";
-        if (subFunnel) subFunnel.textContent = "Conversion funnel & drop anomalies";
+        if (subFunnel) subFunnel.textContent = "Event, path & user exploration";
         if (subDigital) subDigital.textContent = "ROAS, CAC & Campaign Analytics";
 
         if (modalTableSub) modalTableSub.textContent = "Live spreadsheet preview, row search & column analysis";
@@ -3728,7 +3732,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         if (subBusiness) subBusiness.textContent = "Sesli & yazılı Excel komutları";
         if (subCategory) subCategory.textContent = "Kategori & ürün analizi";
         if (subStockPrice) subStockPrice.textContent = "Bulunabilirlik & pazar fiyatları";
-        if (subFunnel) subFunnel.textContent = "Dönüşüm hunisi & anomali analizi";
+        if (subFunnel) subFunnel.textContent = "Event, yol & kullanıcı keşfi";
         if (subDigital) subDigital.textContent = "ROAS, CAC & kampanya analizi";
 
         if (modalTableSub) modalTableSub.textContent = "Canlı Excel tablosu önizlemesi, filtreleme ve sütun analizi";
@@ -3791,6 +3795,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
 
       document.body.classList.toggle("category-analysis-active", key === "category_insights");
       document.body.classList.toggle("stock-price-active", key === "stock_price_comp");
+      document.body.classList.toggle("funnel-analysis-active", key === "funnel_analysis");
       const catWorkspace = document.getElementById("categoryWorkspaceContainer");
       if (catWorkspace) catWorkspace.style.display = key === "category_insights" ? "flex" : "none";
       if (key === "category_insights" && window.CategoryAnalysis) window.CategoryAnalysis.init();
@@ -3805,7 +3810,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       if (funnelWorkspace) {
         if (key === "funnel_analysis") {
           funnelWorkspace.classList.add("active");
-          setTimeout(() => { initFunnelWorkspace(); }, 200);
+          if (window.FunnelAnalysis) window.FunnelAnalysis.init();
         } else {
           funnelWorkspace.classList.remove("active");
         }
@@ -4102,8 +4107,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           if (typeof loadSessionReplays === 'function') loadSessionReplays();
           if (typeof loadWebVitalsData === 'function') loadWebVitalsData();
         } else if (currentModule === 'funnel_analysis') {
-          if (typeof loadFunnelData === 'function') loadFunnelData();
-          if (typeof loadFunnelInsights === 'function') loadFunnelInsights();
+          if (window.FunnelAnalysis) window.FunnelAnalysis.syncGlobalDate(start, end);
         } else if (currentModule === 'category_insights') {
           if (typeof loadGA4CategoryData === 'function') loadGA4CategoryData();
         } else if (currentModule === 'stock_price_comp') {
