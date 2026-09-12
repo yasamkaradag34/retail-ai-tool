@@ -99,15 +99,43 @@ Run one known ClickUp task:
 ./scripts/agent-pipeline.sh run --task-id TASK_ID
 ```
 
-## Scheduling
+## Installed GitHub runner
 
-Start with a trusted local runner or private CI runner. Run one task per invocation every 10–15 minutes. A cron example is:
+`.github/workflows/clickup-agent.yml` implements the queue using separate disposable Ubuntu jobs. The trusted `ci.py` helper runs from a checkout pinned to the workflow revision, with Python isolated mode. Executor and Reviewer use the pinned official Codex Action and its API-key proxy. Only the publisher has GitHub write permissions; ClickUp credentials are available only to preflight, claim, publish, and recovery steps.
 
-```cron
-*/15 * * * * /absolute/path/to/repository/scripts/agent-pipeline.sh run >> /absolute/path/to/repository/.agent-runs/scheduler.log 2>&1
+Candidate code runs in Codex's workspace sandbox or a test container with no network, service credentials, Docker socket, host home, or Git metadata. Tests use dependencies installed from the trusted base manifest. Candidate patches, tests, and review results carry the same Git tree and patch hash. The publisher reconstructs and verifies those bytes, disables Git hooks, and never imports or executes candidate code. Changes to pipeline control files, workflow files, credential files, symlinks, and submodules are rejected.
+
+Repository configuration:
+
+| Type | Name | Purpose |
+| --- | --- | --- |
+| Actions secret | `CLICKUP_API_TOKEN` | ClickUp queue access |
+| Actions secret | `OPENAI_API_KEY` | Codex model access via the official proxy |
+| Actions variable | `CLICKUP_LIST_ID` | Queue list identifier |
+| Actions variable | `CLICKUP_AGENT_ENABLED` | Explicit activation switch, defaults to `false` |
+| Actions variables | `CLICKUP_QUEUE_STATUS`, `CLICKUP_WORKING_STATUS`, `CLICKUP_REVIEW_STATUS`, `CLICKUP_BLOCKED_STATUS` | Status mapping |
+
+The configured list is **Eylül - DataProvido** (`1100380000031234`), with `to do`, `in progress`, `review`, and `blocked`. Existing `done` and `completed` statuses remain available. The ClickUp token is stored as an encrypted Actions secret, not in tracked files. Local `.env.agent` keeps its personal-workstation isolation flag disabled.
+
+Run the read-only setup check with:
+
+```bash
+gh workflow run clickup-agent.yml --ref main -f mode=preflight
 ```
 
-Polling is intentionally the first phase because it does not require a public endpoint. ClickUp webhooks can replace the schedule later; ClickUp signs webhook events with the webhook secret, so the receiver must validate that signature before placing the task into the same pipeline. See [ClickUp webhooks](https://developer.clickup.com/docs/webhooks).
+This verifies ClickUp access/statuses and reports missing configuration. A separate credential-free job installs the pinned Codex CLI and proxy, checks sandbox boundaries, builds the test image, and runs the base suite without network. It makes no model request and claims no task. A successful preflight workflow does **not** mean model authentication is configured; inspect the readiness checks.
+
+To activate, add `OPENAI_API_KEY` to Actions secrets, enable `CLICKUP_AGENT_ENABLED`, and manually run a small dedicated queue task using `mode=run` and `task_id`. Confirm its actual Executor, tests, Reviewer, PR, and ClickUp transition before resuming the scheduler. Presence checks cannot establish that an API key has credit or model permissions; this first real run verifies them. The Actions repository setting allowing workflow-created pull requests must remain enabled.
+
+The repository is public: workflow logs and development artifacts must be treated as public. Do not put credentials, customer data, or confidential material in queued tasks; artifacts are retained for one day. Use a private repository for confidential automation. The Mac's ChatGPT login is not uploaded. The [official Codex Action documentation](https://learn.chatgpt.com/docs/github-action) describes API-key authentication for this workflow.
+
+## Scheduling and recovery
+
+The Codex app heartbeat **ClickUp görev kuyruğu** is configured every 15 minutes and initially paused until the model credential and first real run are verified. When resumed, it checks readiness and dispatches at most one queued task through the GitHub workflow. The Codex app and its host must be available to dispatch; an already dispatched GitHub job continues independently. The workflow itself has no cron trigger. Workflow concurrency prevents overlapping queue consumers.
+
+Recovery moves a claimed task to `blocked` when execution, tests, review, or publishing fails. A user-moved task is preserved. Recovery is best effort: a runner interruption before the claim artifact uploads or a ClickUp outage can leave a task `in progress`. Inspect the GitHub run before manually returning it to `to do`; do not blindly retry a task that may already have a branch or PR.
+
+ClickUp webhooks can replace polling later. Their receiver must verify ClickUp's signature before submitting work to this same queue. See [ClickUp webhooks](https://developer.clickup.com/docs/webhooks).
 
 ## Operational flow
 

@@ -1,0 +1,472 @@
+name: ClickUp Codex Executor and Reviewer
+
+# The Codex scheduler dispatches this workflow. It never runs from PR events.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Validate setup or process one queued task
+        type: choice
+        options:
+          - preflight
+          - run
+        default: preflight
+        required: true
+      task_id:
+        description: Optional queued ClickUp task ID
+        type: string
+        default: ''
+        required: false
+
+concurrency:
+  group: clickup-agent-${{ github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CLICKUP_LIST_ID: ${{ vars.CLICKUP_LIST_ID }}
+  CLICKUP_QUEUE_STATUS: ${{ vars.CLICKUP_QUEUE_STATUS || 'to do' }}
+  CLICKUP_WORKING_STATUS: ${{ vars.CLICKUP_WORKING_STATUS || 'in progress' }}
+  CLICKUP_REVIEW_STATUS: ${{ vars.CLICKUP_REVIEW_STATUS || 'review' }}
+  CLICKUP_BLOCKED_STATUS: ${{ vars.CLICKUP_BLOCKED_STATUS || 'blocked' }}
+  CLICKUP_AGENT_ENABLED: ${{ vars.CLICKUP_AGENT_ENABLED || 'false' }}
+  AGENT_BASE_BRANCH: ${{ github.event.repository.default_branch }}
+  PYTHONDONTWRITEBYTECODE: '1'
+
+jobs:
+  preflight:
+    name: Validate credentials and repository policy
+    if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      ready: ${{ steps.preflight.outputs.ready }}
+    steps:
+      - name: Check out trusted orchestration code
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Report readiness before any task is claimed
+        id: preflight
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_MODE: ${{ inputs.mode }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=()
+          if [[ "$REQUESTED_MODE" == "run" ]]; then
+            args+=(--require-enabled)
+          fi
+          python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
+            --repo "$GITHUB_WORKSPACE/control" preflight "${args[@]}"
+
+  runner-check:
+    name: Verify hosted runner and base tests without model credentials
+    if: ${{ inputs.mode == 'preflight' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '24'
+      - name: Verify the pinned Codex CLI and proxy can be installed
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global @openai/codex@0.154.0 @openai/codex-responses-api-proxy@0.154.0
+          codex --version
+          codex exec --help > "$RUNNER_TEMP/codex-exec-help.txt"
+          codex sandbox --help > "$RUNNER_TEMP/codex-sandbox-help.txt"
+          rg --quiet -- '--ephemeral' "$RUNNER_TEMP/codex-exec-help.txt"
+          rg --quiet -- '--output-schema' "$RUNNER_TEMP/codex-exec-help.txt"
+      - name: Verify the Codex sandbox keeps sibling control files read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          candidate_canary="$GITHUB_WORKSPACE/sandbox-candidate"
+          control_canary="$GITHUB_WORKSPACE/sandbox-control"
+          mkdir -p "$candidate_canary" "$control_canary"
+          test ! -e "$candidate_canary/allowed"
+          test ! -e "$control_canary/forbidden"
+          # Prove ordinary runner permissions allow control writes before testing
+          # the sandbox. Both directories are outside the writable temp roots.
+          touch "$control_canary/host-writable"
+          codex sandbox -P :workspace -C "$candidate_canary" \
+            --sandbox-state-disable-network /bin/sh -c '
+              set -eu
+              touch "$1/allowed"
+              if touch "$2/forbidden" 2>/dev/null; then
+                printf "%s\n" "Sandbox unexpectedly allowed a sibling control write." >&2
+                exit 1
+              fi
+              test -f "$1/allowed"
+              test ! -e "$2/forbidden"
+            ' sandbox-check "$candidate_canary" "$control_canary"
+          test -f "$candidate_canary/allowed"
+          test -f "$control_canary/host-writable"
+          test ! -e "$control_canary/forbidden"
+      - name: Build the trusted base test image
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/test-image"
+          cp "$GITHUB_WORKSPACE/control/requirements.txt" "$RUNNER_TEMP/test-image/requirements.txt"
+          docker build \
+            --file "$GITHUB_WORKSPACE/control/automation/codex_clickup/Dockerfile.tests" \
+            --tag "clickup-agent-tests:$GITHUB_RUN_ID" "$RUNNER_TEMP/test-image"
+          git -C "$GITHUB_WORKSPACE/control" archive --format=tar HEAD > "$RUNNER_TEMP/base-candidate.tar"
+      - name: Run the base suite in a container with network access disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --network=none --cap-drop=ALL --security-opt=no-new-privileges \
+            --pids-limit=256 --memory=3g --cpus=2 --read-only \
+            --tmpfs /tmp:rw,nosuid,nodev,size=512m \
+            --tmpfs /work:rw,nosuid,nodev,size=512m \
+            --mount "type=bind,source=$RUNNER_TEMP/base-candidate.tar,target=/input/candidate.tar,readonly" \
+            "clickup-agent-tests:$GITHUB_RUN_ID" \
+            sh -c 'tar -xf /input/candidate.tar -C /work && cd /work && exec python3 -m unittest discover -s tests -p "test_*.py"'
+          printf '%s\n' '### Hosted runner verified' '' \
+            'Pinned Codex CLI and proxy installed; the sandbox allowed candidate writes and denied sibling control writes; the trusted base test suite passed in a container with network access disabled. No task was claimed and no model request was made.' \
+            >> "$GITHUB_STEP_SUMMARY"
+
+  claim:
+    name: Claim one queued task
+    needs: preflight
+    if: ${{ inputs.mode == 'run' && needs.preflight.outputs.ready == 'true' && vars.CLICKUP_AGENT_ENABLED == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      has_task: ${{ steps.claim.outputs.has_task }}
+      base_sha: ${{ steps.claim.outputs.base_sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Claim task using trusted helper
+        id: claim
+        env:
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_TASK_ID: ${{ inputs.task_id }}
+          CODEX_AUTH_CONFIGURED: ${{ needs.preflight.outputs.ready }}
+          AGENT_ISOLATED_RUNNER: 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=()
+          if [[ -n "$REQUESTED_TASK_ID" ]]; then
+            args+=(--task-id "$REQUESTED_TASK_ID")
+          fi
+          python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
+            --repo "$GITHUB_WORKSPACE/control" claim \
+            --output-dir "$RUNNER_TEMP/claim" \
+            --run-id "$GITHUB_RUN_ID" "${args[@]}"
+      - name: Preserve claim for downstream jobs and failure recovery
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: clickup-claim
+          path: ${{ runner.temp }}/claim/
+          if-no-files-found: ignore
+          retention-days: 1
+
+  executor:
+    name: Execute task with Codex
+    needs: claim
+    if: ${{ needs.claim.outputs.has_task == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.claim.outputs.base_sha }}
+          path: candidate
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: clickup-claim
+          path: ${{ runner.temp }}/claim
+      - name: Install trusted base dependencies before Codex runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --disable-pip-version-check -r "$GITHUB_WORKSPACE/control/requirements.txt" httpx==0.28.1
+          mkdir -p "$RUNNER_TEMP/candidate-artifact"
+      - name: Run isolated Executor through the OpenAI key proxy
+        uses: openai/codex-action@86365089eb2b84e0a8fb0717b304f8bdcb13b20e # v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          codex-version: '0.154.0'
+          working-directory: ${{ github.workspace }}/candidate
+          permission-profile: ':workspace'
+          safety-strategy: drop-sudo
+          prompt-file: ${{ runner.temp }}/claim/executor-prompt.md
+          output-schema-file: ${{ github.workspace }}/control/automation/codex_clickup/schemas/executor-result.schema.json
+          output-file: ${{ runner.temp }}/candidate-artifact/executor-result.json
+          codex-args: '["--ephemeral"]'
+          model: ${{ vars.AGENT_EXECUTOR_MODEL }}
+      # These steps only serialize changes. No repository code runs after Codex.
+      - name: Record and validate candidate bytes with trusted helper
+        shell: bash
+        run: |
+          python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
+            --repo "$GITHUB_WORKSPACE/candidate" snapshot \
+            --output-dir "$RUNNER_TEMP/candidate-artifact"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: clickup-candidate
+          path: ${{ runner.temp }}/candidate-artifact/
+          if-no-files-found: error
+          retention-days: 1
+
+  tests:
+    name: Test candidate without network or service credentials
+    needs: [claim, executor]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.claim.outputs.base_sha }}
+          path: candidate
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: clickup-candidate
+          path: ${{ runner.temp }}/candidate-artifact
+      - name: Build test image from trusted dependency manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/test-image"
+          cp "$GITHUB_WORKSPACE/control/requirements.txt" "$RUNNER_TEMP/test-image/requirements.txt"
+          docker build \
+            --file "$GITHUB_WORKSPACE/control/automation/codex_clickup/Dockerfile.tests" \
+            --tag "clickup-agent-tests:$GITHUB_RUN_ID" "$RUNNER_TEMP/test-image"
+      - name: Reconstruct and verify candidate
+        env:
+          BASE_SHA: ${{ needs.claim.outputs.base_sha }}
+        shell: bash
+        run: |
+          python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
+            --repo "$GITHUB_WORKSPACE/candidate" apply \
+            --candidate-dir "$RUNNER_TEMP/candidate-artifact" --base-sha "$BASE_SHA"
+      - name: Run tests in isolated container
+        shell: bash
+        run: |
+          python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
+            --repo "$GITHUB_WORKSPACE/candidate" test \
+            --candidate-dir "$RUNNER_TEMP/candidate-artifact" \
+            --output-dir "$RUNNER_TEMP/tests" \
+            --container-image "clickup-agent-tests:$GITHUB_RUN_ID"
+      - name: Save verification result
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: clickup-tests
+          path: ${{ runner.temp }}/tests/
+          if-no-files-found: ignore
+          retention-days: 1
+
+  reviewer:
+    name: Review the tested candidate with Codex
+    needs: [claim, executor, tests]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.claim.outputs.base_sha }}
+          path: candidate
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: clickup-claim
+          path: ${{ runner.temp }}/claim
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: clickup-candidate
+          path: ${{ runner.temp }}/candidate-artifact
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: clickup-tests
+          path: ${{ runner.temp }}/tests
+      - name: Reconstruct tested candidate and prepare review prompt
+        env:
+          BASE_SHA: ${{ needs.claim.outputs.base_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
+            --repo "$GITHUB_WORKSPACE/candidate" apply \
+            --candidate-dir "$RUNNER_TEMP/candidate-artifact" --base-sha "$BASE_SHA"
+          python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
+            --repo "$GITHUB_WORKSPACE/candidate" prepare-review \
+            --claim-dir "$RUNNER_TEMP/claim" \
+            --candidate-dir "$RUNNER_TEMP/candidate-artifact" \
+            --test-dir "$RUNNER_TEMP/tests" --output-dir "$RUNNER_TEMP/review"
+      - name: Run isolated read-only Reviewer through the OpenAI key proxy
+        uses: openai/codex-action@86365089eb2b84e0a8fb0717b304f8bdcb13b20e # v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          codex-version: '0.154.0'
+          working-directory: ${{ github.workspace }}/candidate
+          permission-profile: ':read-only'
+          safety-strategy: drop-sudo
+          prompt-file: ${{ runner.temp }}/review/reviewer-prompt.md
+          output-schema-file: ${{ github.workspace }}/control/automation/codex_clickup/schemas/reviewer-result.schema.json
+          output-file: ${{ runner.temp }}/review/reviewer-result.json
+          codex-args: '["--ephemeral"]'
+          model: ${{ vars.AGENT_REVIEWER_MODEL }}
+      - name: Bind the verdict to the unchanged candidate
+        shell: bash
+        run: |
+          python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
+            --repo "$GITHUB_WORKSPACE/candidate" record-review \
+            --candidate-dir "$RUNNER_TEMP/candidate-artifact" \
+            --output-dir "$RUNNER_TEMP/review"
+      - name: Save structured verdict
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: clickup-review
+          path: |
+            ${{ runner.temp }}/review/reviewer-result.json
+            ${{ runner.temp }}/review/review-metadata.json
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish only the tested and approved tree
+    needs: [claim, executor, tests, reviewer]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.claim.outputs.base_sha }}
+          path: candidate
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: clickup-claim
+          path: ${{ runner.temp }}/claim
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: clickup-candidate
+          path: ${{ runner.temp }}/candidate-artifact
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: clickup-tests
+          path: ${{ runner.temp }}/tests
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: clickup-review
+          path: ${{ runner.temp }}/review
+      - name: Validate artifacts and create pull request using trusted code only
+        env:
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global user.name 'codex-clickup[bot]'
+          git config --global user.email 'codex-clickup[bot]@users.noreply.github.com'
+          gh auth setup-git
+          python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
+            --repo "$GITHUB_WORKSPACE/candidate" publish \
+            --claim-dir "$RUNNER_TEMP/claim" \
+            --candidate-dir "$RUNNER_TEMP/candidate-artifact" \
+            --test-dir "$RUNNER_TEMP/tests" --review-dir "$RUNNER_TEMP/review"
+
+  failure:
+    name: Return a claimed task to the blocked status
+    needs: [preflight, claim, executor, tests, reviewer, publish]
+    if: ${{ always() && inputs.mode == 'run' && needs.preflight.result == 'success' && needs.claim.result != 'skipped' && (needs.claim.result == 'failure' || needs.executor.result == 'failure' || needs.tests.result == 'failure' || needs.reviewer.result == 'failure' || needs.publish.result == 'failure' || cancelled()) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          path: control
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Retrieve any recorded claim
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        continue-on-error: true
+        with:
+          name: clickup-claim
+          path: ${{ runner.temp }}/claim
+      - name: Record failure without exposing task contents
+        env:
+          CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
+          FAILURE_REASON: 'Runner stopped: claim=${{ needs.claim.result }}, executor=${{ needs.executor.result }}, tests=${{ needs.tests.result }}, reviewer=${{ needs.reviewer.result }}, publish=${{ needs.publish.result }}.'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f "$RUNNER_TEMP/claim/task.json" ]]; then
+            python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
+              --repo "$GITHUB_WORKSPACE/control" fail \
+              --claim-dir "$RUNNER_TEMP/claim" --reason "$FAILURE_REASON"
+          fi
