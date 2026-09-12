@@ -94,6 +94,23 @@ jobs:
           codex sandbox --help > "$RUNNER_TEMP/codex-sandbox-help.txt"
           grep -q -- '--ephemeral' "$RUNNER_TEMP/codex-exec-help.txt"
           grep -q -- '--output-schema' "$RUNNER_TEMP/codex-exec-help.txt"
+      - name: Prepare the disposable hosted runner for the Codex Linux sandbox
+        if: ${{ runner.os == 'Linux' && runner.environment == 'github-hosted' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Match the pinned official action's bubblewrap prerequisite setup:
+          # https://github.com/openai/codex-action/blob/86365089eb2b84e0a8fb0717b304f8bdcb13b20e/action.yml
+          # This runs only on this disposable GitHub VM, never the personal host.
+          # Executor and Reviewer already receive this setup from codex-action.
+          current_userns="$(sysctl -n kernel.unprivileged_userns_clone 2>/dev/null || true)"
+          if [[ -n "$current_userns" && "$current_userns" != "1" ]]; then
+            sudo sysctl -w kernel.unprivileged_userns_clone=1
+          fi
+          current_apparmor="$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || true)"
+          if [[ -n "$current_apparmor" && "$current_apparmor" != "0" ]]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
       - name: Verify the Codex sandbox keeps sibling control files read-only
         shell: bash
         run: |
