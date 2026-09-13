@@ -4749,7 +4749,7 @@ async def forgot_password_handler(request: Request):
                     "apikey": SUPABASE_ANON_KEY,
                     "Content-Type": "application/json"
                 },
-                json={"email": email, "redirectTo": "https://dataprovido.com/login"},
+                json={"email": email, "redirectTo": "https://www.dataprovido.com/login"},
                 timeout=5
             )
         except Exception as e:
@@ -4757,6 +4757,44 @@ async def forgot_password_handler(request: Request):
             
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/login?notice=password_reset_sent", status_code=303)
+
+
+@app.post("/api/auth/reset-password")
+async def reset_password_handler(request: Request):
+    """Complete a Supabase recovery flow without exposing provider credentials."""
+    from fastapi.responses import RedirectResponse
+
+    form_data = await request.form()
+    access_token = str(form_data.get("access_token") or "").strip()
+    password = str(form_data.get("password") or "")
+    confirmation = str(form_data.get("confirm_password") or "")
+
+    if not hmac.compare_digest(password, confirmation):
+        return RedirectResponse(url="/login?error=password_mismatch", status_code=303)
+    if len(password) < 10 or len(password) > 128:
+        return RedirectResponse(url="/login?error=password_length", status_code=303)
+    if not SUPABASE_URL or not SUPABASE_ANON_KEY or not (20 <= len(access_token) <= 4096):
+        return RedirectResponse(url="/login?error=password_reset_failed", status_code=303)
+
+    try:
+        reset_response = requests.put(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            json={"password": password},
+            timeout=(5, 15),
+        )
+        payload = reset_response.json() if reset_response.status_code == 200 else {}
+        updated = bool(isinstance(payload, dict) and payload.get("id") and payload.get("email"))
+    except (requests.RequestException, ValueError, TypeError):
+        updated = False
+
+    target = "/login?notice=password_reset_success" if updated else "/login?error=password_reset_failed"
+    return RedirectResponse(url=target, status_code=303)
+
 
 @app.get("/pricing", response_class=HTMLResponse)
 def pricing():

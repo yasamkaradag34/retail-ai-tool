@@ -65,6 +65,43 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertIn('invalid_credentials', response.headers['location'])
         self.assertNotIn('gauth=', response.headers.get('set-cookie', ''))
 
+    @patch.object(main, 'SUPABASE_ANON_KEY', 'anon-key')
+    @patch.object(main.requests, 'put')
+    def test_password_recovery_updates_supabase_user(self, put):
+        put.return_value = Mock(status_code=200, json=lambda: {
+            'id': 'user-id', 'email': 'dataprovido@gmail.com'
+        })
+        response = self.client.post('/api/auth/reset-password', data={
+            'access_token': 'provider-recovery-token',
+            'password': 'secure-value-1',
+            'confirm_password': 'secure-value-1',
+        }, follow_redirects=False)
+        self.assertEqual(response.status_code, 303)
+        self.assertIn('password_reset_success', response.headers['location'])
+        self.assertEqual(put.call_args.kwargs['json'], {'password': 'secure-value-1'})
+        self.assertEqual(
+            put.call_args.kwargs['headers']['Authorization'],
+            'Bearer provider-recovery-token',
+        )
+
+    @patch.object(main, 'SUPABASE_ANON_KEY', 'anon-key')
+    @patch.object(main.requests, 'put')
+    def test_password_recovery_rejects_mismatch_without_provider_call(self, put):
+        response = self.client.post('/api/auth/reset-password', data={
+            'access_token': 'provider-recovery-token',
+            'password': 'secure-value-1',
+            'confirm_password': 'different-value-2',
+        }, follow_redirects=False)
+        self.assertIn('password_mismatch', response.headers['location'])
+        put.assert_not_called()
+
+    def test_login_page_handles_recovery_fragment_without_embedded_secret(self):
+        response = self.client.get('/login')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('id="resetPasswordForm"', response.text)
+        self.assertIn("recoveryParams.get('access_token')", response.text)
+        self.assertNotIn('provider-recovery-token', response.text)
+
     @patch.object(main,'GoogleAnalytics')
     def test_selected_property_belongs_to_returned_account(self,provider):
         self.sign_in(access_token="test",expires_at=time.time()+5000,selected_ga4="999")
