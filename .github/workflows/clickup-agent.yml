@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - preflight
+          - auth-check
           - run
         default: preflight
         required: true
@@ -37,6 +38,35 @@ env:
   PYTHONDONTWRITEBYTECODE: '1'
 
 jobs:
+  auth-check:
+    name: Verify OpenAI API authentication without claiming a task
+    if: ${{ inputs.mode == 'auth-check' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Make a minimal authenticated model request
+        uses: openai/codex-action@86365089eb2b84e0a8fb0717b304f8bdcb13b20e # v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          codex-version: '0.154.0'
+          permission-profile: ':read-only'
+          safety-strategy: drop-sudo
+          prompt: 'This is an authentication check. Do not use tools, read files, or change anything. Reply with exactly RUNNER_AUTH_OK.'
+          output-file: ${{ runner.temp }}/auth-check.txt
+          codex-args: '["--ephemeral"]'
+          model: ${{ vars.AGENT_EXECUTOR_MODEL }}
+      - name: Confirm the model answered
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -qx 'RUNNER_AUTH_OK' "$RUNNER_TEMP/auth-check.txt"
+          printf '%s\n' '### OpenAI authentication verified' '' \
+            'A real API request succeeded. No ClickUp task was claimed.' >> "$GITHUB_STEP_SUMMARY"
+
   preflight:
     name: Validate credentials and repository policy
     if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
