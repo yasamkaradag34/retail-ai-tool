@@ -60,6 +60,39 @@ class CommerceAuthTests(unittest.TestCase):
 
     @patch.object(main, 'SUPABASE_ANON_KEY', 'anon-key')
     @patch.object(main.requests, 'post')
+    def test_email_password_login_preserves_same_account_google_grant(self, post):
+        post.return_value = Mock(status_code=200, json=lambda: {
+            'access_token': 'provider-session-token',
+            'user': {'email': 'dataprovido@gmail.com', 'user_metadata': {}},
+        })
+        self.sign_in(
+            access_token='google-access', refresh_token='google-refresh',
+            expires_at=time.time() + 3600,
+            scope='https://www.googleapis.com/auth/analytics.readonly',
+            selected_ga4='123', google_verified=True,
+        )
+        response = self.client.post('/api/auth/login', data={
+            'email': 'dataprovido@gmail.com', 'password': 'provider-verified-value'
+        }, follow_redirects=False)
+        set_cookie = next(value for value in response.headers.get_list('set-cookie') if value.startswith('gauth='))
+        response_cookie = SimpleCookie(set_cookie)['gauth'].value
+        session = json.loads(main._decrypt_token(response_cookie))
+        self.assertEqual(session['access_token'], 'google-access')
+        self.assertEqual(session['refresh_token'], 'google-refresh')
+        self.assertEqual(session['selected_ga4'], '123')
+
+    def test_category_workspace_requires_real_ga4_instead_of_auto_sample(self):
+        self.sign_in()
+        response = self.client.get('/journey?module=category_insights')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('CHECKING GA4', response.text)
+        script = (os.path.join(os.path.dirname(main.__file__), 'static', 'category-analysis.js'))
+        script = open(script, encoding='utf-8').read()
+        self.assertIn('Real GA4 data is required.', script)
+        self.assertNotIn('if (!data.connected && testMode)', script)
+
+    @patch.object(main, 'SUPABASE_ANON_KEY', 'anon-key')
+    @patch.object(main.requests, 'post')
     def test_rejected_supabase_login_sets_no_session(self, post):
         post.return_value = Mock(status_code=400, json=lambda: {})
         response = self.client.post('/api/auth/login', data={

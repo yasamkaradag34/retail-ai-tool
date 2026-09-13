@@ -5208,15 +5208,27 @@ async def email_password_login(request: Request):
     if email not in ALLOWED_LOGIN_EMAILS and not has_paid_subscription(email):
         return RedirectResponse(url="/login?error=subscription_required", status_code=303)
 
-    cookie_data = json.dumps({
+    cookie_data = {
         "email": email,
         "name": str((auth_payload.get("user") or {}).get("user_metadata", {}).get("full_name") or email.split("@", 1)[0]),
         "login_type": "email",
         "role": "admin"
-    })
+    }
+    # Email authentication proves access to the DataProvido account, but it must
+    # not discard a Google OAuth grant already bound to the same email. Keeping
+    # the refresh token lets GA4 reports continue to work after a normal login.
+    prior = _session_payload(request) or {}
+    if str(prior.get("email") or "").strip().lower() == email:
+        for key in (
+            "access_token", "refresh_token", "expires_at", "scope",
+            "google_verified", "picture", "selected_ga4", "selected_merchant",
+            "onboarding_complete",
+        ):
+            if key in prior:
+                cookie_data[key] = prior[key]
     destination = "/journey?activated=true" if _is_test_account(email) else "/connect-data"
     response = RedirectResponse(url=destination, status_code=303)
-    _set_auth_cookie(response, request, json.loads(cookie_data))
+    _set_auth_cookie(response, request, cookie_data)
     return response
 
 @app.post("/api/auth/forgot-password")

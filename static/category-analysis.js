@@ -63,22 +63,16 @@
       state.properties = data.properties || [];
       state.demo = false; clearCategory(); state.categories = [];
       $('caDemo').textContent = 'Explore sample data';
-      $('caSource').textContent = data.connected ? 'CONNECTED' : 'NOT CONNECTED'; $('caSource').className = 'ca-badge ' + (data.connected ? 'live' : '');
+      $('caConnect').href = testMode ? '/api/auth/google?integration=analytics' : '/connect-data';
+      $('caConnect').hidden = data.connected && state.properties.length > 0;
+      $('caSource').textContent = data.connected ? state.properties.length ? 'CONNECTED' : 'NO GA4 PROPERTY' : 'CONNECTION REQUIRED';
+      $('caSource').className = 'ca-badge ' + (data.connected && state.properties.length ? 'live' : '');
       $('caConnect').textContent = data.connected ? 'Change Google account ↗' : 'Connect Google Analytics ↗';
-      $('caConnectionText').textContent = data.connected ? data.email : 'Connect your store to load its categories and products.';
+      $('caConnectionText').textContent = data.connected ? `${data.email} · ${state.properties.length} accessible GA4 ${state.properties.length === 1 ? 'property' : 'properties'}` : 'Connect Google Analytics to load real category and product data.';
       $('caProperty').innerHTML = '<option value="">' + (data.connected ? 'Select your GA4 property' : 'Connect an account first') + '</option>' + state.properties.map(p => `<option value="${esc(p.id)}">${esc(p.name)} · ${esc(p.id)}</option>`).join('');
       $('caProperty').disabled = !state.properties.length;
-      if (!data.connected && testMode) {
-        state.demo = true;
-        $('caProperty').innerHTML = `<option value="sample">${esc(pivotBrand)} · Test dataset</option>`;
-        $('caProperty').value = 'sample';
-        $('caConnectionText').textContent = `${pivotBrand} · Pivot test workspace`;
-        await load();
-        return;
-      }
-      if (!data.connected) { status('Your Analytics connection needs attention. Review data setup from the sidebar.'); return; }
-      if (!state.properties.length && testMode) { state.demo=true;$('caProperty').innerHTML=`<option value="sample">${esc(pivotBrand)} · Test dataset</option>`;$('caProperty').value='sample';await load();return; }
-      if (!state.properties.length) { status('No Analytics properties are available to this account. Review access during data setup.', 'error'); return; }
+      if (!data.connected) { status('Real GA4 data is required. Connect the Google account that has access to the store property.', 'error'); return; }
+      if (!state.properties.length) { status('This Google account has no accessible GA4 properties. Change account or grant it Viewer access in Analytics.', 'error'); return; }
       const selected = state.properties.some(p => p.id === data.selected_property) ? data.selected_property : state.properties.length === 1 ? state.properties[0].id : '';
       $('caProperty').value = selected;
       if (selected) await load(); else status('Choose a GA4 property above. Its first report will load automatically.');
@@ -151,6 +145,8 @@
   }
   function render() {
     const r = state.report;
+    $('caStoreName').textContent = r.property.name || 'Google Analytics 4';
+    $('caConnectionText').textContent = `${r.property.name || 'Selected property'} · Live, read-only GA4 reporting`;
     $('caReportScope').textContent = `${r.start_date} – ${r.end_date} · Prior: ${r.previous_start} – ${r.previous_end}`;
     $('caFreshness').textContent = `${r.property.time_zone} · ${r.property.currency || 'Currency unavailable'} · ${state.demo ? 'Illustrative sample' : 'Updated ' + new Date(r.fetched_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
     const kpis = [['itemRevenue',r.summary,'Item revenue',state.category || 'All items'], ['purchaseToViewRate',r.summary,'Purchase-to-view rate',state.category || 'All items'], ['bounceRate',r.property_quality,'Bounce rate','Whole property'], ['averageSessionDuration',r.property_quality,'Avg. session duration','Whole property']];
