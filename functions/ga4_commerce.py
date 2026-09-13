@@ -15,6 +15,8 @@ from fastapi import HTTPException
 
 ITEM_METRICS = ["itemsViewed", "itemsAddedToCart", "itemsPurchased", "itemRevenue", "cartToViewRate", "purchaseToViewRate"]
 QUALITY_METRICS = ["sessions", "activeUsers", "engagedSessions", "bounceRate", "engagementRate", "averageSessionDuration"]
+COMMERCE_OVERVIEW_METRICS = ["sessions", "transactions", "purchaseRevenue", "purchaserRate", "totalPurchasers", "activeUsers"]
+TRANSACTION_TREND_METRICS = ["sessions", "transactions", "purchaseRevenue"]
 EVENTS = ["view_item", "add_to_cart", "begin_checkout", "purchase"]
 ROW_LIMIT = 10000
 
@@ -206,15 +208,19 @@ def commerce_report(provider, pid, view="categories", category="", days=30, star
             return {}, [], [f"Item engagement compatibility could not be checked. {error.detail['message']}"]
 
     event_filter = {"filter": {"fieldName": "eventName", "inListFilter": {"values": EVENTS}}}
-    with ThreadPoolExecutor(max_workers=3) as pool:
+    with ThreadPoolExecutor(max_workers=6) as pool:
         item_future = pool.submit(provider.report, pid, item_body)
         summary_future = pool.submit(optional_report, report_body(ranges, [], ITEM_METRICS, filt), "Item totals")
         quality_future = pool.submit(optional_report, report_body(ranges, [], QUALITY_METRICS), "Property engagement")
+        overview_future = pool.submit(optional_report, report_body(ranges, [], COMMERCE_OVERVIEW_METRICS), "Transaction overview")
+        trend_future = pool.submit(optional_report, report_body([ranges[0]], ["date"], TRANSACTION_TREND_METRICS), "Transaction trend")
         events_future = pool.submit(optional_report, report_body(ranges, ["eventName"], ["eventCount"], event_filter), "Event coverage")
         item_quality_future = pool.submit(item_quality)
         items = item_future.result()
         summary, notices = summary_future.result(); warnings.extend(notices)
         quality, notices = quality_future.result(); warnings.extend(notices)
+        overview, notices = overview_future.result(); warnings.extend(notices)
+        trend_report, notices = trend_future.result(); warnings.extend(notices)
         events, notices = events_future.result(); warnings.extend(notices)
         row_quality, compatible, notices = item_quality_future.result(); warnings.extend(notices)
 
@@ -255,6 +261,26 @@ def commerce_report(provider, pid, view="categories", category="", days=30, star
         if not values.get("sessions"):
             for metric in ("bounceRate", "engagementRate", "averageSessionDuration"):
                 values[metric] = None
+    commerce_overview = aggregate(overview)
+    for values in commerce_overview.values():
+        sessions = values.get("sessions")
+        transactions = values.get("transactions")
+        values["transactionConversionRate"] = transactions / sessions if sessions and transactions is not None else None
+    transaction_trend = []
+    for dims, values in parsed_rows(trend_report):
+        raw_date = dims.get("date", "")
+        if not re.fullmatch(r"\d{8}", raw_date):
+            continue
+        sessions = values.get("sessions")
+        transactions = values.get("transactions")
+        transaction_trend.append({
+            "date": f"{raw_date[:4]}-{raw_date[4:6]}-{raw_date[6:]}",
+            "sessions": sessions,
+            "transactions": transactions,
+            "purchaseRevenue": values.get("purchaseRevenue"),
+            "transactionConversionRate": transactions / sessions if sessions and transactions is not None else None,
+        })
+    transaction_trend.sort(key=lambda point: point["date"])
     event_counts = {"current": {}, "previous": {}}
     if events:
         event_counts = {period: {e: 0 for e in EVENTS} for period in ("current", "previous")}
@@ -272,6 +298,6 @@ def commerce_report(provider, pid, view="categories", category="", days=30, star
         warnings.append("The engagement report reached its row limit. Some item-level quality values are unavailable.")
     if any(r["category"] in ("(not set)", "(unset)") for r in rows):
         warnings.append("Some items have no category. Populate item_category in the items array of your ecommerce events.")
-    for report, label in [(items, "Item report"), (summary, "Item totals"), (quality, "Property engagement"), (row_quality, "Item engagement"), (events, "Events")]:
+    for report, label in [(items, "Item report"), (summary, "Item totals"), (quality, "Property engagement"), (overview, "Transaction overview"), (trend_report, "Transaction trend"), (row_quality, "Item engagement"), (events, "Events")]:
         warnings.extend(metadata_warnings(report, label))
-    return {"source": "ga4", "view": view, "property": prop, "rows": rows, "summary": totals, "property_quality": property_quality, "quality_metrics": compatible, "events": event_counts, "warnings": warnings, "list_complete": complete, "start_date": ranges[0]["startDate"], "end_date": ranges[0]["endDate"], "previous_start": ranges[1]["startDate"], "previous_end": ranges[1]["endDate"], "fetched_at": datetime.now(timezone.utc).isoformat()}
+    return {"source": "ga4", "view": view, "property": prop, "rows": rows, "summary": totals, "property_quality": property_quality, "commerce_overview": commerce_overview, "transaction_trend": transaction_trend, "quality_metrics": compatible, "events": event_counts, "warnings": warnings, "list_complete": complete, "start_date": ranges[0]["startDate"], "end_date": ranges[0]["endDate"], "previous_start": ranges[1]["startDate"], "previous_end": ranges[1]["endDate"], "fetched_at": datetime.now(timezone.utc).isoformat()}

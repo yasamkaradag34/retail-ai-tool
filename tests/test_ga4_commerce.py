@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from fastapi import HTTPException
-from functions.ga4_commerce import (GoogleAnalytics, ITEM_METRICS, QUALITY_METRICS, ROW_LIMIT,
+from functions.ga4_commerce import (COMMERCE_OVERVIEW_METRICS, GoogleAnalytics, ITEM_METRICS, QUALITY_METRICS, ROW_LIMIT,
                                     commerce_report, date_ranges, parsed_rows)
 
 
@@ -35,9 +35,16 @@ class FixtureAnalytics:
         metrics = [m["name"] for m in body["metrics"]]
         if self.empty:
             return report(dims + ["dateRange"], metrics, [])
+        if dims == ["date"]:
+            return report(dims, metrics, [
+                (["20260801"], [40, 2, 120]),
+                (["20260802"], [50, 4, 260]),
+            ])
         if dims == ["eventName"]:
             return report(dims+["dateRange"],metrics,[(["view_item","current"],[120]),(["purchase","current"],[3])])
-        if metrics[0] == "sessions":
+        if metrics == COMMERCE_OVERVIEW_METRICS:
+            values = [200, 12, 900, .08, 16, 150]
+        elif metrics[0] == "sessions":
             if self.quality_failure:
                 raise HTTPException(422,{"code":"report_incompatible","message":"Unavailable."})
             values = [20,15,12,.4,.6,165]
@@ -87,11 +94,18 @@ class CommerceTests(unittest.TestCase):
         self.assertEqual(row["current"]["cartToViewRate"],.22)  # not 30/100
         self.assertEqual(row["current"]["averageSessionDuration"],165)
         self.assertEqual(data["property_quality"]["current"]["sessions"],20)
+        self.assertEqual(data["commerce_overview"]["current"]["transactions"],12)
+        self.assertEqual(data["commerce_overview"]["current"]["transactionConversionRate"],.06)
+        self.assertEqual(data["transaction_trend"][0]["date"],"2026-08-01")
+        self.assertEqual(data["transaction_trend"][0]["transactionConversionRate"],.05)
         self.assertEqual(data["source"],"ga4")
         for call in self.provider.calls:
             if isinstance(call,dict):
                 self.assertEqual(call["dateRanges"][0]["startDate"],"2026-08-01")
-                self.assertEqual(call["dateRanges"][1]["endDate"],"2026-07-31")
+                if call["dimensions"] == [{"name":"date"}]:
+                    self.assertEqual(len(call["dateRanges"]),1)
+                else:
+                    self.assertEqual(call["dateRanges"][1]["endDate"],"2026-07-31")
 
     def test_product_filter_is_exact_and_never_applied_to_property_quality(self):
         data=self.get_report(view="products",category="shoes")

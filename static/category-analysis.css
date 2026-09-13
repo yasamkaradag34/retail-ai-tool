@@ -41,3 +41,29 @@
   .ca-date-actions>label{min-width:120px}
   .ca-date-actions .ca-custom-dates{width:100%;order:3}
 }
+
+/* GA4 commerce visualisations */
+.ca-visual-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,.8fr);gap:16px;margin-top:18px}
+.ca-visual-grid .ca-card{padding:19px 20px}
+.ca-visual-grid .ca-card-heading{align-items:flex-start;margin-bottom:14px}
+.ca-visual-grid .ca-card-heading h3{font-size:1.02rem;margin:5px 0 3px}
+.ca-visual-grid .ca-card-heading p{font-size:.76rem;line-height:1.5;color:var(--ca-muted)}
+.ca-transaction-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid #e4eaf2;border-radius:11px;overflow:hidden;margin-bottom:14px}
+.ca-transaction-summary>div{padding:10px 12px;border-right:1px solid #e9edf3;min-width:0}
+.ca-transaction-summary>div:last-child{border-right:0}
+.ca-transaction-summary span{display:block;color:#6a788c;font-size:.68rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ca-transaction-summary strong{display:block;margin-top:4px;font-size:.95rem;color:#1c2b42;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ca-transaction-summary .ca-delta{font-size:.64rem;margin-top:3px;white-space:nowrap}
+.ca-combo-chart{height:250px;min-width:0}
+.ca-combo-chart svg{display:block;width:100%;height:100%;overflow:visible}
+.ca-grid line{stroke:#e8edf4;stroke-width:1;vector-effect:non-scaling-stroke}.ca-grid text,.ca-axis-right,.ca-axis-date{fill:#7b889b;font-size:10px;font-family:inherit}.ca-bars-svg rect{fill:#bfd4f3;transition:fill .18s}.ca-bars-svg rect:hover{fill:#82aee8}.ca-rate-line{fill:none;stroke:var(--ca-orange);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}.ca-rate-dots circle{fill:#fff;stroke:var(--ca-orange);stroke-width:2;vector-effect:non-scaling-stroke}
+.ca-chart-empty{height:100%;display:grid;place-items:center;color:var(--ca-muted);font-size:.82rem;background:#fafbfd;border:1px dashed #d8e0eb;border-radius:11px}
+.ca-chart-legend{display:flex;justify-content:center;gap:20px;color:#607088;font-size:.7rem;margin-top:5px}.ca-chart-legend span{display:flex;align-items:center;gap:6px}.ca-chart-legend i{display:inline-block}.ca-legend-bar{width:10px;height:10px;border-radius:3px;background:#bfd4f3}.ca-legend-line{width:16px;height:3px;border-radius:3px;background:var(--ca-orange)}
+.ca-donut-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.ca-donut-grid article{background:#fafbfd;border:1px solid #e6ebf2;border-radius:12px;padding:14px 10px;text-align:center}.ca-donut-grid article>strong{display:block;font-size:.78rem;margin-top:10px}.ca-donut-grid article>p{color:var(--ca-muted);font-size:.66rem;line-height:1.45;margin-top:4px}
+.ca-rate-donut{--ca-rate:0;position:relative;width:112px;height:112px;margin:auto;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--ca-orange) calc(var(--ca-rate)*1%),#e9eef5 0)}.ca-rate-donut:before{content:"";position:absolute;inset:12px;border-radius:50%;background:#fff}.ca-rate-donut span{position:relative;z-index:1;font-size:1.28rem;font-weight:800;color:#17243b}.ca-rate-donut.unavailable{background:#e9eef5}.ca-cart-donut{background:conic-gradient(#3b82f6 calc(var(--ca-rate)*1%),#e9eef5 0)}
+.ca-pdp-signals{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#e7ecf3;border:1px solid #e7ecf3;border-radius:10px;overflow:hidden;margin-top:12px}.ca-pdp-signals>div{background:#fff;padding:9px 8px;text-align:center}.ca-pdp-signals span{display:block;color:#718096;font-size:.62rem}.ca-pdp-signals strong{display:block;color:#263750;font-size:.78rem;margin-top:3px}
+.ca-revenue-mix{display:grid;grid-template-columns:170px minmax(0,1fr);align-items:center;gap:24px}.ca-revenue-donut{width:166px;height:166px;border-radius:50%;background:var(--ca-mix);display:grid;place-items:center;position:relative}.ca-revenue-donut:before{content:"";position:absolute;inset:26px;border-radius:50%;background:#fff}.ca-revenue-donut>div{position:relative;z-index:1;text-align:center;max-width:108px}.ca-revenue-donut strong{display:block;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ca-revenue-donut span{display:block;color:var(--ca-muted);font-size:.65rem;margin-top:3px}.ca-revenue-mix ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}.ca-revenue-mix li{display:grid;grid-template-columns:9px minmax(0,1fr) auto;gap:7px;align-items:center;font-size:.72rem}.ca-revenue-mix li i{width:8px;height:8px;border-radius:50%}.ca-revenue-mix li span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ca-revenue-mix li strong{font-size:.72rem}.ca-revenue-mix li small{grid-column:2/4;color:var(--ca-muted);font-size:.63rem;margin-top:-5px}
+
+@media(max-width:1120px){.ca-visual-grid{grid-template-columns:1fr}.ca-conversion-card{display:grid;grid-template-columns:minmax(230px,.7fr) 1fr;gap:16px}.ca-conversion-card .ca-card-heading{grid-column:1/-1}.ca-pdp-signals{align-self:center}}
+@media(max-width:760px){.ca-transaction-summary{grid-template-columns:1fr 1fr}.ca-transaction-summary>div:nth-child(2){border-right:0}.ca-transaction-summary>div:nth-child(-n+2){border-bottom:1px solid #e9edf3}.ca-combo-chart{height:220px}.ca-conversion-card{display:block}.ca-revenue-mix{grid-template-columns:140px minmax(0,1fr);gap:16px}.ca-revenue-donut{width:138px;height:138px}}
+@media(max-width:500px){.ca-visual-grid .ca-card{padding:16px}.ca-donut-grid{grid-template-columns:1fr 1fr}.ca-rate-donut{width:94px;height:94px}.ca-rate-donut:before{inset:10px}.ca-rate-donut span{font-size:1.05rem}.ca-pdp-signals{grid-template-columns:1fr}.ca-revenue-mix{grid-template-columns:1fr}.ca-revenue-donut{margin:auto}.ca-combo-chart{height:190px}.ca-chart-legend{gap:12px}}

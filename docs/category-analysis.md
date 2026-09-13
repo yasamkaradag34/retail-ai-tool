@@ -15,6 +15,9 @@ Existing administrator accounts remain supported. Customer access is checked aga
 
 - Item dimensions: `itemCategory`, or `itemId`, `itemName`, `itemCategory` for products. Category drilldown uses an exact, case-sensitive item-category filter.
 - Item metrics: `itemsViewed`, `itemsAddedToCart`, `itemsPurchased`, `itemRevenue`, `cartToViewRate`, `purchaseToViewRate`. Quantities are not transactions; rates come from GA4 rather than dividing item counts.
+- Commerce overview: `sessions`, `transactions`, `purchaseRevenue`, `purchaserRate`, `totalPurchasers`, and `activeUsers` for current and prior periods.
+- Daily combo chart: `date` with `sessions`, `transactions`, and `purchaseRevenue`. The displayed transaction-conversion line is the derived `transactions / sessions` ratio and is labelled as such in the UI.
+- PDP conversion donuts use GA4's user-based `purchaseToViewRate` and `cartToViewRate`. Category revenue distribution uses the returned `itemRevenue` rows and discloses partial-list limits.
 - Quality metrics: `sessions`, `activeUsers`, `engagedSessions`, `bounceRate`, `engagementRate`, `averageSessionDuration`. `checkCompatibility` selects supported metrics for each item breakdown. An unavailable quality report does not replace successful item data.
 - Whole-property bounce rate and session duration are requested separately and explicitly labelled. Category filtering does not silently change these cards. Session/user rows are non-additive.
 - Both periods are real GA4 queries. The comparison is the immediately preceding equal-length range; presets exclude today in the property's timezone. Rate differences are percentage points.

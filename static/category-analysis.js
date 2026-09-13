@@ -7,7 +7,8 @@
   const pageSize = 15;
   const metrics = {
     itemsViewed: ['Items viewed', 'number'], itemsAddedToCart: ['Added to cart', 'number'], itemsPurchased: ['Items purchased', 'number'], itemRevenue: ['Item revenue', 'money'], cartToViewRate: ['Cart-to-view', 'percent'], purchaseToViewRate: ['Purchase-to-view', 'percent'],
-    sessions: ['Sessions', 'number'], activeUsers: ['Active users', 'number'], engagedSessions: ['Engaged sessions', 'number'], bounceRate: ['Bounce rate', 'percent'], engagementRate: ['Engagement rate', 'percent'], averageSessionDuration: ['Avg. session duration', 'duration']
+    sessions: ['Sessions', 'number'], activeUsers: ['Active users', 'number'], engagedSessions: ['Engaged sessions', 'number'], bounceRate: ['Bounce rate', 'percent'], engagementRate: ['Engagement rate', 'percent'], averageSessionDuration: ['Avg. session duration', 'duration'],
+    transactions: ['Transactions', 'number'], purchaseRevenue: ['Purchase revenue', 'money'], purchaserRate: ['Purchaser rate', 'percent'], totalPurchasers: ['Purchasers', 'number'], transactionConversionRate: ['Transaction conversion', 'percent']
   };
   const performanceKeys = ['itemsViewed', 'itemsAddedToCart', 'itemsPurchased', 'itemRevenue', 'cartToViewRate', 'purchaseToViewRate'];
   const qualityKeys = ['sessions', 'activeUsers', 'engagedSessions', 'bounceRate', 'engagementRate', 'averageSessionDuration'];
@@ -159,15 +160,65 @@
     $('caSearch').placeholder = state.view === 'categories' ? 'Search categories…' : 'Search products or item IDs…';
     const missing = qualityKeys.filter(k => !r.quality_metrics.includes(k)).map(k => metrics[k][0]);
     $('caQualityNote').textContent = missing.length ? `Unavailable for this breakdown: ${missing.join(', ')}. Whole-property bounce rate and session duration remain visible in the cards above when available.` : 'Session and user metrics associated with each category or product, as reported by GA4. These rows overlap and are not additive.';
-    renderTable(); renderCharts(); renderMeasurement(); setTab(state.tab);
+    renderTable(); renderCommerceVisuals(); renderCharts(); renderMeasurement(); setTab(state.tab);
+  }
+  function compact(value) {
+    if (!numeric(value)) return '—';
+    return new Intl.NumberFormat('en', {notation:'compact', maximumFractionDigits:1}).format(value);
+  }
+  function chartDate(value) {
+    const date = new Date(value + 'T12:00:00');
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en', {month:'short', day:'numeric'});
+  }
+  function comboChart(points) {
+    const valid = (points || []).filter(point => numeric(point.transactions) && numeric(point.transactionConversionRate));
+    if (!valid.length) return '<div class="ca-chart-empty">Transaction trend is unavailable for this period.</div>';
+    const width=820, height=265, left=48, right=54, top=20, bottom=38, plotW=width-left-right, plotH=height-top-bottom;
+    const maxTransactions=Math.max(1,...valid.map(point => point.transactions));
+    const maxRate=Math.max(.01,...valid.map(point => point.transactionConversionRate)) * 1.15;
+    const step=plotW/valid.length, barWidth=Math.max(2,Math.min(18,step*.52));
+    const x=index => left+step*(index+.5);
+    const yTransactions=value => top+plotH-(value/maxTransactions)*plotH;
+    const yRate=value => top+plotH-(value/maxRate)*plotH;
+    const grids=[0,.25,.5,.75,1].map(fraction => `<line x1="${left}" y1="${top+plotH*(1-fraction)}" x2="${width-right}" y2="${top+plotH*(1-fraction)}"/><text x="${left-8}" y="${top+plotH*(1-fraction)+4}" text-anchor="end">${compact(maxTransactions*fraction)}</text>`).join('');
+    const bars=valid.map((point,index) => { const y=yTransactions(point.transactions), h=top+plotH-y; return `<rect x="${(x(index)-barWidth/2).toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${Math.max(1,h).toFixed(1)}" rx="3"><title>${chartDate(point.date)} · ${format(point.transactions,'number')} transactions</title></rect>`; }).join('');
+    const line=valid.map((point,index) => `${x(index).toFixed(1)},${yRate(point.transactionConversionRate).toFixed(1)}`).join(' ');
+    const dots=valid.length <= 35 ? valid.map((point,index) => `<circle cx="${x(index).toFixed(1)}" cy="${yRate(point.transactionConversionRate).toFixed(1)}" r="3.2"><title>${chartDate(point.date)} · ${format(point.transactionConversionRate,'percent')} conversion</title></circle>`).join('') : '';
+    const labelIndexes=[0,Math.floor((valid.length-1)/2),valid.length-1].filter((value,index,list)=>list.indexOf(value)===index);
+    const labels=labelIndexes.map(index => `<text class="ca-axis-date" x="${x(index).toFixed(1)}" y="${height-11}" text-anchor="middle">${chartDate(valid[index].date)}</text>`).join('');
+    return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true"><g class="ca-grid">${grids}</g><g class="ca-bars-svg">${bars}</g><polyline class="ca-rate-line" points="${line}"/><g class="ca-rate-dots">${dots}</g><text class="ca-axis-right" x="${width-5}" y="${top+4}" text-anchor="end">${format(maxRate,'percent')}</text><text class="ca-axis-right" x="${width-5}" y="${top+plotH+4}" text-anchor="end">0%</text>${labels}</svg>`;
+  }
+  function setRateDonut(id, labelId, value) {
+    const pct = numeric(value) ? Math.max(0,Math.min(100,value*100)) : 0;
+    $(id).style.setProperty('--ca-rate',pct.toFixed(2));
+    $(id).classList.toggle('unavailable',!numeric(value));
+    $(labelId).textContent = format(value,'percent');
+  }
+  function renderCommerceVisuals() {
+    const r=state.report, current=r.commerce_overview?.current || {}, previous=r.commerce_overview?.previous || {};
+    const tiles=[['transactions','Transactions'],['transactionConversionRate','Transaction conversion'],['purchaserRate','Purchaser rate'],['purchaseRevenue','Purchase revenue']];
+    $('caTransactionSummary').innerHTML=tiles.map(([key,label]) => `<div><span>${label}</span><strong>${format(current[key],metrics[key][1])}</strong>${change(current[key],previous[key],key)}</div>`).join('');
+    $('caTransactionChart').innerHTML=comboChart(r.transaction_trend || []);
+    setRateDonut('caPdpDonut','caPdpRate',r.summary?.current?.purchaseToViewRate);
+    setRateDonut('caCartDonut','caCartRate',r.summary?.current?.cartToViewRate);
+    const purchased=r.summary?.current?.itemsPurchased, viewed=r.summary?.current?.itemsViewed;
+    const revenuePerItem=numeric(r.summary?.current?.itemRevenue)&&purchased ? r.summary.current.itemRevenue/purchased : null;
+    $('caPdpSignals').innerHTML=`<div><span>Items viewed</span><strong>${format(viewed,'number')}</strong></div><div><span>Items purchased</span><strong>${format(purchased,'number')}</strong></div><div><span>Revenue / item sold</span><strong>${format(revenuePerItem,'money')}</strong></div>`;
   }
   function renderCharts() {
     const r = state.report, rows = [...r.rows].sort((a,b) => (b.current.itemRevenue || 0) - (a.current.itemRevenue || 0));
     const revenue = r.summary.current.itemRevenue;
-    $('caRevenueBars').innerHTML = rows.slice(0,6).map(row => {
-      const share = numeric(revenue) && revenue > 0 && numeric(row.current.itemRevenue) ? row.current.itemRevenue / revenue * 100 : null;
-      return `<div class="ca-bar"><div class="ca-bar-label"><span>${esc(row.name)}</span><strong>${format(row.current.itemRevenue,'money')} · ${share === null ? '—' : share.toFixed(1) + '%'}</strong></div><div class="ca-bar-track"><div class="ca-bar-fill" style="width:${Math.max(0, Math.min(100,share || 0))}%"></div></div></div>`;
-    }).join('') || '<p class="ca-note">Revenue will appear once GA4 returns ecommerce items.</p>';
+    const grouped=new Map();
+    for (const row of rows) { const name=state.view==='categories'?row.name:(row.category||'(not set)'); grouped.set(name,(grouped.get(name)||0)+(numeric(row.current.itemRevenue)?row.current.itemRevenue:0)); }
+    const mix=[...grouped].sort((a,b)=>b[1]-a[1]);
+    const top=mix.slice(0,5), remainder=mix.slice(5).reduce((sum,item)=>sum+item[1],0); if(remainder>0) top.push(['Other',remainder]);
+    const mixTotal=top.reduce((sum,item)=>sum+item[1],0), colors=['#ed6926','#3b82f6','#10b981','#8b5cf6','#f59e0b','#94a3b8'];
+    if (!numeric(revenue) || revenue<=0 || !top.length || mixTotal<=0) $('caRevenueBars').innerHTML='<p class="ca-note">Category revenue distribution will appear once GA4 returns item revenue.</p>';
+    else {
+      let cursor=0; const stops=top.map((item,index)=>{ const start=cursor; cursor+=item[1]/mixTotal*100; return `${colors[index]} ${start.toFixed(2)}% ${cursor.toFixed(2)}%`; }).join(',');
+      const legend=top.map((item,index)=>`<li><i style="background:${colors[index]}"></i><span>${esc(item[0])}</span><strong>${(item[1]/mixTotal*100).toFixed(1)}%</strong><small>${format(item[1],'money')}</small></li>`).join('');
+      $('caRevenueBars').innerHTML=`<div class="ca-revenue-donut" style="--ca-mix:conic-gradient(${stops})"><div><strong>${format(mixTotal,'money')}</strong><span>item revenue</span></div></div><ul>${legend}</ul>`;
+    }
     const insights = [];
     const rate = r.summary.current.purchaseToViewRate;
     const opportunities = r.rows.filter(row => row.current.itemsViewed >= 100 && numeric(row.current.purchaseToViewRate) && numeric(rate) && row.current.purchaseToViewRate < rate).sort((a,b) => b.current.itemsViewed - a.current.itemsViewed);
@@ -237,7 +288,9 @@
       summary[period].cartToViewRate = state.category && rows.length ? rows[0][period].cartToViewRate : period === 'current' ? .212 : .201;
       summary[period].purchaseToViewRate = state.category && rows.length ? rows[0][period].purchaseToViewRate : period === 'current' ? .054 : .049;
     }
-    return {source:'sample',property:{id:'sample',name:testMode ? pivotBrand : 'Sample retail store',currency:'USD',time_zone:'UTC'},start_date:iso(start),end_date:iso(end),previous_start:iso(new Date(start.getTime()-length*86400000)),previous_end:iso(new Date(start.getTime()-86400000)),fetched_at:new Date().toISOString(),rows,summary,property_quality:{current:{bounceRate:.418,averageSessionDuration:167},previous:{bounceRate:.449,averageSessionDuration:151}},quality_metrics:qualityKeys,events:{current:{view_item:112790,add_to_cart:26220,begin_checkout:12280,purchase:6450}},warnings:[],list_complete:true};
+    const transaction_trend=Array.from({length},(_,index)=>{ const date=new Date(start.getTime()+index*86400000), sessions=Math.round(2280+Math.sin(index*.72)*370+(index%7===5?520:0)), transactions=Math.max(0,Math.round(sessions*(.046+Math.sin(index*.43)*.008))); return {date:iso(date),sessions,transactions,purchaseRevenue:transactions*112,transactionConversionRate:transactions/sessions}; });
+    const commerce_overview={current:{sessions:68400,transactions:3520,purchaseRevenue:394240,purchaserRate:.047,totalPurchasers:3215,activeUsers:59800,transactionConversionRate:3520/68400},previous:{sessions:64200,transactions:3010,purchaseRevenue:337120,purchaserRate:.043,totalPurchasers:2760,activeUsers:57100,transactionConversionRate:3010/64200}};
+    return {source:'sample',property:{id:'sample',name:testMode ? pivotBrand : 'Sample retail store',currency:'USD',time_zone:'UTC'},start_date:iso(start),end_date:iso(end),previous_start:iso(new Date(start.getTime()-length*86400000)),previous_end:iso(new Date(start.getTime()-86400000)),fetched_at:new Date().toISOString(),rows,summary,commerce_overview,transaction_trend,property_quality:{current:{bounceRate:.418,averageSessionDuration:167},previous:{bounceRate:.449,averageSessionDuration:151}},quality_metrics:qualityKeys,events:{current:{view_item:112790,add_to_cart:26220,begin_checkout:12280,purchase:6450}},warnings:[],list_complete:true};
   }
   function init() {
     if (state.initialized) return;
