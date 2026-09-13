@@ -65,7 +65,7 @@ Completed on 13 September 2026:
 - Declared the three non-sensitive identity scopes and the two sensitive product scopes.
 - Opened the verification request and replaced the generic scope explanation with the exact production behavior and least-privilege rationale.
 
-The Verification Center currently reports one missing field: a YouTube demo video that shows both sensitive scopes working with real data. The Analytics portion can use a populated GA4 property. The Merchant portion requires a real Merchant Center account available to the recording user; sample UI data is not sufficient for the verification recording.
+The Verification Center currently reports one missing field: a YouTube demo video that shows both sensitive scopes working with real data. The Analytics portion requires a populated GA4 property that the Analytics Data API can query. Google's public Analytics demo account cannot be used because Google blocks Data API access for its demo properties. The Merchant portion requires a real Merchant Center account available to the recording user; sample UI data is not sufficient for the verification recording.
 
 ## Video script
 

@@ -4518,7 +4518,7 @@ def terms_of_service():
     return simple_page(
         "Terms of Service",
         """
-        <p class="page-subhead"><strong>Effective date: 13 September 2026.</strong> These Terms govern access to and use of the DataProvido retail analytics service.</p>
+        <p class="page-subhead"><strong>Effective date: 13 September 2026.</strong> These Terms govern access to and use of DataProvido, an independent retail analytics product operated in Türkiye by Yaşam Karadağ.</p>
 
         <h2 style="font-size: 22px; margin: 28px 0 12px;">1. Service and eligibility</h2>
         <p style="margin-bottom: 14px;">DataProvido provides analytics workspaces for customer-controlled files and optional third-party data connections. You must have authority to upload, connect and analyse the business data used with the service. You are responsible for the accuracy and legality of the data and instructions you provide.</p>
@@ -4583,7 +4583,7 @@ def privacy():
 
           <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.1 Who We Are</h3>
           <p style="margin-bottom: 14px;">
-            DataProvido ("we", "us", "the Platform") is a retail analytics service operated from Türkiye. Contact: <a href="mailto:dataprovido@gmail.com" style="color: var(--orange); font-weight: 600;">dataprovido@gmail.com</a>.
+            DataProvido ("we", "us", "the Platform") is an independent retail analytics product operated in Türkiye by Yaşam Karadağ. Contact: <a href="mailto:dataprovido@gmail.com" style="color: var(--orange); font-weight: 600;">dataprovido@gmail.com</a>.
           </p>
           <p style="margin-bottom: 14px;">
             If you are located in the European Economic Area (EEA), your personal data is processed under the General Data Protection Regulation (GDPR). If you are located in Türkiye, your personal data is processed under Law No. 6698 on the Protection of Personal Data (KVKK).
