@@ -6,12 +6,14 @@ Last reviewed: 13 September 2026
 
 - Google Cloud project: `elevated-nature-406612` (`DataProvido`)
 - Audience: External
-- Current publishing status: Testing
+- Current publishing status: In production
+- Branding: verified and published
+- Data access verification: pending demo video and final submission
 - Homepage: `https://www.dataprovido.com/`
 - Privacy Policy: `https://www.dataprovido.com/privacy`
 - Terms of Service: `https://www.dataprovido.com/terms`
 - Google data disclosure: `https://www.dataprovido.com/google-data`
-- Redirect URI: `https://www.dataprovido.com/api/auth/google/callback`
+- Redirect URI configured in production: `https://dataprovido.com/api/auth/google/callback`
 - Authorized domain: `dataprovido.com`
 - Domain ownership: verified in Google Search Console
 
@@ -53,6 +55,18 @@ Google Ads access is intentionally excluded from this verification request. It r
 - Production OAuth callback and stable `COOKIE_SECRET` configured.
 - Reviewer can reach the product flow without an unexplained paywall or broken link.
 
+## Cloud Console status
+
+Completed on 13 September 2026:
+
+- Published the OAuth audience to production.
+- Verified and published the DataProvido brand.
+- Saved the live Terms of Service URL.
+- Declared the three non-sensitive identity scopes and the two sensitive product scopes.
+- Opened the verification request and replaced the generic scope explanation with the exact production behavior and least-privilege rationale.
+
+The Verification Center currently reports one missing field: a YouTube demo video that shows both sensitive scopes working with real data. The Analytics portion can use a populated GA4 property. The Merchant portion requires a real Merchant Center account available to the recording user; sample UI data is not sufficient for the verification recording.
+
 ## Video script
 
 Record the actual production application. Keep Google and DataProvido UI in English. Do not simulate API responses.
@@ -81,4 +95,3 @@ Upload the video to YouTube as Unlisted and confirm it is viewable without reque
 5. In Verification Center, select Prepare for verification.
 6. Paste the scope justifications, add the unlisted demo video and provide the three public documentation links.
 7. Submit once and monitor both developer contact inboxes. Do not modify branding or scopes while review is in progress unless Google asks for a change.
-
