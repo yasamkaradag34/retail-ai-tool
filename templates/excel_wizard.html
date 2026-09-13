@@ -1,0 +1,124 @@
+<section id="excelWizardWorkspace" class="excel-wizard-workspace" aria-label="Excel Wizard workspace">
+  <div class="xw-hero">
+    <div class="xw-hero-copy">
+      <span class="xw-eyebrow"><span class="xw-live-dot"></span> AI-POWERED SPREADSHEET WORKSPACE</span>
+      <h4>Excel bilmeden verinizle çalışın.</h4>
+      <p>Dosyanızı yükleyin; Türkçe veya İngilizce yazarak ya da konuşarak hesaplayın, filtreleyin, karşılaştırın ve açıklanmış bir Excel çıktısı alın.</p>
+      <div class="xw-trust-row">
+        <span>✓ Formül bilmek gerekmez</span>
+        <span>✓ Orijinal dosya korunur</span>
+        <span>✓ İşlem önizlemesi</span>
+      </div>
+    </div>
+    <div class="xw-flow" aria-label="Excel Wizard workflow">
+      <div class="xw-flow-step is-active"><b>1</b><span><strong>Dosya yükle</strong><small>Excel veya CSV</small></span></div>
+      <i></i>
+      <div class="xw-flow-step"><b>2</b><span><strong>Sor veya düzenle</strong><small>Ses ya da yazı</small></span></div>
+      <i></i>
+      <div class="xw-flow-step"><b>3</b><span><strong>Kontrol et ve indir</strong><small>Değişiklik özeti</small></span></div>
+    </div>
+  </div>
+
+  <div class="xw-upload-grid">
+    <button id="excelWizardDropzone" class="xw-dropzone" type="button" onclick="document.getElementById('excelFileInput').click()">
+      <span class="xw-upload-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M5 15v4a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"/></svg>
+      </span>
+      <span class="xw-drop-copy">
+        <strong id="xwDropTitle">Excel dosyanızı buraya bırakın</strong>
+        <small id="xwDropSubtitle">veya bilgisayarınızdan seçin · .xlsx, .xls, .csv</small>
+      </span>
+      <span class="xw-browse">Dosya seç</span>
+    </button>
+
+    <div class="xw-file-summary" id="xwFileSummary">
+      <div class="xw-summary-head">
+        <div><span class="xw-summary-icon">▦</span><span><small>AKTİF ÇALIŞMA KİTABI</small><strong id="xwSummaryFile">Henüz dosya yüklenmedi</strong></span></div>
+        <button type="button" onclick="openExcelPreview()" title="Tabloyu önizle">Önizle ↗</button>
+      </div>
+      <div class="xw-stat-grid">
+        <div><small>Satır</small><strong id="xwRows">—</strong></div>
+        <div><small>Sütun</small><strong id="xwColumns">—</strong></div>
+        <div><small>Eksik hücre</small><strong id="xwMissing">—</strong></div>
+        <div><small>Tekrar satır</small><strong id="xwDuplicates">—</strong></div>
+      </div>
+      <div class="xw-quality-track"><span id="xwQualityBar"></span></div>
+      <p id="xwQualityText">Dosya yüklendiğinde veri kalitesi burada kontrol edilir.</p>
+    </div>
+  </div>
+
+  <div class="xw-main-grid">
+    <div class="xw-assistant-card">
+      <div class="xw-card-heading">
+        <div>
+          <span class="xw-card-kicker">EXCEL COPILOT</span>
+          <h5>Ne yapmak istiyorsunuz?</h5>
+          <p>Komut vermek için teknik terim veya Excel formülü kullanmanız gerekmez.</p>
+        </div>
+        <div class="xw-mode-tabs" role="tablist" aria-label="Excel command mode">
+          <button id="xwAskMode" class="is-active" type="button" onclick="ExcelWizardUI.setMode('ask')">Veriye sor</button>
+          <button id="xwTransformMode" type="button" onclick="ExcelWizardUI.setMode('transform')">Excel’i düzenle</button>
+        </div>
+      </div>
+
+      <div class="xw-prompt-groups">
+        <div class="xw-prompt-group">
+          <div class="xw-prompt-label"><span class="xw-label-icon blue">∑</span><span><strong>Hızlı hesaplamalar</strong><small>Toplam, ortalama ve oranlar</small></span></div>
+          <div class="xw-prompt-chips">
+            <button type="button" data-xw-prompt="Toplam ciroyu ve ortalama sipariş değerini hesapla">Toplam ciro</button>
+            <button type="button" data-xw-prompt="Ortalama fiyatı hesapla ve medyan ile karşılaştır">Ortalama fiyat</button>
+            <button type="button" data-xw-prompt="Toplam satır sayısını ve benzersiz ürün sayısını göster">Ürün sayısı</button>
+          </div>
+        </div>
+        <div class="xw-prompt-group">
+          <div class="xw-prompt-label"><span class="xw-label-icon violet">◇</span><span><strong>Marka ve kategori</strong><small>Performans kırılımları</small></span></div>
+          <div class="xw-prompt-chips">
+            <button type="button" data-xw-prompt="Marka bazında toplam ciroyu karşılaştır ve en güçlü markayı açıkla">Markaları karşılaştır</button>
+            <button type="button" data-xw-prompt="Kategori bazında satış, stok ve ortalama fiyat özeti oluştur">Kategori özeti</button>
+            <button type="button" data-xw-prompt="En yüksek ciro üreten ilk 10 ürünü listele">İlk 10 ürün</button>
+          </div>
+        </div>
+        <div class="xw-prompt-group">
+          <div class="xw-prompt-label"><span class="xw-label-icon orange">✦</span><span><strong>Veriyi hazırla</strong><small>Temizleme ve düzenleme</small></span></div>
+          <div class="xw-prompt-chips">
+            <button type="button" data-xw-mode="transform" data-xw-prompt="Tekrar eden satırları kaldır ve kaç satır silindiğini açıkla">Tekrarları kaldır</button>
+            <button type="button" data-xw-mode="transform" data-xw-prompt="Boş hücreleri tespit et ve uygun değerlerle doldur">Boşlukları doldur</button>
+            <button type="button" data-xw-mode="transform" data-xw-prompt="Ciro sütununa göre büyükten küçüğe sırala">Sırala</button>
+          </div>
+        </div>
+        <div class="xw-prompt-group">
+          <div class="xw-prompt-label"><span class="xw-label-icon green">↗</span><span><strong>Yönetici içgörüsü</strong><small>LLM açıklaması ve öneri</small></span></div>
+          <div class="xw-prompt-chips">
+            <button type="button" data-xw-prompt="Bu dosyadaki en önemli 5 ticari bulguyu sade bir dille açıkla">5 önemli bulgu</button>
+            <button type="button" data-xw-prompt="Stok riski olan ürünleri ve tahmini ticari etkisini göster">Stok riski</button>
+            <button type="button" data-xw-prompt="Verideki sıra dışı değerleri bul ve neden kontrol edilmesi gerektiğini açıkla">Anormallikleri bul</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="xw-side-stack">
+      <div class="xw-side-card xw-llm-card">
+        <div class="xw-side-title"><span>✦</span><div><strong>LLM size nasıl yardım eder?</strong><small>Sonucu hesaplar ve anlaşılır hale getirir.</small></div></div>
+        <ul>
+          <li><span>01</span><p><b>Soruyu anlar</b>“En iyi marka hangisi?” gibi doğal dili hesaplama planına çevirir.</p></li>
+          <li><span>02</span><p><b>Hesabı açıklar</b>Kullanılan sütunları, filtreyi ve sonucu sade dille gösterir.</p></li>
+          <li><span>03</span><p><b>Sonraki soruyu önerir</b>Önemli sapmaları ve kontrol edilmesi gereken noktaları belirtir.</p></li>
+        </ul>
+      </div>
+
+      <div class="xw-side-card xw-offline-card">
+        <div class="xw-side-title"><span class="xw-status-ring">●</span><div><strong>Yerel ve çevrimdışı kullanım</strong><small id="xwNetworkLabel">Bağlantı durumu kontrol ediliyor…</small></div></div>
+        <div class="xw-capability"><span>Excel hesaplama ve filtreler</span><b class="ok">Çevrimdışı</b></div>
+        <div class="xw-capability"><span>Yerel AI yorumları</span><b>Ollama gerekir</b></div>
+        <div class="xw-capability"><span>Çevrimdışı ses</span><b>Whisper gerekir</b></div>
+        <p>Yerel modda dosya cihazınızda işlenir. Bulut AI kullanılırsa yalnızca analiz için gereken özet veri gönderilir.</p>
+      </div>
+    </aside>
+  </div>
+
+  <div class="xw-command-intro">
+    <div><span class="xw-command-number">2</span><span><strong id="xwCommandHeading">Veriniz hakkında sorunuzu yazın</strong><small id="xwCommandHelp">Cevap verirken dosyayı değiştirmeyeceğiz.</small></span></div>
+    <span class="xw-safe-badge">🔒 Orijinal dosya korunur</span>
+  </div>
+</section>

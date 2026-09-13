@@ -1027,6 +1027,8 @@
   <script src="/static/stock-price-analysis.js?v=1" defer></script>
   <link rel="stylesheet" href="/static/funnel-analysis.css?v=1">
   <script src="/static/funnel-analysis.js?v=1" defer></script>
+  <link rel="stylesheet" href="/static/excel-wizard.css?v=1">
+  <script src="/static/excel-wizard.js?v=1" defer></script>
 </head>
 <body>
   <!-- Google Tag Manager (noscript) -->
@@ -2695,6 +2697,8 @@ print(res.json())
           </div>
           <!-- END HEATMAP & UX ANALYTICS WORKSPACE -->
 
+          {% include "excel_wizard.html" %}
+
           <div class="input-area" style="margin-top: 0;">
             <!-- IMPECCABLE UNIFIED AI COMMAND BAR CARD -->
             <div id="dropZoneContainer" class="impeccable-cmd-card">
@@ -2734,7 +2738,7 @@ print(res.json())
                     <span id="voiceSubtext" style="display: none;"></span>
                   </button>
                   <button class="primary-btn cmd-run-btn" onclick="runModule()" id="runBtnLabel" disabled>
-                    <span>Run Analysis</span>
+                    <span id="runBtnText">Run Analysis</span>
                     <kbd class="cmd-shortcut-hint">⌘ ↵</kbd>
                   </button>
                 </div>
@@ -3582,6 +3586,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       const btnEN = document.getElementById("langBtnEN");
       const voiceText = document.getElementById("voiceText");
       const runBtnLabel = document.getElementById("runBtnLabel");
+      const runBtnText = document.getElementById("runBtnText");
       const previewBtnLabel = document.getElementById("previewBtnLabel");
       const downloadBtnLabel = document.getElementById("downloadBtnLabel");
       const clearBtnLabel = document.getElementById("clearBtnLabel");
@@ -3626,7 +3631,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         }
 
         if (!isListening) voiceText.textContent = "Voice Command";
-        runBtnLabel.textContent = "Run Analysis";
+        if (runBtnText) runBtnText.textContent = (window.ExcelWizardUI && window.ExcelWizardUI.getMode() === 'transform') ? "Apply Changes" : "Answer Question";
         previewBtnLabel.textContent = "Excel Preview";
         downloadBtnLabel.textContent = "Export Excel";
         clearBtnLabel.textContent = "Clear";
@@ -3685,7 +3690,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         }
 
         if (!isListening) voiceText.textContent = "Voice Command";
-        runBtnLabel.textContent = "Run Analysis";
+        if (runBtnText) runBtnText.textContent = (window.ExcelWizardUI && window.ExcelWizardUI.getMode() === 'transform') ? "İşlemi Uygula" : "Soruyu Yanıtla";
         previewBtnLabel.textContent = "Excel Preview";
         downloadBtnLabel.textContent = "Export Excel";
         clearBtnLabel.textContent = "Temizle";
@@ -3768,6 +3773,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       document.body.classList.toggle("category-analysis-active", key === "category_insights");
       document.body.classList.toggle("stock-price-active", key === "stock_price_comp");
       document.body.classList.toggle("funnel-analysis-active", key === "funnel_analysis");
+      document.body.classList.toggle("excel-wizard-active", key === "business_calculator");
       const catWorkspace = document.getElementById("categoryWorkspaceContainer");
       if (catWorkspace) catWorkspace.style.display = key === "category_insights" ? "flex" : "none";
       if (key === "category_insights" && window.CategoryAnalysis) window.CategoryAnalysis.init();
@@ -3839,6 +3845,10 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         } else {
           inputArea.style.display = "none";
         }
+      }
+
+      if (key === "business_calculator" && window.ExcelWizardUI) {
+        window.ExcelWizardUI.setMode(window.ExcelWizardUI.getMode());
       }
 
       renderHowToUse();
@@ -5832,7 +5842,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       try {
         const res = await fetch("/active-excel-state");
         const data = await res.json();
-        if (data.status === "success") {
+          if (data.status === "success") {
           originalSpreadsheetData = data.original_rows || [];
           processedSpreadsheetData = data.processed_rows || [];
           currentSpreadsheetData = (data.is_modified && processedSpreadsheetData.length > 0)
@@ -5854,9 +5864,11 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           if (modBadge) {
             modBadge.style.display = data.is_modified ? "inline-flex" : "none";
           }
-          if (data.is_modified) {
-            activePreviewTab = "processed";
-          }
+            if (data.is_modified) {
+              activePreviewTab = "processed";
+            }
+
+            if (window.ExcelWizardUI) window.ExcelWizardUI.renderFileState(data);
 
           updateRunButtonState();
         }
@@ -5923,6 +5935,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
               : `'${file.name}' üzerinde yapmak istediğiniz işlemi yazın veya sesle söyleyin...`;
             updateRunButtonState();
           }
+          if (window.ExcelWizardUI) window.ExcelWizardUI.renderFileState(data);
         } else {
           alert("Excel Yükleme Hatası: " + (data.error || "Unknown error"));
         }
@@ -5972,8 +5985,15 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       if (modal) modal.style.display = "none";
     }
 
-    function resetDataset() {
+    async function resetDataset() {
+      try {
+        await fetch('/reset-dataset', { method: 'POST' });
+      } catch (error) {
+        console.warn('Dataset reset sync notice:', error);
+      }
       currentSpreadsheetData = [];
+      originalSpreadsheetData = [];
+      processedSpreadsheetData = [];
       const activeFileName = document.getElementById("activeFileName");
       const activeFileMeta = document.getElementById("activeFileMeta");
       const activeFileBadge = document.getElementById("activeFileBadge");
@@ -5990,6 +6010,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           ? "Select a module on the left and start the analysis using voice or text."
           : "Soldaki modüllerden birini seç ve sesle veya yazıyla sorunu sorup analizi başlat.";
       }
+      if (window.ExcelWizardUI) window.ExcelWizardUI.renderFileState({ total_rows: 0, total_columns: 0, filename: '', profile: {} });
       updateRunButtonState();
     }
 
@@ -6742,6 +6763,19 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
 
     /* ── Live Interactive Excel Spreadsheet Data Engine ── */
 
+    function escapeExcelHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatExcelSummary(value) {
+      return escapeExcelHtml(value).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    }
+
     async function runModule() {
       if (currentModule === "app_benchmark") return;
       const questionInput = document.getElementById("questionInput");
@@ -6764,50 +6798,60 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         const response = await fetch("/process-excel", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ command: question })
+          body: JSON.stringify({
+            command: question,
+            mode: window.ExcelWizardUI ? window.ExcelWizardUI.getMode() : 'transform'
+          })
         });
         const data = await response.json();
 
         resultBox.classList.remove("loading");
         
         if (data.status === "success") {
-          originalSpreadsheetData = data.original_rows || originalSpreadsheetData;
-          processedSpreadsheetData = data.processed_rows || data.rows;
-          currentSpreadsheetData = processedSpreadsheetData;
-          activePreviewTab = "processed";
-
-          const modBadge = document.getElementById("previewModifiedBadge");
-          if (modBadge) modBadge.style.display = "inline-flex";
-
           const actionNote = data.action_note;
+          const isMutation = data.is_mutation !== false;
           const filteredRows = data.rows;
           const filteredAvgPrice = (data.updated_avg_price || 0).toLocaleString();
           const filteredStockValue = (data.updated_stock_value || 0).toLocaleString();
           const q = question.toLowerCase();
+          const safeQuestion = escapeExcelHtml(question);
+          const summaryHtml = formatExcelSummary(data.executive_summary || actionNote);
+
+          originalSpreadsheetData = data.original_rows || originalSpreadsheetData;
+          if (isMutation) {
+            processedSpreadsheetData = data.processed_rows || data.rows;
+            currentSpreadsheetData = processedSpreadsheetData;
+            activePreviewTab = "processed";
+          }
+
+          const modBadge = document.getElementById("previewModifiedBadge");
+          if (modBadge) modBadge.style.display = isMutation ? "inline-flex" : "none";
 
           // Update top command card status bar with SKU count and operation feedback
           const fileMeta = document.getElementById("activeFileMeta");
           if (fileMeta) {
-            fileMeta.innerHTML = `<span style="color: #059669; font-weight: 700;"> (${data.total_rows} SKUs processed, ${data.total_columns || 58} cols) ✓ ${actionNote.replace('⚡ ', '')}</span>`;
+            fileMeta.innerHTML = `<span style="color: #059669; font-weight: 700;"> (${data.total_rows} rows, ${data.total_columns || 0} cols) ✓ ${isMutation ? 'Workbook updated' : 'Question answered'}</span>`;
           }
+
+          if (isMutation && window.ExcelWizardUI) window.ExcelWizardUI.renderFileState(data);
 
           let outputHtml = `
             <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9;">
                 <div>
-                  <span style="font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Direct Excel Operation Output</span>
-                  <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">Executed Command: "${question}"</h4>
+                  <span style="font-size: 11px; font-weight: 700; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">${isMutation ? 'Excel Operation Output' : 'Answer From Your Data'}</span>
+                  <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 2px;">${isMutation ? 'Executed command' : 'Your question'}: "${safeQuestion}"</h4>
                 </div>
                 <div style="display: flex; gap: 8px;">
-                  <button onclick="openExcelPreview()" type="button" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 7px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">Inspect Modified Table</button>
-                  <button onclick="downloadExcel()" type="button" style="background: #2563eb; color: #ffffff; border: none; padding: 7px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">Download Updated Excel</button>
+                  <button onclick="openExcelPreview()" type="button" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 7px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">${isMutation ? 'Inspect changes' : 'Open workbook'}</button>
+                  ${isMutation ? '<button onclick="downloadExcel()" type="button" style="background: #2563eb; color: #ffffff; border: none; padding: 7px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer;">Download updated Excel</button>' : ''}
                 </div>
               </div>
 
               <!-- AUDIT LOG BANNER -->
               <div style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;">
-                <span>${actionNote}</span>
-                <span style="background: #10b981; color: #ffffff; font-size: 10.5px; padding: 2px 8px; border-radius: 999px;">EXCEL UPDATED</span>
+                  <span>${summaryHtml}</span>
+                  <span style="background: ${isMutation ? '#10b981' : '#2563eb'}; color: #ffffff; font-size: 10.5px; padding: 2px 8px; border-radius: 999px;">${isMutation ? 'EXCEL UPDATED' : 'READ-ONLY ANSWER'}</span>
               </div>
 
               <!-- Filtered Table -->
@@ -6816,7 +6860,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
                   <thead>
                     <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 2;">
                       <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">#</th>
-                      ${Object.keys(filteredRows[0] || {}).slice(0, 12).map(col => `<th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">${col}</th>`).join('')}
+                      ${Object.keys(filteredRows[0] || {}).slice(0, 12).map(col => `<th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">${escapeExcelHtml(col)}</th>`).join('')}
                     </tr>
                   </thead>
                   <tbody>
@@ -6828,9 +6872,9 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
                           let valStr = (val === null || val === undefined) ? "-" : val.toString();
                           let isFlag = col.toLowerCase().includes("flag") || col.toLowerCase().includes("group");
                           if (isFlag) {
-                            return `<td style="padding: 9px 14px;"><span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${valStr}</span></td>`;
+                            return `<td style="padding: 9px 14px;"><span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${escapeExcelHtml(valStr)}</span></td>`;
                           }
-                          return `<td style="padding: 9px 14px; color: #1e293b;">${valStr}</td>`;
+                          return `<td style="padding: 9px 14px; color: #1e293b;">${escapeExcelHtml(valStr)}</td>`;
                         }).join('')}
                       </tr>
                     `).join('')}

@@ -2075,6 +2075,32 @@ def df_to_preview_rows(df: Optional[pd.DataFrame], max_rows: int = 200) -> List[
     return records
 
 
+def build_excel_profile(df: Optional[pd.DataFrame]) -> dict:
+    """Small, privacy-safe workbook profile used by the Excel Wizard UI."""
+    if df is None or df.empty:
+        return {
+            "missing_cells": 0,
+            "duplicate_rows": 0,
+            "numeric_columns": 0,
+            "text_columns": 0,
+            "date_columns": 0,
+        }
+
+    numeric_columns = sum(pd.api.types.is_numeric_dtype(df[col]) for col in df.columns)
+    date_columns = sum(
+        pd.api.types.is_datetime64_any_dtype(df[col])
+        or any(token in str(col).lower() for token in ["date", "tarih", "time", "zaman"])
+        for col in df.columns
+    )
+    return {
+        "missing_cells": int(df.isna().sum().sum()),
+        "duplicate_rows": int(df.duplicated().sum()),
+        "numeric_columns": int(numeric_columns),
+        "text_columns": int(max(0, len(df.columns) - numeric_columns - date_columns)),
+        "date_columns": int(date_columns),
+    }
+
+
 @app.get("/active-excel-state")
 async def get_active_excel_state():
     global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME, IS_DATASET_CLEARED
@@ -2091,7 +2117,8 @@ async def get_active_excel_state():
             "original_rows": [],
             "processed_rows": [],
             "original_column_names": [],
-            "processed_column_names": []
+            "processed_column_names": [],
+            "profile": build_excel_profile(None)
         }
 
     orig_rows = df_to_preview_rows(CURRENT_ORIGINAL_EXCEL_DF, max_rows=200)
@@ -2113,7 +2140,8 @@ async def get_active_excel_state():
         "original_rows": orig_rows,
         "processed_rows": proc_rows,
         "original_column_names": CURRENT_ORIGINAL_EXCEL_DF.columns.tolist() if CURRENT_ORIGINAL_EXCEL_DF is not None else [],
-        "processed_column_names": CURRENT_EXCEL_DF.columns.tolist() if CURRENT_EXCEL_DF is not None else []
+        "processed_column_names": CURRENT_EXCEL_DF.columns.tolist() if CURRENT_EXCEL_DF is not None else [],
+        "profile": build_excel_profile(CURRENT_EXCEL_DF)
     }
 
 
@@ -2128,7 +2156,8 @@ async def reset_dataset_endpoint():
         "total_columns": 0,
         "original_rows": [],
         "processed_rows": [],
-        "rows": []
+        "rows": [],
+        "profile": build_excel_profile(None)
     }
 
 
@@ -2178,7 +2207,8 @@ async def upload_excel(file: UploadFile = File(...)):
             "column_names": df.columns.tolist(),
             "original_rows": orig_rows,
             "processed_rows": proc_rows,
-            "rows": proc_rows
+            "rows": proc_rows,
+            "profile": build_excel_profile(df)
         }
     except Exception as e:
         from fastapi.responses import JSONResponse
@@ -2187,6 +2217,7 @@ async def upload_excel(file: UploadFile = File(...)):
 
 class ExcelCommandRequest(BaseModel):
     command: str
+    mode: str = "transform"
 
 @app.post("/process-excel")
 async def process_excel(req: ExcelCommandRequest):
@@ -2196,6 +2227,7 @@ async def process_excel(req: ExcelCommandRequest):
 
     command = req.command.strip()
     q = command.lower()
+    interaction_mode = "ask" if req.mode == "ask" else "transform"
 
     # 0. RESET DATASET COMMAND CHECK
     if any(k in q for k in ["reset", "sıfırla", "baştan başla"]):
@@ -2212,7 +2244,9 @@ async def process_excel(req: ExcelCommandRequest):
             "total_pdp_views": 0,
             "original_rows": [],
             "processed_rows": [],
-            "rows": []
+            "rows": [],
+            "profile": build_excel_profile(None),
+            "is_mutation": True
         }
 
     if CURRENT_ORIGINAL_EXCEL_DF is None:
@@ -2254,6 +2288,16 @@ async def process_excel(req: ExcelCommandRequest):
     cat2_col = get_col(["cat2", "sub_category"])
     name_col = get_col(["product", "name", "title", "product_title", "ürün"])
 
+    # Match brand/category values from any uploaded workbook instead of relying
+    # only on a fixed retail demo vocabulary.
+    def mentioned_value(column: Optional[str]) -> Optional[str]:
+        if not column or column not in df.columns:
+            return None
+        normalized_question = q.casefold()
+        values = df[column].dropna().astype(str).str.strip().unique().tolist()
+        values.sort(key=len, reverse=True)
+        return next((value for value in values[:500] if len(value) > 1 and value.casefold() in normalized_question), None)
+
     # 1. MULTI-CONDITION DYNAMIC FILTERING (Combining Brand + Availability/Risk + Category)
     applied_filters = []
     target_term = ""
@@ -2261,11 +2305,12 @@ async def process_excel(req: ExcelCommandRequest):
     # Filter A: Brand Match
     brands_list = ["apple", "samsung", "sony", "dyson", "philips", "logitech", "dji", "lg", "jbl", "xiaomi", "bosch", "stanley", "onvo", "ecovacs", "roborock", "braun", "daikin", "honor"]
     matched_brand = next((b for b in brands_list if b in q), None)
+    matched_brand = mentioned_value(brand_col) or matched_brand
     if matched_brand and brand_col and brand_col in df.columns:
-        df_b = df[df[brand_col].astype(str).str.lower() == matched_brand]
+        df_b = df[df[brand_col].astype(str).str.lower() == str(matched_brand).lower()]
         if not df_b.empty:
             df = df_b
-            b_name = matched_brand.upper()
+            b_name = str(matched_brand)
             applied_filters.append(f"'{brand_col}' = '{b_name}'")
 
     # Filter B: Availability / Risk Match
@@ -2280,7 +2325,7 @@ async def process_excel(req: ExcelCommandRequest):
 
     for label, aliases in status_terms:
         if any(alias in q for alias in aliases):
-            target_col = get_col(["availability_status", "status"]) if ("critical" in label or "stock" in label or "in_" in label) else (risk_col or status_col)
+            target_col = get_col(["availability_status", "status"]) if ("critical" in label or "stock" in label or "in_" in label) else risk_col
             if target_col and target_col in df.columns:
                 m_st = df[target_col].astype(str).str.lower().str.contains(label.replace(" ", "_"), na=False) | df[target_col].astype(str).str.lower().str.contains(label, na=False)
                 df_st = df[m_st]
@@ -2308,6 +2353,15 @@ async def process_excel(req: ExcelCommandRequest):
                     applied_filters.append(f"'category' = '{cat_label}'")
             break
 
+    mentioned_category = mentioned_value(cat2_col) or mentioned_value(cat1_col)
+    if mentioned_category and not any("category" in item or "kategori" in item for item in applied_filters):
+        c_col = cat2_col if mentioned_value(cat2_col) else cat1_col
+        if c_col:
+            category_mask = df[c_col].astype(str).str.casefold() == str(mentioned_category).casefold()
+            if category_mask.any():
+                df = df[category_mask]
+                applied_filters.append(f"'{c_col}' = '{mentioned_category}'")
+
     filter_desc = " AND ".join(applied_filters) if applied_filters else ""
 
     # 2. DYNAMIC COLUMN CREATION & TAGGING
@@ -2315,6 +2369,46 @@ async def process_excel(req: ExcelCommandRequest):
         tag_val = target_term.replace(" ", "_").upper() if target_term else "PROCESSED"
         new_col_name = f"Flagged_{tag_val}_SKUs"
         df[new_col_name] = f"YES - {tag_val}"
+
+    # Beginner-friendly data preparation commands.
+    removed_duplicates = 0
+    if any(k in q for k in ["tekrar eden", "yinelenen", "duplicate", "duplicates", "mükerrer"]):
+        before = len(df)
+        df = df.drop_duplicates().copy()
+        removed_duplicates = before - len(df)
+
+    removed_blank_rows = 0
+    if any(k in q for k in ["boş satırları sil", "empty rows", "blank rows"]):
+        before = len(df)
+        df = df.dropna(how="all").copy()
+        removed_blank_rows = before - len(df)
+
+    filled_cells = 0
+    if any(k in q for k in ["boş hücreleri", "eksik değerleri", "fill blanks", "fill missing"]):
+        filled_cells = int(df.isna().sum().sum())
+        for column in df.columns:
+            if not df[column].isna().any():
+                continue
+            if pd.api.types.is_numeric_dtype(df[column]):
+                replacement = df[column].median()
+                replacement = 0 if pd.isna(replacement) else replacement
+            else:
+                replacement = "Bilinmiyor" if any(ch in q for ch in "çğıöşü") else "Unknown"
+            df[column] = df[column].fillna(replacement)
+
+    sort_direction = None
+    sorted_column = None
+    if any(k in q for k in ["büyükten küçüğe", "azalan", "descending", "highest first"]):
+        sort_direction = False
+    elif any(k in q for k in ["küçükten büyüğe", "artan", "ascending", "lowest first"]):
+        sort_direction = True
+    if sort_direction is not None:
+        sort_col = next((column for column in all_columns if str(column).casefold() in q.casefold()), None)
+        sort_col = sort_col or (rev_col if any(k in q for k in ["ciro", "revenue"]) else None)
+        sort_col = sort_col or (price_col if any(k in q for k in ["fiyat", "price"]) else None)
+        if sort_col and sort_col in df.columns:
+            df = df.sort_values(sort_col, ascending=sort_direction, na_position="last").copy()
+            sorted_column = sort_col
 
     # 3. METRIC CALCULATION ACROSS ALL METRICS
     metric_msg = ""
@@ -2360,8 +2454,57 @@ async def process_excel(req: ExcelCommandRequest):
     avg_price = float(df[price_col].dropna().mean()) if price_col and price_col in df.columns and not df[price_col].dropna().empty else 0.0
     tot_stock_val = float(df[rev_col].dropna().sum()) if rev_col and rev_col in df.columns and not df[rev_col].dropna().empty else 0.0
 
+    # Natural-language group breakdowns power questions such as "brand by
+    # revenue" without requiring the user to know pivot tables.
+    breakdown_rows = None
+    breakdown_summary = None
+    wants_group = any(k in q for k in ["bazında", "kırılım", "breakdown", "group by", "by brand", "by category"])
+    group_col = brand_col if any(k in q for k in ["marka", "brand"]) else (cat2_col or cat1_col if any(k in q for k in ["kategori", "category"]) else None)
+    metric_col = rev_col if any(k in q for k in ["ciro", "revenue", "satış", "sales"]) else (price_col if any(k in q for k in ["fiyat", "price"]) else (stock_col if any(k in q for k in ["stok", "stock"]) else None))
+    if wants_group and group_col and metric_col and group_col in df.columns and metric_col in df.columns:
+        aggregation = "mean" if any(k in q for k in ["ortalama", "average", "mean"]) else "sum"
+        grouped = df.groupby(group_col, dropna=False)[metric_col].agg(aggregation).sort_values(ascending=False).reset_index()
+        result_name = f"{aggregation}_{metric_col}"
+        grouped.columns = [group_col, result_name]
+        breakdown_rows = df_to_preview_rows(grouped, max_rows=200)
+        leader = grouped.iloc[0] if not grouped.empty else None
+        if leader is not None:
+            breakdown_summary = f"**{group_col}** kırılımında en yüksek sonuç **{leader[group_col]}** için **{float(leader[result_name]):,.2f}** olarak hesaplandı. Toplam {len(grouped)} grup karşılaştırıldı."
+
+    top_rows = None
+    top_summary = None
+    wants_top = any(k in q for k in ["ilk 5", "ilk 10", "top 5", "top 10", "en yüksek", "highest"])
+    if wants_top and not wants_group and metric_col and metric_col in df.columns:
+        limit = 5 if any(k in q for k in ["ilk 5", "top 5"]) else 10
+        ranked = df.sort_values(metric_col, ascending=False, na_position="last").head(limit)
+        top_rows = df_to_preview_rows(ranked, max_rows=limit)
+        top_summary = f"**{metric_col}** değerine göre en yüksek **{len(ranked)}** satır listelendi. İlk sıradaki değer **{float(ranked.iloc[0][metric_col]):,.2f}**."
+
+    workbook_profile = build_excel_profile(df)
+    aov = None
+    if rev_col and trans_col and rev_col in df.columns and trans_col in df.columns:
+        transaction_total = float(pd.to_numeric(df[trans_col], errors="coerce").sum())
+        if transaction_total:
+            aov = float(pd.to_numeric(df[rev_col], errors="coerce").sum()) / transaction_total
+
     # 5. GENERATE HUMAN-READABLE EXECUTIVE SUMMARY & DIRECT ANSWER
-    if any(k in q for k in ["kaç satır", "kaç tane satır", "satır sayısı", "kaç ürün", "ürün sayısı", "kaç adet ürün", "kaç tane ürün", "row count", "how many rows", "total rows"]):
+    if breakdown_summary:
+        executive_summary = breakdown_summary
+    elif top_summary:
+        executive_summary = top_summary
+    elif any(k in q for k in ["önemli bulgu", "önemli 5", "dosyayı özetle", "summarize", "key finding"]):
+        executive_summary = (
+            f"Dosyada **{len(df):,} satır** ve **{len(df.columns)} sütun** var. "
+            f"**{workbook_profile['missing_cells']:,} eksik hücre** ve **{workbook_profile['duplicate_rows']:,} tekrar eden satır** tespit edildi. "
+            f"Analize uygun **{workbook_profile['numeric_columns']} sayısal sütun** bulundu."
+        )
+    elif removed_duplicates or "duplicate" in q or "tekrar eden" in q:
+        executive_summary = f"**{removed_duplicates:,}** tekrar eden satır kaldırıldı. Çalışma kitabında **{len(df):,}** benzersiz satır kaldı."
+    elif removed_blank_rows or "boş satırları sil" in q or "blank rows" in q:
+        executive_summary = f"Tamamen boş olan **{removed_blank_rows:,}** satır kaldırıldı. Çalışma kitabında **{len(df):,}** satır kaldı."
+    elif filled_cells or "boş hücreleri" in q or "fill missing" in q:
+        executive_summary = f"**{filled_cells:,}** eksik hücre, sayısal sütunlarda medyan; metin sütunlarında açıklayıcı bir varsayılan değer kullanılarak dolduruldu."
+    elif any(k in q for k in ["kaç satır", "kaç tane satır", "satır sayısı", "kaç ürün", "ürün sayısı", "kaç adet ürün", "kaç tane ürün", "row count", "how many rows", "total rows"]):
         executive_summary = f"Aktif Excel dosyasında toplam **{len(df):,}** adet satır (ürün / SKU) bulunmaktadır."
     elif any(k in q for k in ["kaç sütun", "kaç tane sütun", "sütun sayısı", "kolon sayısı", "sütunlar", "kolonlar", "column count", "how many columns"]):
         cols_preview = ", ".join(df.columns[:8])
@@ -2372,7 +2515,10 @@ async def process_excel(req: ExcelCommandRequest):
         tot_stock_qty = int(df[stock_col].sum()) if stock_col and stock_col in df.columns else 0
         executive_summary = f"Seçili **{len(df)}** adet üründe toplam stok miktarı **{tot_stock_qty:,} adet** olarak hesaplanmıştır."
     elif any(k in q for k in ["toplam ciro", "total revenue", "gmv", "toplam ciro nedir"]):
-        executive_summary = f"Seçili **{len(df)}** adet üründe toplam ciro **₺{tot_stock_val:,.2f}** olarak hesaplanmıştır."
+        aov_text = f" Ortalama sipariş değeri **₺{aov:,.2f}**." if aov is not None and any(k in q for k in ["sipariş değeri", "order value", "aov"]) else ""
+        executive_summary = f"Seçili **{len(df)}** adet üründe toplam ciro **₺{tot_stock_val:,.2f}** olarak hesaplanmıştır.{aov_text}"
+    elif aov is not None and any(k in q for k in ["sipariş değeri", "order value", "aov"]):
+        executive_summary = f"Toplam ciro, toplam işlem sayısına bölünerek ortalama sipariş değeri **₺{aov:,.2f}** olarak hesaplandı."
     elif any(k in q for k in ["zam", "fiyatı artır", "fiyat indirimi", "fiyat düşür", "stok ekle"]):
         executive_summary = f"Excel verisi üzerinde yapılan işlem ile **{len(df)}** adet üründe {metric_msg.strip()} gerçekleşmiştir."
     elif filter_desc:
@@ -2382,20 +2528,45 @@ async def process_excel(req: ExcelCommandRequest):
 
     col_msg = f" Excel dosyasına '{new_col_name}' adında yeni sütun eklendi." if new_col_name else ""
     filter_msg = f" {filter_desc} şartlarına uyan" if filter_desc else ""
-    action_note = f"⚡ EXCEL ÇOKLU FİLTRE OPERASYONU:{filter_msg} {len(df)} adet SKU filtrelendi.{metric_msg}{col_msg}"
+    operation_notes = []
+    if filter_desc:
+        operation_notes.append(f"{filter_desc} filtresi uygulandı; {len(df)} satır eşleşti")
+    if removed_duplicates or any(k in q for k in ["tekrar eden", "duplicate", "mükerrer"]):
+        operation_notes.append(f"{removed_duplicates} tekrar eden satır kaldırıldı")
+    if removed_blank_rows or any(k in q for k in ["boş satırları sil", "blank rows"]):
+        operation_notes.append(f"{removed_blank_rows} boş satır kaldırıldı")
+    if filled_cells or any(k in q for k in ["boş hücreleri", "fill missing"]):
+        operation_notes.append(f"{filled_cells} eksik hücre dolduruldu")
+    if sorted_column:
+        direction_label = "artan" if sort_direction else "azalan"
+        operation_notes.append(f"{sorted_column} sütunu {direction_label} sıralandı")
+    if breakdown_rows:
+        operation_notes.append(f"{group_col} bazında {metric_col} kırılımı hesaplandı")
+    if top_rows:
+        operation_notes.append(f"{metric_col} değerine göre en yüksek {len(top_rows)} satır listelendi")
+    if metric_msg.strip():
+        operation_notes.append(metric_msg.strip())
+    if new_col_name:
+        operation_notes.append(f"{new_col_name} sütunu eklendi")
+    if not operation_notes:
+        operation_notes.append(f"{len(df)} satır ve {len(df.columns)} sütun analiz edildi")
+    action_note = "⚡ " + "; ".join(operation_notes) + "."
 
-    CURRENT_EXCEL_DF = df
-    try:
-        df.to_excel(ACTIVE_UPLOAD_FILE, index=False)
-    except Exception as save_err:
-        print("Notice persisting modified dataset to disk:", save_err)
+    is_mutation = interaction_mode == "transform"
+    if is_mutation:
+        CURRENT_EXCEL_DF = df
+        try:
+            df.to_excel(ACTIVE_UPLOAD_FILE, index=False)
+        except Exception as save_err:
+            print("Notice persisting modified dataset to disk:", save_err)
 
     orig_rows = df_to_preview_rows(CURRENT_ORIGINAL_EXCEL_DF, max_rows=200)
-    proc_rows = df_to_preview_rows(df, max_rows=200)
+    proc_rows = breakdown_rows or top_rows or df_to_preview_rows(df, max_rows=200)
 
     return {
         "status": "success",
         "command": command,
+        "filename": CURRENT_EXCEL_FILENAME,
         "executive_summary": executive_summary,
         "action_note": action_note,
         "total_rows": len(df),
@@ -2406,7 +2577,10 @@ async def process_excel(req: ExcelCommandRequest):
         "total_pdp_views": round(total_pdp_sum, 0),
         "original_rows": orig_rows,
         "processed_rows": proc_rows,
-        "rows": proc_rows
+        "rows": proc_rows,
+        "profile": build_excel_profile(df),
+        "is_mutation": is_mutation,
+        "interaction_mode": interaction_mode
     }
 
 
