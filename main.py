@@ -4749,7 +4749,8 @@ async def forgot_password_handler(request: Request):
                     "apikey": SUPABASE_ANON_KEY,
                     "Content-Type": "application/json"
                 },
-                json={"email": email, "redirectTo": "https://www.dataprovido.com/login"},
+                params={"redirect_to": "https://www.dataprovido.com/login"},
+                json={"email": email},
                 timeout=5
             )
         except Exception as e:

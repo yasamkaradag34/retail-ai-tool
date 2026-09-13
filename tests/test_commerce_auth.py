@@ -102,6 +102,20 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertIn("recoveryParams.get('access_token')", response.text)
         self.assertNotIn('provider-recovery-token', response.text)
 
+    @patch.object(main, 'SUPABASE_ANON_KEY', 'anon-key')
+    @patch.object(main.requests, 'post')
+    def test_forgot_password_uses_production_recovery_redirect(self, post):
+        post.return_value = Mock(status_code=200)
+        response = self.client.post('/api/auth/forgot-password', data={
+            'email': 'dataprovido@gmail.com'
+        }, follow_redirects=False)
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(
+            post.call_args.kwargs['params']['redirect_to'],
+            'https://www.dataprovido.com/login',
+        )
+        self.assertEqual(post.call_args.kwargs['json'], {'email': 'dataprovido@gmail.com'})
+
     @patch.object(main,'GoogleAnalytics')
     def test_selected_property_belongs_to_returned_account(self,provider):
         self.sign_in(access_token="test",expires_at=time.time()+5000,selected_ga4="999")
