@@ -27,6 +27,9 @@ from automation.codex_clickup.pipeline import (
 )
 
 MAX_PATCH_BYTES = 10 * 1024 * 1024
+URGENT_QUIET_SECONDS = 15 * 60
+ELIGIBILITY_WAIT_SECONDS = 35 * 60
+ELIGIBILITY_POLL_SECONDS = 30
 TEST_COMMAND = ["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"]
 PROTECTED_PREFIXES = (".github/", ".codex/", "automation/", "scripts/agent-pipeline")
 
@@ -133,6 +136,80 @@ def preflight(settings: Settings) -> dict:
     return result
 
 
+def queued_task_payload(settings: Settings, payload: dict, task_id: str) -> Task | None:
+    """Check the live task's home list and archive state before any claim."""
+    task_list = payload.get("list")
+    if (str(payload.get("id", "")) != task_id
+            or not isinstance(task_list, dict)
+            or str(task_list.get("id", "")) != settings.clickup_list_id
+            or payload.get("archived") is not False):
+        return None
+    task = Task.from_payload(payload)
+    return task if task.is_queued(settings.queue_status) else None
+
+
+def task_payload(client: ClickUpClient, task_id: str) -> dict:
+    task_id = clickup_path_id(task_id, "task id")
+    return client._request("GET", f"/task/{task_id}", query=[("include_markdown_description", "true")])
+
+
+def epoch_milliseconds(value: object, now: float) -> float:
+    # Strings and integer timestamps are the only supported ClickUp values.
+    # Missing, fractional, negative, boolean, and future dates cannot release work.
+    if isinstance(value, bool) or not isinstance(value, (str, int)) or not re.fullmatch(r"[0-9]{1,16}", str(value)):
+        raise ValueError("Invalid event timestamp")
+    timestamp = int(value) / 1000
+    if not 0 < timestamp <= now:
+        raise ValueError("Invalid event timestamp")
+    return timestamp
+
+
+def _wait_eligible(settings: Settings, args: argparse.Namespace) -> tuple[dict, Task | None]:
+    """Recheck delayed work without mutating tasks or starting model sessions.
+
+    GitHub's environment timer handles the initial durable delay. Later task
+    edits conservatively restart the quiet period here, because date_updated is
+    the only live task timestamp that can also cover a newer Urgent transition.
+    """
+    settings.require_clickup()
+    clickup_path_id(settings.clickup_list_id, "list id", digits_only=True)
+    task_id = clickup_path_id(args.task_id, "task id")
+
+    def finish(eligible: bool, reason: str, task: Task | None = None) -> tuple[dict, Task | None]:
+        return ({"eligible": eligible, "status": "eligible" if eligible else "skipped", "reason": reason}, task)
+
+    try:
+        event_time = 0.0 if args.urgency_changed_at in ("", None) else epoch_milliseconds(args.urgency_changed_at, time.time())
+    except ValueError:
+        return finish(False, "invalid_event_timestamp")
+    deadline = time.monotonic() + ELIGIBILITY_WAIT_SECONDS
+    client = ClickUpClient(settings.clickup_token)
+    latest_change = event_time
+    while True:
+        payload = task_payload(client, task_id)
+        task = queued_task_payload(settings, payload, task_id)
+        if task is None:
+            return finish(False, "task_no_longer_eligible")
+        now = time.time()
+        try:
+            latest_change = max(latest_change, epoch_milliseconds(payload.get("date_updated"), now))
+        except ValueError:
+            return finish(False, "invalid_task_timestamp")
+        remaining = latest_change + URGENT_QUIET_SECONDS - now
+        if remaining <= 0:
+            return finish(True, "quiet_period_complete", task)
+        budget = deadline - time.monotonic()
+        if budget <= 0:
+            raise PipelineError("Task kept changing during the 35-minute Urgent quiet-period wait. The task was not claimed; retry after edits stop.")
+        time.sleep(min(ELIGIBILITY_POLL_SECONDS, remaining, budget))
+
+
+def wait_eligible(settings: Settings, args: argparse.Namespace) -> dict:
+    result, _ = _wait_eligible(settings, args)
+    output("eligible", str(result["eligible"]).lower())
+    return result
+
+
 def claim(settings: Settings, args: argparse.Namespace) -> dict:
     settings.require_clickup()
     if not settings.isolated_runner or os.getenv("CLICKUP_AGENT_ENABLED") != "true":
@@ -143,15 +220,26 @@ def claim(settings: Settings, args: argparse.Namespace) -> dict:
     tasks = [task for task in client.list_tasks(settings.clickup_list_id, settings.queue_status) if task.is_queued(settings.queue_status)]
     task = next((item for item in tasks if item.id == args.task_id), None) if args.task_id else next(iter(tasks), None)
     if args.task_id and task is None:
+        if getattr(args, "wait_for_urgent", False):
+            output("has_task", "false")
+            return {"status": "idle", "reason": "task_no_longer_eligible"}
         raise PipelineError("Requested task is not Urgent in the configured queue.")
     if task is None:
         output("has_task", "false")
         return {"status": "idle"}
     clickup_path_id(task.id, "task id")
-    # Refresh both eligibility and task content before claiming it.
-    task = client.get_task(task.id)
-    if not task.is_queued(settings.queue_status):
-        raise PipelineError("Task status or Urgent priority changed before it could be claimed.")
+    # Refresh both eligibility and task content before claiming it. For webhook
+    # work, the same final read must also satisfy the Urgent quiet period.
+    if getattr(args, "wait_for_urgent", False):
+        wait_args = argparse.Namespace(task_id=task.id, urgency_changed_at=args.urgency_changed_at)
+        eligibility, task = _wait_eligible(settings, wait_args)
+        if task is None:
+            output("has_task", "false")
+            return {"status": "idle", "reason": eligibility["reason"]}
+    else:
+        task = queued_task_payload(settings, task_payload(client, task.id), task.id)
+    if task is None:
+        raise PipelineError("Task list, archive state, status or Urgent priority changed before it could be claimed.")
     base_sha = current_sha(settings.repo)
     run_id = args.run_id
     if not re.fullmatch(r"[0-9]+", run_id):
@@ -164,7 +252,6 @@ def claim(settings: Settings, args: argparse.Namespace) -> dict:
     output("has_task", "true")
     output("base_sha", base_sha)
     output("task_id", task.id)
-    client.comment(task.id, "Codex Executor + Reviewer started. Changes will be tested and submitted as a pull request for review.")
     return {"status": "claimed", "task_id": task.id}
 
 
@@ -285,6 +372,9 @@ def record_review(repo: Path, args: argparse.Namespace) -> dict:
 
 
 def publish(settings: Settings, args: argparse.Namespace) -> dict:
+    human_reviewer = os.getenv("AGENT_HUMAN_REVIEWER", "").strip()
+    if human_reviewer and not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?", human_reviewer):
+        raise PipelineError("Invalid GitHub human reviewer login.")
     task, base = load_claim(args.claim_dir)
     metadata = candidate_metadata(args.candidate_dir)
     tests = matched_result(args.test_dir / "test-result.json", metadata)
@@ -312,13 +402,15 @@ def publish(settings: Settings, args: argparse.Namespace) -> dict:
         body = Path(temp) / "body.md"
         body.write_text(f"Implements ClickUp task `{task.id}`.\n\nThe isolated test suite passed and the independent Reviewer approved this exact candidate.\n\nManual merge required.\n")
         command = ["gh", "pr", "create", "--head", branch, "--base", settings.base_branch, "--title", f"[ClickUp {task.id}] {task.name[:180]}", "--body-file", str(body)]
+        if human_reviewer:
+            command.extend(["--reviewer", human_reviewer])
         result = subprocess.run(command, cwd=settings.repo, capture_output=True, text=True, timeout=180)
     if result.returncode:
         raise PipelineError("Branch was pushed but pull request creation failed.")
     url = result.stdout.strip()
     if not url.startswith("https://github.com/"):
         raise PipelineError("GitHub returned an unexpected pull request URL.")
-    client.comment(task.id, "Tests passed and Reviewer approved the change.\n\nPull request: " + url)
+    client.comment(task.id, "Çalışma tamamlandı. Testler geçti ve ikinci agent incelemeyi onayladı.\n\nPull request: " + url + "\n\nİnceleyip canlıya alma kararını verebilirsiniz.")
     client.set_status(task.id, settings.review_status)
     return {"status": "review", "task_id": task.id, "pull_request": url, **metadata}
 
@@ -341,10 +433,15 @@ def parser() -> argparse.ArgumentParser:
     commands = p.add_subparsers(dest="command", required=True)
     pre = commands.add_parser("preflight")
     pre.add_argument("--require-enabled", action="store_true")
+    wait = commands.add_parser("wait-eligible")
+    wait.add_argument("--task-id", required=True)
+    wait.add_argument("--urgency-changed-at", default="")
     c = commands.add_parser("claim")
     c.add_argument("--output-dir", type=Path, required=True)
     c.add_argument("--run-id", required=True)
     c.add_argument("--task-id", default="")
+    c.add_argument("--wait-for-urgent", action="store_true")
+    c.add_argument("--urgency-changed-at", default="")
     s = commands.add_parser("snapshot")
     s.add_argument("--output-dir", type=Path, required=True)
     a = commands.add_parser("apply")
@@ -377,6 +474,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(result))
             return 1 if args.require_enabled and not result["ready"] else 0
         handlers = {
+            "wait-eligible": lambda: wait_eligible(settings, args),
             "claim": lambda: claim(settings, args),
             "snapshot": lambda: snapshot(settings.repo, args.output_dir),
             "apply": lambda: apply_candidate(settings.repo, args.candidate_dir, args.base_sha),

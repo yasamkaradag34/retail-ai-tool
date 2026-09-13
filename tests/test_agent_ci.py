@@ -66,6 +66,10 @@ class AgentCiTests(unittest.TestCase):
         return argparse.Namespace(claim_dir=self.claim_dir, candidate_dir=self.candidate,
                                   test_dir=self.test_dir, review_dir=self.review_dir)
 
+    def task_payload(self, task=None, **overrides):
+        return {**asdict(task or self.task), "list": {"id": self.settings.clickup_list_id},
+                "archived": False, "date_updated": "1699999100000", **overrides}
+
     def test_snapshot_and_apply_bind_the_exact_tree(self):
         metadata = self.make_candidate()
         self.git("reset", "--hard", "HEAD")
@@ -193,22 +197,21 @@ class AgentCiTests(unittest.TestCase):
                 client.assert_not_called()
         self.assertFalse(self.claim_dir.exists())
 
-    def test_failed_claim_comment_preserves_recovery_artifacts(self):
+    def test_claim_saves_recovery_artifacts_without_start_notification(self):
         client = Mock()
         client.list_tasks.return_value = [self.task]
-        client.get_task.return_value = self.task
-        client.comment.side_effect = PipelineError("Comment failed")
+        client._request.return_value = self.task_payload()
         args = argparse.Namespace(task_id="", run_id="123", output_dir=self.claim_dir)
         with patch.dict(os.environ, {"CLICKUP_AGENT_ENABLED": "true", "CODEX_AUTH_CONFIGURED": "true"}), patch.object(ci, "ClickUpClient", return_value=client):
-            with self.assertRaisesRegex(PipelineError, "Comment failed"):
-                ci.claim(self.settings, args)
+            self.assertEqual(ci.claim(self.settings, args)["status"], "claimed")
         self.assertEqual(ci.load_claim(self.claim_dir)[0].id, self.task.id)
         client.set_status.assert_called_once_with(self.task.id, "in progress")
+        client.comment.assert_not_called()
 
     def test_claim_status_race_does_not_mutate_task(self):
         client = Mock()
         client.list_tasks.return_value = [self.task]
-        client.get_task.return_value = replace(self.task, status="review")
+        client._request.return_value = self.task_payload(replace(self.task, status="review"))
         args = argparse.Namespace(task_id="", run_id="123", output_dir=self.claim_dir)
         with patch.dict(os.environ, {"CLICKUP_AGENT_ENABLED": "true", "CODEX_AUTH_CONFIGURED": "true"}), patch.object(ci, "ClickUpClient", return_value=client):
             with self.assertRaisesRegex(PipelineError, "changed"):
@@ -219,7 +222,7 @@ class AgentCiTests(unittest.TestCase):
     def test_claim_priority_race_does_not_mutate_task(self):
         client = Mock()
         client.list_tasks.return_value = [self.task]
-        client.get_task.return_value = replace(self.task, priority=2)
+        client._request.return_value = self.task_payload(replace(self.task, priority=2))
         args = argparse.Namespace(task_id="", run_id="123", output_dir=self.claim_dir)
         with patch.dict(os.environ, {"CLICKUP_AGENT_ENABLED": "true", "CODEX_AUTH_CONFIGURED": "true"}), patch.object(ci, "ClickUpClient", return_value=client):
             with self.assertRaisesRegex(PipelineError, "Urgent priority changed"):
@@ -227,6 +230,179 @@ class AgentCiTests(unittest.TestCase):
         client.set_status.assert_not_called()
         client.comment.assert_not_called()
         self.assertFalse(self.claim_dir.exists())
+
+    def test_claim_rechecks_list_archive_and_id_for_manual_tasks(self):
+        for overrides in ({"list": {"id": "456"}}, {"archived": True}, {"id": "another"},
+                          {"list": None}, {"archived": None}):
+            with self.subTest(overrides=overrides):
+                client = Mock()
+                client.list_tasks.return_value = [self.task]
+                client._request.return_value = self.task_payload(**overrides)
+                args = argparse.Namespace(task_id=self.task.id, run_id="123", output_dir=self.claim_dir)
+                with patch.dict(os.environ, {"CLICKUP_AGENT_ENABLED": "true", "CODEX_AUTH_CONFIGURED": "true"}), patch.object(ci, "ClickUpClient", return_value=client):
+                    with self.assertRaisesRegex(PipelineError, "changed"):
+                        ci.claim(self.settings, args)
+                client.set_status.assert_not_called()
+                client.comment.assert_not_called()
+                self.assertFalse(self.claim_dir.exists())
+
+    def run_wait(self, client, event_time="", start=1700000000.0):
+        now = [start]
+        sleeps = []
+
+        def sleep(seconds):
+            self.assertGreater(seconds, 0)
+            self.assertLessEqual(seconds, 30)
+            sleeps.append(seconds)
+            now[0] += seconds
+
+        args = argparse.Namespace(task_id=self.task.id, urgency_changed_at=event_time)
+        with patch.object(ci, "ClickUpClient", return_value=client), \
+                patch.object(ci.time, "time", side_effect=lambda: now[0]), \
+                patch.object(ci.time, "monotonic", side_effect=lambda: now[0] - start), \
+                patch.object(ci.time, "sleep", side_effect=sleep), patch.object(ci, "output") as output:
+            result = ci.wait_eligible(self.settings, args)
+        output.assert_called_once_with("eligible", str(result["eligible"]).lower())
+        client.set_status.assert_not_called()
+        client.comment.assert_not_called()
+        return result, sleeps
+
+    def test_wait_releases_a_task_after_the_existing_quiet_period(self):
+        client = Mock()
+        client._request.return_value = self.task_payload()
+        result, sleeps = self.run_wait(client)
+        self.assertTrue(result["eligible"])
+        self.assertEqual(sleeps, [])
+        client._request.assert_called_once_with("GET", "/task/task1", query=[("include_markdown_description", "true")])
+
+    def test_wait_uses_the_later_of_event_and_live_task_update(self):
+        for event_time, updated_time in (("1699999940000", "1699999100000"),
+                                         ("1699999100000", "1699999940000")):
+            with self.subTest(event_time=event_time, updated_time=updated_time):
+                client = Mock()
+                client._request.return_value = self.task_payload(date_updated=updated_time)
+                result, sleeps = self.run_wait(client, event_time)
+                self.assertTrue(result["eligible"])
+                self.assertEqual(sum(sleeps), 840)
+
+    def test_wait_restarts_after_an_edit_and_retains_the_latest_seen_timestamp(self):
+        client = Mock()
+        payload = self.task_payload(date_updated="1699999110000")
+        calls = [0]
+
+        def fetch(*args, **kwargs):
+            calls[0] += 1
+            if calls[0] == 2:
+                return {**payload, "date_updated": "1700000010000"}
+            return payload
+
+        client._request.side_effect = fetch
+        result, sleeps = self.run_wait(client)
+        self.assertTrue(result["eligible"])
+        self.assertEqual(sum(sleeps), 910)
+
+    def test_wait_skips_tasks_that_leave_the_queue(self):
+        for overrides in ({"priority": 2}, {"status": "review"}, {"archived": True},
+                          {"list": {"id": "456"}}, {"list": None}, {"id": "another"}):
+            with self.subTest(overrides=overrides):
+                client = Mock()
+                client._request.side_effect = [self.task_payload(date_updated="1700000000000"),
+                                               self.task_payload(**overrides)]
+                result, sleeps = self.run_wait(client)
+                self.assertFalse(result["eligible"])
+                self.assertEqual(result["reason"], "task_no_longer_eligible")
+                self.assertEqual(sleeps, [30])
+
+    def test_wait_rejects_invalid_or_future_timestamps_without_sleeping(self):
+        for invalid in ("abc", "-1", "1700000000000.0", "1700000000001", "0", 0, True, False, 1.5):
+            for field in ("event", "task"):
+                with self.subTest(invalid=invalid, field=field):
+                    client = Mock()
+                    client._request.return_value = self.task_payload(date_updated=invalid if field == "task" else "1699999100000")
+                    result, sleeps = self.run_wait(client, invalid if field == "event" else "")
+                    self.assertFalse(result["eligible"])
+                    self.assertEqual(sleeps, [])
+                    if field == "event":
+                        client._request.assert_not_called()
+        client = Mock()
+        client._request.return_value = self.task_payload(date_updated=None)
+        self.assertFalse(self.run_wait(client)[0]["eligible"])
+
+    def test_wait_stops_after_the_bounded_window_when_edits_continue(self):
+        client = Mock()
+        client._request.side_effect = lambda *args, **kwargs: self.task_payload(date_updated=str(int(ci.time.time() * 1000)))
+        now = [1700000000.0]
+        args = argparse.Namespace(task_id=self.task.id, urgency_changed_at="")
+
+        def sleep(seconds):
+            self.assertLessEqual(seconds, 30)
+            now[0] += seconds
+
+        with patch.object(ci, "ClickUpClient", return_value=client), \
+                patch.object(ci.time, "time", side_effect=lambda: now[0]), \
+                patch.object(ci.time, "monotonic", side_effect=lambda: now[0] - 1700000000.0), \
+                patch.object(ci.time, "sleep", side_effect=sleep):
+            with self.assertRaisesRegex(PipelineError, "35-minute.*not claimed"):
+                ci.wait_eligible(self.settings, args)
+        self.assertEqual(now[0] - 1700000000.0, 35 * 60)
+        client.set_status.assert_not_called()
+        client.comment.assert_not_called()
+
+    def test_delayed_claim_uses_the_fresh_eligible_task_content(self):
+        client = Mock()
+        client.list_tasks.return_value = [self.task]
+        fresh = replace(self.task, description="Fresh acceptance criteria")
+        client._request.return_value = self.task_payload(fresh)
+        args = argparse.Namespace(task_id=self.task.id, run_id="123", output_dir=self.claim_dir,
+                                  wait_for_urgent=True, urgency_changed_at="")
+        with patch.dict(os.environ, {"CLICKUP_AGENT_ENABLED": "true", "CODEX_AUTH_CONFIGURED": "true"}), \
+                patch.object(ci, "ClickUpClient", return_value=client), patch.object(ci.time, "time", return_value=1700000000.0):
+            result = ci.claim(self.settings, args)
+        self.assertEqual(result["status"], "claimed")
+        self.assertEqual(ci.load_claim(self.claim_dir)[0].description, fresh.description)
+        client._request.assert_called_once()
+        client.set_status.assert_called_once_with(self.task.id, "in progress")
+        client.comment.assert_not_called()
+
+    def test_delayed_claim_skips_a_task_moved_while_waiting(self):
+        client = Mock()
+        client.list_tasks.return_value = [self.task]
+        client._request.return_value = self.task_payload(archived=True)
+        args = argparse.Namespace(task_id=self.task.id, run_id="123", output_dir=self.claim_dir,
+                                  wait_for_urgent=True, urgency_changed_at="")
+        with patch.dict(os.environ, {"CLICKUP_AGENT_ENABLED": "true", "CODEX_AUTH_CONFIGURED": "true"}), \
+                patch.object(ci, "ClickUpClient", return_value=client):
+            result = ci.claim(self.settings, args)
+        self.assertEqual(result["status"], "idle")
+        self.assertFalse(self.claim_dir.exists())
+        client.set_status.assert_not_called()
+        client.comment.assert_not_called()
+
+    def test_delayed_claim_skips_duplicate_or_deprioritized_queue_events(self):
+        client = Mock()
+        client.list_tasks.return_value = []
+        args = argparse.Namespace(task_id=self.task.id, run_id="123", output_dir=self.claim_dir,
+                                  wait_for_urgent=True, urgency_changed_at="")
+        with patch.dict(os.environ, {"CLICKUP_AGENT_ENABLED": "true", "CODEX_AUTH_CONFIGURED": "true"}), \
+                patch.object(ci, "ClickUpClient", return_value=client), patch.object(ci, "output") as output:
+            result = ci.claim(self.settings, args)
+        self.assertEqual(result, {"status": "idle", "reason": "task_no_longer_eligible"})
+        output.assert_called_once_with("has_task", "false")
+        self.assertFalse(self.claim_dir.exists())
+        client._request.assert_not_called()
+        client.set_status.assert_not_called()
+        client.comment.assert_not_called()
+
+    def test_wait_command_writes_the_eligible_workflow_output(self):
+        client = Mock()
+        client._request.return_value = self.task_payload()
+        output_file = self.root / "outputs"
+        with patch.dict(os.environ, {"CLICKUP_API_TOKEN": "test-token", "CLICKUP_LIST_ID": "123", "GITHUB_OUTPUT": str(output_file)}), \
+                patch.object(ci, "ClickUpClient", return_value=client), \
+                patch.object(ci.time, "time", return_value=1700000000.0), patch("sys.stdout", new_callable=io.StringIO):
+            code = ci.main(["--repo", str(self.repo), "wait-eligible", "--task-id", self.task.id])
+        self.assertEqual(code, 0)
+        self.assertEqual(output_file.read_text(), "eligible=true\n")
 
     def test_claim_only_urgent_and_manual_id_cannot_bypass_filter(self):
         for task_id in ("", self.task.id):
@@ -302,6 +478,14 @@ class AgentCiTests(unittest.TestCase):
                 ci.publish(self.settings, self.publish_args())
             client.assert_not_called()
 
+    def test_invalid_human_reviewer_is_rejected_before_remote_mutation(self):
+        for reviewer in ("--body-file", "team/reviewer", "user\nother", "a" * 40, "user,"):
+            with self.subTest(reviewer=reviewer), patch.dict(os.environ, {"AGENT_HUMAN_REVIEWER": reviewer}), \
+                    patch.object(ci, "ClickUpClient") as client:
+                with self.assertRaisesRegex(PipelineError, "human reviewer"):
+                    ci.publish(self.settings, self.publish_args())
+                client.assert_not_called()
+
     def test_publisher_commits_only_reviewed_tree_and_never_executes_candidate(self):
         marker = self.root / "candidate-executed"
         metadata = self.make_candidate("sitecustomize.py", "from pathlib import Path\nPath(" + repr(str(marker)) + ").write_text('unsafe')\n")
@@ -324,7 +508,8 @@ class AgentCiTests(unittest.TestCase):
                 return subprocess.CompletedProcess(command, 0, b"", b"")
             return real_run(command, **kwargs)
 
-        with patch.object(ci, "ClickUpClient", return_value=client), patch.object(ci.subprocess, "run", side_effect=run):
+        with patch.object(ci, "ClickUpClient", return_value=client), patch.object(ci.subprocess, "run", side_effect=run), \
+                patch.dict(os.environ, {"AGENT_HUMAN_REVIEWER": "yasamkaradag34"}):
             result = ci.publish(self.settings, self.publish_args())
         self.assertEqual(result["candidate_tree"], metadata["candidate_tree"])
         self.assertEqual(self.git("rev-parse", "HEAD^{tree}").decode().strip(), metadata["candidate_tree"])
@@ -332,6 +517,9 @@ class AgentCiTests(unittest.TestCase):
         self.assertTrue(all(command[0] in {"git", "gh"} for command in commands))
         self.assertTrue(all("core.hooksPath=/dev/null" in command for command in commands if command[0] == "git"))
         client.set_status.assert_called_once_with(self.task.id, "review")
+        client.comment.assert_called_once_with(self.task.id, "Çalışma tamamlandı. Testler geçti ve ikinci agent incelemeyi onayladı.\n\nPull request: https://github.com/example/repo/pull/1\n\nİnceleyip canlıya alma kararını verebilirsiniz.")
+        pull_request_command = next(command for command in commands if command[0] == "gh")
+        self.assertEqual(pull_request_command[-2:], ["--reviewer", "yasamkaradag34"])
 
 
 if __name__ == "__main__":

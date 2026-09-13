@@ -4,7 +4,9 @@ This repository contains a working orchestration layer for the double-agent desi
 
 ```mermaid
 flowchart LR
-    CU[ClickUp Agent Queue] --> O[Trusted orchestrator]
+    CU[Urgent + To do] --> WH[Signed ClickUp webhook]
+    WH --> D[GitHub 15 minute wait]
+    D --> O[Trusted orchestrator]
     O --> W[Isolated Git worktree]
     W --> E[Codex Executor\nworkspace-write\nnetwork disabled]
     E --> T[Configured test command]
@@ -28,7 +30,7 @@ flowchart LR
 - Executor changes to `AGENTS.md` or `.codex/` control files are rejected before Reviewer starts. Known orchestrator and Codex authentication values are scanned out of staged files.
 - Only a passing test result plus an `approve` reviewer verdict can commit that exact staged tree, push a branch, and open a pull request.
 - The pipeline never merges a pull request or deploys production.
-- One process lock prevents overlapping queue consumers. The task moves out of the queue status before Codex starts.
+- GitHub workflow concurrency serializes each task; different task IDs can run on separate disposable runners. The legacy local CLI uses a process lock. The task moves out of the queue status before Codex starts.
 - Only tasks with ClickUp priority **Urgent** (`1`) and the configured queue status (`to do`) are eligible. Priority and status are checked again before claiming; a manual task ID cannot bypass this rule. Other tasks are preserved.
 - Per-task audit files are written under `.agent-runs/`; failed worktrees remain under `.agent-worktrees/` for inspection. Both paths are ignored by Git.
 
@@ -102,7 +104,7 @@ Run one known Urgent ClickUp task:
 
 ## Installed GitHub runner
 
-`.github/workflows/clickup-agent.yml` implements the queue using separate disposable Ubuntu jobs. The trusted `ci.py` helper runs from a checkout pinned to the workflow revision, with Python isolated mode. Executor and Reviewer use the pinned official Codex Action and its API-key proxy. Only the publisher has GitHub write permissions; ClickUp credentials are available only to preflight, claim, publish, and recovery steps.
+`.github/workflows/clickup-agent.yml` implements the queue using separate disposable Ubuntu jobs. The trusted `ci.py` helper runs from a checkout pinned to the workflow revision, with Python isolated mode. Executor and Reviewer use the pinned official Codex Action and its API-key proxy. Only the publisher has GitHub write permissions; ClickUp credentials are available only to trusted preflight, delayed eligibility/claim, publish, and recovery steps.
 
 Candidate code runs in Codex's workspace sandbox or a test container with no network, service credentials, Docker socket, host home, or Git metadata. Tests use dependencies installed from the trusted base manifest. Candidate patches, tests, and review results carry the same Git tree and patch hash. The publisher reconstructs and verifies those bytes, disables Git hooks, and never imports or executes candidate code. Changes to pipeline control files, workflow files, credential files, symlinks, and submodules are rejected.
 
@@ -114,6 +116,8 @@ Repository configuration:
 | Actions secret | `OPENAI_API_KEY` | Codex model access via the official proxy |
 | Actions variable | `CLICKUP_LIST_ID` | Queue list identifier |
 | Actions variable | `CLICKUP_AGENT_ENABLED` | Explicit activation switch, defaults to `false` |
+| Actions variable | `AGENT_HUMAN_REVIEWER` | GitHub login to request review from when the PR is ready |
+| GitHub environment | `clickup-urgent-delay` | Wait timer of 15 minutes, no required reviewer |
 | Actions variables | `CLICKUP_QUEUE_STATUS`, `CLICKUP_WORKING_STATUS`, `CLICKUP_REVIEW_STATUS`, `CLICKUP_BLOCKED_STATUS` | Status mapping |
 
 The configured list is **Eylül - DataProvido** (`1100380000031234`), with `to do`, `in progress`, `review`, and `blocked`. Existing `done` and `completed` statuses remain available. The ClickUp token is stored as an encrypted Actions secret, not in tracked files. Local `.env.agent` keeps its personal-workstation isolation flag disabled.
@@ -126,23 +130,54 @@ gh workflow run clickup-agent.yml --ref main -f mode=preflight
 
 This verifies ClickUp access/statuses and reports missing configuration. A separate credential-free job installs the pinned Codex CLI and proxy, checks sandbox boundaries, builds the test image, and runs the base suite without network. It makes no model request and claims no task. A successful preflight workflow does **not** mean model authentication is configured; inspect the readiness checks.
 
-To activate, add `OPENAI_API_KEY` to Actions secrets, enable `CLICKUP_AGENT_ENABLED`, and manually run a small dedicated Urgent queue task using `mode=run` and `task_id`. Confirm its actual Executor, tests, Reviewer, PR, and ClickUp transition before processing further tasks. Presence checks cannot establish that an API key has credit or model permissions; this first real run verifies them. The Actions repository setting allowing workflow-created pull requests must remain enabled.
+Before activation, run `gh workflow run clickup-agent.yml --ref main -f mode=auth-check`. This makes one minimal real model request without claiming any task. After it succeeds, enable `CLICKUP_AGENT_ENABLED` and manually run a small dedicated Urgent queue task using `mode=run` and `task_id`. A task ID is required for live Actions runs so manual and webhook deliveries share the same concurrency key. Confirm its actual Executor, tests, Reviewer, PR, and ClickUp transition before processing further tasks. Presence checks cannot establish that an API key has credit or model permissions; this first real run verifies them. The Actions repository setting allowing workflow-created pull requests must remain enabled.
 
 The repository is public: workflow logs and development artifacts must be treated as public. Do not put credentials, customer data, or confidential material in queued tasks; artifacts are retained for one day. Use a private repository for confidential automation. The Mac's ChatGPT login is not uploaded. The [official Codex Action documentation](https://learn.chatgpt.com/docs/github-action) describes API-key authentication for this workflow.
 
-## Scheduling and recovery
+## Automatic Urgent dispatch
 
-Periodic polling is disabled. Start the workflow manually with `mode=run` to process the oldest Urgent task in `to do`, or provide `task_id` for a particular eligible task. The GitHub runner executes independently of the Mac and Codex app. Workflow concurrency prevents overlapping queue consumers. Changing a task to Urgent does not itself trigger a run yet.
+There is no recurring queue poll. The production application exposes `POST /integrations/clickup/webhook`. It verifies ClickUp's raw-body HMAC-SHA256 signature, checks the registered webhook ID when configured, fetches the current task, and dispatches only tasks in the configured list with priority `Urgent` and status `to do`. Google sign-in is not required for this machine endpoint; a valid webhook signature is required. Task descriptions and provider credentials are not included in its responses or logs.
 
-Recovery moves a claimed task to `blocked` when execution, tests, review, or publishing fails. A user-moved task is preserved. Recovery is best effort: a runner interruption before the claim artifact uploads or a ClickUp outage can leave a task `in progress`. Inspect the GitHub run before manually returning it to `to do`; do not blindly retry a task that may already have a branch or PR.
+Register a list-scoped ClickUp webhook for `taskPriorityUpdated`, `taskStatusUpdated`, and `taskCreated`, targeting:
 
-Automatic dispatch on a priority change requires a ClickUp webhook receiver; it is not installed. The receiver must verify ClickUp's signature and submit work through this same Urgent queue. See [ClickUp webhooks](https://developer.clickup.com/docs/webhooks).
+```text
+https://www.dataprovido.com/integrations/clickup/webhook
+```
+
+Railway service variables:
+
+| Name | Value/source |
+| --- | --- |
+| `CLICKUP_WEBHOOK_ENABLED` | `false` until credential and end-to-end checks pass, then `true` |
+| `CLICKUP_LIST_ID` | `1100380000031234` |
+| `CLICKUP_QUEUE_STATUS` | `to do` |
+| `CLICKUP_API_TOKEN` | Existing ClickUp queue credential, stored as a secret |
+| `CLICKUP_WEBHOOK_SECRET` | Secret returned by the ClickUp webhook registration, stored as a secret |
+| `CLICKUP_WEBHOOK_ID` | ID returned by that registration |
+| `GITHUB_AGENT_DISPATCH_TOKEN` | Fine-grained GitHub token restricted to this repository with Actions read/write, stored as a secret |
+| `GITHUB_AGENT_REPOSITORY` | `yasamkaradag34/retail-ai-tool` |
+
+The dispatch token only starts the trusted workflow. It is never sent to an agent. Do not substitute a broad personal workstation token. The OpenAI API key stays in GitHub Actions and is not needed by Railway.
+
+Every webhook dispatch includes the exact task ID, a stable event fingerprint, and the signed event timestamp when available. GitHub's `clickup-urgent-delay` environment waits 15 minutes without keeping an executor running. Provision it before enabling webhook dispatch; GitHub otherwise creates an environment without a timer. The claim helper independently enforces at least 15 minutes since the later of the event timestamp and the task's current `date_updated`. Edits during the wait can therefore extend the delay. GitHub runner availability can also make the start later than 15 minutes.
+
+Immediately before claiming, the helper rechecks list, status, priority, and archive state. Moving a task out of Urgent or `to do` cancels its pending eligibility without changing the task. Repeated events for a task are serialized, and an event for an already-claimed/completed task is skipped. Different tasks can run in parallel. Each job uses its own checkout; the user's local Codex workspace stays independent.
+
+After 35 minutes of continued edits in the claim runner, the quiet wait fails visibly and leaves the task unchanged. Review that run before sending a new priority/status event. Rejected, failed, or interrupted claimed work moves to `blocked` where possible. Recovery is best effort: a runner interruption before the claim artifact uploads or a ClickUp outage can leave a task `in progress`. Inspect the GitHub run before manually returning it to `to do`; do not blindly retry a task that may already have a branch or PR.
+
+No start comment is posted by the hosted pipeline. At completion it posts the PR and review result to ClickUp, moves the task to `review`, and requests GitHub review from `AGENT_HUMAN_REVIEWER` when configured. Delivery of email/app notifications follows the user's ClickUp/GitHub settings; this is not a Codex chat notification. The pipeline does not merge or deploy finished tasks automatically.
+
+Official references: [ClickUp webhooks](https://developer.clickup.com/docs/webhooks), [ClickUp priority events](https://developer.clickup.com/docs/webhooktaskpayloads), and [GitHub environment wait timers](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments).
+
+### Deployment verification (2026-09-13)
+
+The 15-minute GitHub environment has been configured. The new OpenAI key is present, but the real authentication check [run 34748617245](https://github.com/yasamkaradag34/retail-ai-tool/actions/runs/34748617245) returned **no credits remaining**. Automatic task claiming remains disabled. Railway webhook credentials and registration still need provisioning, followed by a real delayed end-to-end smoke task. Unit tests or a deployed receiver alone do not establish that automatic dispatch is active.
 
 ## Operational flow
 
 For every task, the pipeline:
 
-1. Moves the ClickUp task to `in progress` and leaves a start comment.
+1. Revalidates the requested Urgent task after the delay and moves it to `in progress`.
 2. Fetches the base branch and creates `agent/clickup-...` in an isolated worktree.
 3. Runs Executor with repository write access and no shell network access.
 4. Stages the candidate, rejects control-plane/credential changes, and records its Git tree hash.

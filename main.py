@@ -140,6 +140,9 @@ from schemas.tools import TOOLS
 
 app = FastAPI()
 
+from automation.codex_clickup.webhook import router as clickup_webhook_router
+app.include_router(clickup_webhook_router)
+
 @app.middleware("http")
 async def enforce_https_middleware(request: Request, call_next):
     # Check X-Forwarded-Proto header set by Cloudflare / Railway proxy

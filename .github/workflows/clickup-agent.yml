@@ -1,6 +1,6 @@
 name: ClickUp Codex Executor and Reviewer
 
-# Dispatch on demand. Polling is disabled; no ClickUp webhook is installed yet.
+# Signed ClickUp events dispatch this workflow. No recurring polling is used.
 # This workflow never runs from PR events.
 on:
   workflow_dispatch:
@@ -15,13 +15,26 @@ on:
         default: preflight
         required: true
       task_id:
-        description: Optional Urgent queued ClickUp task ID
+        description: Urgent queued ClickUp task ID (required for run)
         type: string
         default: ''
         required: false
+      wait_for_urgent:
+        description: Wait at least 15 minutes before claiming (webhook runs)
+        type: boolean
+        default: false
+      event_key:
+        description: Signed webhook event fingerprint for audit
+        type: string
+        default: ''
+      urgency_changed_at:
+        description: Signed event timestamp in epoch milliseconds
+        type: string
+        default: ''
 
 concurrency:
-  group: clickup-agent-${{ github.repository }}
+  # Serialize retries for the same task while allowing different tasks in parallel.
+  group: clickup-agent-${{ github.repository }}-${{ inputs.task_id || inputs.mode }}
   cancel-in-progress: false
 
 permissions:
@@ -35,6 +48,7 @@ env:
   CLICKUP_BLOCKED_STATUS: ${{ vars.CLICKUP_BLOCKED_STATUS || 'blocked' }}
   CLICKUP_AGENT_ENABLED: ${{ vars.CLICKUP_AGENT_ENABLED || 'false' }}
   AGENT_BASE_BRANCH: ${{ github.event.repository.default_branch }}
+  AGENT_HUMAN_REVIEWER: ${{ vars.AGENT_HUMAN_REVIEWER }}
   PYTHONDONTWRITEBYTECODE: '1'
 
 jobs:
@@ -91,11 +105,16 @@ jobs:
           CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
           GH_TOKEN: ${{ github.token }}
           REQUESTED_MODE: ${{ inputs.mode }}
+          REQUESTED_TASK_ID: ${{ inputs.task_id }}
         shell: bash
         run: |
           set -euo pipefail
           args=()
           if [[ "$REQUESTED_MODE" == "run" ]]; then
+            if [[ -z "$REQUESTED_TASK_ID" ]]; then
+              printf '%s\n' 'mode=run requires task_id to prevent overlapping claims.' >&2
+              exit 1
+            fi
             args+=(--require-enabled)
           fi
           python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
@@ -199,7 +218,8 @@ jobs:
     needs: preflight
     if: ${{ inputs.mode == 'run' && needs.preflight.outputs.ready == 'true' && vars.CLICKUP_AGENT_ENABLED == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    environment: ${{ inputs.wait_for_urgent && 'clickup-urgent-delay' || 'clickup-manual' }}
+    timeout-minutes: 40
     outputs:
       has_task: ${{ steps.claim.outputs.has_task }}
       base_sha: ${{ steps.claim.outputs.base_sha }}
@@ -219,6 +239,8 @@ jobs:
           CLICKUP_API_TOKEN: ${{ secrets.CLICKUP_API_TOKEN }}
           GH_TOKEN: ${{ github.token }}
           REQUESTED_TASK_ID: ${{ inputs.task_id }}
+          WAIT_FOR_URGENT: ${{ inputs.wait_for_urgent }}
+          URGENCY_CHANGED_AT: ${{ inputs.urgency_changed_at }}
           CODEX_AUTH_CONFIGURED: ${{ needs.preflight.outputs.ready }}
           AGENT_ISOLATED_RUNNER: 'true'
         shell: bash
@@ -227,6 +249,9 @@ jobs:
           args=()
           if [[ -n "$REQUESTED_TASK_ID" ]]; then
             args+=(--task-id "$REQUESTED_TASK_ID")
+          fi
+          if [[ "$WAIT_FOR_URGENT" == "true" ]]; then
+            args+=(--wait-for-urgent --urgency-changed-at "$URGENCY_CHANGED_AT")
           fi
           python3 -I "$GITHUB_WORKSPACE/control/automation/codex_clickup/ci.py" \
             --repo "$GITHUB_WORKSPACE/control" claim \
