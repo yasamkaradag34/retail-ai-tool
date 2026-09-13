@@ -1,13 +1,17 @@
 <section id="categoryWorkspaceContainer" class="ca-workspace" aria-label="Category and product analytics" style="display:none">
-  <div class="ca-connection">
-    <div class="ca-connection-copy"><span class="ca-source-icon" aria-hidden="true">▥</span><div><strong id="caStoreName">Commerce analytics</strong><p id="caConnectionText">A connected GA4 property powers category and product analysis.</p><p style="font-size:12px;margin-top:6px;">Aggregate, read-only reporting data. <a href="/google-data" target="_blank" rel="noopener noreferrer">How data is used ↗</a></p></div></div>
-    <div class="ca-actions"><span id="caSource" class="ca-badge">CHECKING GA4</span><a class="ca-button ca-primary" id="caConnect" href="/connect-data" hidden>Connect Google Analytics <span aria-hidden="true">↗</span></a><button id="caDemo" class="ca-button" type="button" hidden>Explore sample data</button></div>
-  </div>
-  <div class="ca-controls">
-    <label class="ca-property">Analytics property<select id="caProperty" disabled><option value="">Loading your selected property</option></select></label>
-    <label>Date range<select id="caPeriod"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="custom">Custom range</option></select></label>
-    <div id="caCustomDates" class="ca-custom-dates" hidden><label>From<input id="caStart" type="date"></label><label>To<input id="caEnd" type="date"></label></div>
-    <button id="caRefresh" class="ca-button ca-refresh" type="button" disabled>↻ Refresh data</button>
+  <div class="ca-command-bar">
+    <div class="ca-connection">
+      <div class="ca-connection-copy"><span class="ca-source-icon" aria-hidden="true">▥</span><div><strong id="caStoreName">Commerce analytics</strong><div class="ca-connection-meta"><span id="caConnectionText">A connected GA4 property powers this report.</span><span aria-hidden="true">·</span><a href="/google-data" target="_blank" rel="noopener noreferrer">Read-only data ↗</a></div></div></div>
+      <div class="ca-actions"><span id="caSource" class="ca-badge">CHECKING GA4</span><a class="ca-button ca-primary" id="caConnect" href="/connect-data" hidden>Connect Google Analytics <span aria-hidden="true">↗</span></a><button id="caDemo" class="ca-button" type="button" hidden>Explore sample data</button></div>
+    </div>
+    <div class="ca-controls">
+      <label class="ca-property">Analytics property<select id="caProperty" disabled><option value="">Loading your selected property</option></select></label>
+      <div class="ca-date-actions">
+        <label>Date range<select id="caPeriod"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="custom">Custom range</option></select></label>
+        <div id="caCustomDates" class="ca-custom-dates" hidden><label>From<input id="caStart" type="date"></label><label>To<input id="caEnd" type="date"></label></div>
+        <button id="caRefresh" class="ca-button ca-refresh" type="button" disabled>↻ Refresh data</button>
+      </div>
+    </div>
   </div>
   <p id="caStatus" class="ca-status" role="status" aria-live="polite">Loading the selected store data…</p>
   <div id="caWelcome" class="ca-welcome">
