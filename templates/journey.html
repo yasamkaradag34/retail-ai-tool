@@ -1039,6 +1039,7 @@
   <link rel="stylesheet" href="/static/stock-price-analysis.css?v=1">
   <script src="/static/stock-price-analysis.js?v=1" defer></script>
   <link rel="stylesheet" href="/static/funnel-analysis.css?v=1">
+  <link rel="stylesheet" href="/static/heatmap-analysis.css?v=1">
   <script src="/static/funnel-analysis.js?v=1" defer></script>
   <link rel="stylesheet" href="/static/excel-wizard.css?v=1">
   <script src="/static/excel-wizard.js?v=1" defer></script>
@@ -1092,7 +1093,7 @@
             <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             <span class="menu-btn-text">
               <strong>Heatmap &amp; UX Analytics</strong>
-              <span id="sub_heatmap_analytics">Click, scroll &amp; rage maps</span>
+              <span id="sub_heatmap_analytics">Page paths, clicks &amp; friction</span>
             </span>
           </button>
           <button class="menu-btn" id="appBenchmarkMenuBtn" data-key="app_benchmark" onclick="renderModule('app_benchmark')">
@@ -1623,119 +1624,127 @@
           ══════════════════════════════════════════════════════ -->
           <div id="heatmapWorkspaceContainer" class="funnel-workspace">
             
-            <!-- 1. COMMERCIAL PRODUCT HEADER CARD -->
-            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 20px; padding: 22px 26px; margin-bottom: 20px; color: #ffffff; box-shadow: 0 8px 30px rgba(15,23,42,0.15); border: 1px solid #334155;">
-              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
-                <div style="display: flex; align-items: center; gap: 14px;">
-                  <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #f26f26 0%, #ea580c 100%); color: #ffffff; font-size: 24px; display: grid; place-items: center; box-shadow: 0 4px 16px rgba(242,111,38,0.45); flex-shrink: 0;">🎯</div>
-                  <div>
-                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                      <span style="font-size: 11px; font-weight: 800; color: #fb923c; letter-spacing: 0.08em; text-transform: uppercase;">Enterprise Behavioral Intelligence</span>
-                      <span style="background: rgba(16,185,129,0.25); border: 1px solid #10b981; color: #6ee7b7; font-size: 11px; font-weight: 800; padding: 2px 9px; border-radius: 6px; display: inline-flex; align-items: center; gap: 5px;">🟢 Injector Marketing (ID: 418920145)</span>
-                      <span style="background: rgba(37,99,235,0.25); border: 1px solid #3b82f6; color: #93c5fd; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">⚡ Clarity ID: m8q2k4p9</span>
-                      <span style="background: rgba(245,158,11,0.20); border: 1px solid #f59e0b; color: #fcd34d; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">🏪 Merchant: 509182341</span>
-                    </div>
-                    <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; color: #ffffff; margin: 4px 0 0;">DataProvido UX Sense™ &amp; E-Commerce Revenue Heatmap</h3>
+            <!-- 1. GUIDED BEHAVIOUR ANALYTICS HEADER -->
+            <section class="hm-hero" aria-labelledby="hmWorkspaceTitle">
+              <div class="hm-hero-main">
+                <div class="hm-hero-icon" aria-hidden="true">⌖</div>
+                <div>
+                  <div class="hm-eyebrow">Behaviour analytics · Injector Marketing</div>
+                  <h3 id="hmWorkspaceTitle">See what visitors do on each page.</h3>
+                  <p>Choose a page group or inspect one exact path. Every filter refreshes the interaction map, scroll reach and frustration signals for that scope.</p>
+                </div>
+              </div>
+              <div class="hm-hero-actions">
+                <span class="hm-source-badge"><span></span> Illustrative test workspace</span>
+                <button type="button" class="hm-export-btn" onclick="exportHeatmapCSV()">↓ Export current view</button>
+              </div>
+            </section>
+
+            <!-- 2. PAGE SCOPE, AUDIENCE, DEVICE AND DATE FILTERS -->
+            <section class="hm-filter-card" aria-labelledby="hmFilterTitle">
+              <div class="hm-filter-heading">
+                <div>
+                  <span class="hm-eyebrow">Start with a page</span>
+                  <h4 id="hmFilterTitle">What do you want to understand?</h4>
+                  <p>Analyse every page in a group, or enter one page path for a focused view.</p>
+                </div>
+                <div id="hmFilterStatus" class="hm-filter-status" role="status" aria-live="polite"><span></span> Ready</div>
+              </div>
+
+              <div class="hm-filter-grid">
+                <label class="hm-field">
+                  <span>Page group</span>
+                  <select id="hmPageSelect" onchange="switchHeatmapPage(this.value)">
+                    <option value="pdp" selected>Product detail pages · PDP</option>
+                    <option value="plp">Product listing pages · PLP</option>
+                    <option value="home">Homepage</option>
+                    <option value="cart">Cart</option>
+                    <option value="checkout">Checkout</option>
+                    <option value="custom">Custom page path</option>
+                  </select>
+                  <small>Use a group to combine similar page templates.</small>
+                </label>
+
+                <label class="hm-field hm-path-field">
+                  <span>Page path</span>
+                  <div class="hm-path-control">
+                    <span class="hm-path-prefix">injectormarketing.com</span>
+                    <input id="hmPathInput" type="text" list="hmPagePathOptions" autocomplete="off" placeholder="All product detail pages" oninput="queueHeatmapPathFilter(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();applyHeatmapPathFilter();}" />
+                    <datalist id="hmPagePathOptions"></datalist>
+                    <button type="button" id="hmPathClear" class="hm-path-clear" onclick="clearHeatmapPath()" aria-label="Clear page path" hidden>×</button>
                   </div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                  <button type="button" onclick="openTrackingSetupModal()" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #ffffff; padding: 8px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
-                    ⚙️ <span>Kurulum Kodu &amp; Açık Kaynak SDK</span>
-                  </button>
-                  <button type="button" onclick="exportHeatmapCSV()" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border: none; color: #ffffff; padding: 8px 18px; border-radius: 10px; font-size: 12.5px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 14px rgba(37,99,235,0.35); transition: all 0.2s;">
-                    📥 <span>Yönetici Raporu İndir (CSV)</span>
-                  </button>
-                </div>
-              </div>
-              <p style="font-size: 13px; color: #94a3b8; margin: 12px 0 0; line-height: 1.5; max-width: 950px;">
-                Injector Marketing verileriyle Microsoft Clarity'nin ötesinde e-ticaret finansal çıktısı sunan açık kaynak temelli analiz motoru: Hangi butonun kaç ₺ kazandırdığını, tüketicilerin nerede öfkelenip sepeti bıraktığını ve Core Web Vitals gecikmelerinin satışa etkisini keşfedin.
-              </p>
-            </div>
+                  <small>Leave blank for the full group, or choose an exact URL.</small>
+                </label>
 
-            <!-- 2. GLOBAL CONTROLS BAR: CUSTOM DATE RANGE PICKER, MULTI-PAGE & AUDIENCE SEGMENTS -->
-            <div class="hm-controls-wrapper" style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 14px 18px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
-              
-              <!-- LEFT GROUP: PAGE & AUDIENCE SEGMENTS -->
-              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                <!-- PAGE SELECTOR (PDP, PLP, CART, CHECKOUT, HOME) -->
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span style="font-size: 11.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Sayfa:</span>
-                  <select id="hmPageSelect" onchange="switchHeatmapPage(this.value)" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 9px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: #0f172a; cursor: pointer; outline: none;">
-                    <option value="pdp" selected>🛍️ Ürün Detay (PDP)</option>
-                    <option value="plp">📑 Kategori (PLP)</option>
-                    <option value="home">🏠 Anasayfa (/)</option>
-                    <option value="cart">🛒 Sepet (/cart)</option>
-                    <option value="checkout">💳 Ödeme (/checkout)</option>
+                <label class="hm-field">
+                  <span>Visitor group</span>
+                  <select id="hmSegmentSelect" onchange="switchHeatmapSegment(this.value)">
+                    <option value="all" selected>All visitors</option>
+                    <option value="converters">Purchased</option>
+                    <option value="abandoners">Cart abandoners</option>
+                    <option value="paid">Paid traffic</option>
+                    <option value="returning">Returning visitors</option>
                   </select>
-                </div>
+                  <small>Compare behaviour for one audience.</small>
+                </label>
 
-                <!-- AUDIENCE SEGMENTATION DROPDOWN -->
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span style="font-size: 11.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Segment:</span>
-                  <select id="hmSegmentSelect" onchange="switchHeatmapSegment(this.value)" style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 9px; padding: 6px 12px; font-size: 12px; font-weight: 700; color: #0f172a; cursor: pointer; outline: none;">
-                    <option value="all" selected>👥 Tüm Ziyaretçiler</option>
-                    <option value="converters">🟢 Satın Alanlar (%100)</option>
-                    <option value="abandoners">🔴 Sepeti Terk Edenler</option>
-                    <option value="paid">📢 Reklam Trafiği (PMax)</option>
-                    <option value="returning">🔁 Sadık Müşteriler</option>
-                  </select>
+                <div class="hm-field">
+                  <span>Device</span>
+                  <div class="hm-device-toggle" role="group" aria-label="Device">
+                    <button type="button" id="hmBtnDesktop" class="active" onclick="switchHeatmapDevice('desktop')">Desktop</button>
+                    <button type="button" id="hmBtnMobile" onclick="switchHeatmapDevice('mobile')">Mobile</button>
+                  </div>
+                  <small>Maps are rebuilt for each viewport.</small>
                 </div>
               </div>
 
-              <!-- RIGHT GROUP: VIEWPORT & DATE RANGE -->
-              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <!-- DEVICE VIEWPORT TOGGLE -->
-                <div style="display: flex; align-items: center; gap: 2px; background: #f1f5f9; padding: 3px; border-radius: 8px;">
-                  <button type="button" id="hmBtnDesktop" onclick="switchHeatmapDevice('desktop')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a; padding: 5px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-                    💻 <span>Masaüstü</span>
-                  </button>
-                  <button type="button" id="hmBtnMobile" onclick="switchHeatmapDevice('mobile')" style="background: transparent; border: 1px solid transparent; color: #64748b; padding: 5px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                    📱 <span>Mobil</span>
-                  </button>
+              <div class="hm-filter-footer">
+                <div class="hm-date-control">
+                  <span>Date range</span>
+                  <input type="date" id="hmStartDate" value="2026-08-11" />
+                  <span class="hm-date-arrow">→</span>
+                  <input type="date" id="hmEndDate" value="2026-09-10" />
+                  <button type="button" id="hmApplyDateBtn" onclick="applyCustomDateRange()">Apply dates</button>
                 </div>
-
-                <!-- MANUEL ÖZEL TARİH SEÇİCİ -->
-                <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; border: 1.5px solid #e2e8f0; padding: 4px 8px; border-radius: 10px;">
-                  <span style="font-size: 11.5px; font-weight: 800; color: #2563eb;">📅</span>
-                  <input type="date" id="hmStartDate" value="2026-08-11" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-weight: 700; color: #0f172a; outline: none;" />
-                  <span style="color: #94a3b8; font-weight: 800; font-size: 10px;">→</span>
-                  <input type="date" id="hmEndDate" value="2026-09-10" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-weight: 700; color: #0f172a; outline: none;" />
-                  <button type="button" id="hmApplyDateBtn" onclick="applyCustomDateRange()" style="background: #2563eb; color: #ffffff; border: none; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 800; cursor: pointer;">
-                    Uygula
-                  </button>
-                </div>
-
-                <!-- HIZLI TARİH PRESETLERİ -->
-                <div style="display: flex; align-items: center; gap: 3px;">
-                  <button type="button" onclick="setQuickDateRange('7d')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">7G</button>
-                  <button type="button" onclick="setQuickDateRange('30d')" style="background: #eff6ff; border: 1px solid #3b82f6; color: #1d4ed8; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer;">30G</button>
-                  <button type="button" onclick="setQuickDateRange('this_month')" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Bu Ay</button>
+                <div class="hm-quick-ranges" aria-label="Quick date ranges">
+                  <button type="button" onclick="setQuickDateRange('7d')">7 days</button>
+                  <button type="button" class="active" onclick="setQuickDateRange('30d')">30 days</button>
+                  <button type="button" onclick="setQuickDateRange('this_month')">This month</button>
                 </div>
               </div>
 
-            </div>
+              <div class="hm-scope-strip">
+                <div class="hm-scope-icon">◎</div>
+                <div>
+                  <span>Analysing now</span>
+                  <strong id="hmScopeTitle">All product detail pages</strong>
+                  <code id="hmScopePath">PDP group · all matching paths</code>
+                </div>
+                <div id="hmScopeMeta" class="hm-scope-meta">4 discovered paths · Desktop · All visitors</div>
+              </div>
+            </section>
 
-            <!-- 3. SUB-TABS NAVIGATION (6 TICARI E-TICARET MODUL SEKMESI - COMPACT & RESPONSIVE GRID) -->
-            <div class="hm-subtabs-grid">
+            <!-- 3. CLARITY-STYLE GUIDED ANALYSIS VIEWS -->
+            <nav class="hm-subtabs-grid" aria-label="Behaviour analysis views">
               <button type="button" id="subTabBtnCanvas" onclick="switchHmSubTab('canvas')" class="hm-subtab-btn active">
-                🔥 <span>Isı Haritası</span>
-              </button>
-              <button type="button" id="subTabBtnAB" onclick="switchHmSubTab('ab')" class="hm-subtab-btn">
-                🧪 <span>A/B Testleri</span>
-              </button>
-              <button type="button" id="subTabBtnForms" onclick="switchHmSubTab('forms')" class="hm-subtab-btn">
-                📝 <span>Form Analizi</span>
+                <span class="hm-tab-icon">⌖</span><span><strong>Live heatmaps</strong><small>Clicks &amp; scroll reach</small></span>
               </button>
               <button type="button" id="subTabBtnReplay" onclick="switchHmSubTab('replay')" class="hm-subtab-btn">
-                🎥 <span>Oturum Kaydı</span>
+                <span class="hm-tab-icon">▶</span><span><strong>Session journeys</strong><small>Watch visitor paths</small></span>
+              </button>
+              <button type="button" id="subTabBtnForms" onclick="switchHmSubTab('forms')" class="hm-subtab-btn">
+                <span class="hm-tab-icon">▤</span><span><strong>Form friction</strong><small>Hesitation &amp; exits</small></span>
               </button>
               <button type="button" id="subTabBtnVitals" onclick="switchHmSubTab('vitals')" class="hm-subtab-btn">
-                ⚡ <span>Sayfa Hızı</span>
+                <span class="hm-tab-icon">⚡</span><span><strong>Experience health</strong><small>Speed &amp; UX impact</small></span>
               </button>
               <button type="button" id="subTabBtnCRO" onclick="switchHmSubTab('cro')" class="hm-subtab-btn">
-                📋 <span>CRO Planı</span>
+                <span class="hm-tab-icon">✓</span><span><strong>Action plan</strong><small>Prioritised fixes</small></span>
               </button>
-            </div>
+              <button type="button" id="subTabBtnAB" onclick="switchHmSubTab('ab')" class="hm-subtab-btn">
+                <span class="hm-tab-icon">A/B</span><span><strong>Experiments</strong><small>Validate improvements</small></span>
+              </button>
+            </nav>
 
             <!-- ══════════════════════════════════════════════════════
                  TAB 1: VISUAL HEATMAP & TOP ELEMENTS BREAKDOWN
@@ -1746,60 +1755,60 @@
               <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
                 <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase;">Toplam İncelenen Oturum</span>
+                    <span style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase;">Sessions in scope</span>
                     <span style="font-size: 16px;">👥</span>
                   </div>
                   <div id="hmKpiSessions" style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">84,200</div>
-                  <div id="hmKpiClicksSub" style="font-size: 11.5px; color: #64748b; margin-top: 2px;">142,500 toplam etkileşim</div>
+                  <div id="hmKpiClicksSub" style="font-size: 11.5px; color: #64748b; margin-top: 2px;">142,500 interactions in this scope</div>
                 </div>
 
                 <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 11px; font-weight: 800; color: #059669; text-transform: uppercase;">Ortalama Kaydırma (Scroll)</span>
+                    <span style="font-size: 11px; font-weight: 800; color: #059669; text-transform: uppercase;">Average scroll reach</span>
                     <span style="font-size: 16px;">📜</span>
                   </div>
                   <div id="hmKpiScroll" style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">68.4%</div>
-                  <div style="font-size: 11.5px; color: #059669; font-weight: 700; margin-top: 2px;">%62.4 katlanma çizgisine (fold) erişti</div>
+                  <div id="hmKpiScrollSub" style="font-size: 11.5px; color: #059669; font-weight: 700; margin-top: 2px;">Average page reach for this filter</div>
                 </div>
 
                 <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 11px; font-weight: 800; color: #dc2626; text-transform: uppercase;">Öfke Tıklaması Oranı (Rage)</span>
+                    <span style="font-size: 11px; font-weight: 800; color: #dc2626; text-transform: uppercase;">Frustration click rate</span>
                     <span style="font-size: 16px;">⚡</span>
                   </div>
                   <div id="hmKpiRage" style="font-size: 26px; font-weight: 800; color: #dc2626; margin-top: 4px;">2.8%</div>
-                  <div style="font-size: 11.5px; color: #dc2626; font-weight: 700; margin-top: 2px;">🔴 2,350 sinirli ardışık tıklama</div>
+                  <div id="hmKpiRageSub" style="font-size: 11.5px; color: #dc2626; font-weight: 700; margin-top: 2px;">Repeated clicks in quick succession</div>
                 </div>
 
                 <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
                   <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 11px; font-weight: 800; color: #d97706; text-transform: uppercase;">Ölü Tıklama Oranı (Dead)</span>
+                    <span style="font-size: 11px; font-weight: 800; color: #d97706; text-transform: uppercase;">Dead click rate</span>
                     <span style="font-size: 16px;">🚫</span>
                   </div>
                   <div id="hmKpiDead" style="font-size: 26px; font-weight: 800; color: #d97706; margin-top: 4px;">4.9%</div>
-                  <div style="font-size: 11.5px; color: #b45309; font-weight: 700; margin-top: 2px;">🟡 4,120 link olmayan öğeye tıklama</div>
+                  <div id="hmKpiDeadSub" style="font-size: 11.5px; color: #b45309; font-weight: 700; margin-top: 2px;">Clicks on non-interactive areas</div>
                 </div>
               </div>
 
               <!-- HEATMAP OVERLAY MODES SELECTOR -->
               <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 10px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase;">Görsel Katman Modu:</span>
+                  <span style="font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase;">Map layer:</span>
                   <button type="button" id="hmModeClick" onclick="switchHeatmapMode('click')" class="hm-mode-pill active" style="background: #eff6ff; border: 1.5px solid #3b82f6; color: #1d4ed8; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.2s;">
-                    🔥 Tıklama Yoğunluğu (Click Heatmap)
+                    Click map
                   </button>
                   <button type="button" id="hmModeScroll" onclick="switchHeatmapMode('scroll')" class="hm-mode-pill" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
-                    📜 Kaydırma Derinliği (Scroll Depth)
+                    Scroll reach
                   </button>
                   <button type="button" id="hmModeRage" onclick="switchHeatmapMode('rage')" class="hm-mode-pill" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
-                    ⚡ Öfke Tıklamaları (Rage Clicks)
+                    Frustration clicks
                   </button>
                   <button type="button" id="hmModeRevenue" onclick="switchHeatmapMode('revenue')" class="hm-mode-pill" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
-                    💰 Ciro &amp; Gelir Katmanı (Revenue Attribution)
+                    Value signals
                   </button>
                 </div>
                 <div style="font-size: 12px; color: #059669; font-weight: 700;">
-                  ✓ Canlı Veri Akışı Bağlı
+                  ✓ Updates with every filter
                 </div>
               </div>
 
@@ -1807,14 +1816,14 @@
               <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
                   <div>
-                    <span class="funnel-section-tag">🎨 Visual Behavioral Canvas</span>
-                    <h4 class="funnel-section-title" id="hmCanvasHeading">Interactive PDP Click Hotspots &amp; User Retention</h4>
+                    <span class="funnel-section-tag">Interaction map</span>
+                    <h4 class="funnel-section-title" id="hmCanvasHeading">Click concentration · All product detail pages</h4>
                   </div>
                   <div style="display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 700; color: #64748b;">
-                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> Sıcak / CVR %20+</span>
-                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Orta / Aktif</span>
-                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Bilgi / Soğuk</span>
-                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #9333ea; display: inline-block;"></span> Ölü Tıklama</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span> High attention</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span> Active</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span> Low attention</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #9333ea; display: inline-block;"></span> Dead click</span>
                   </div>
                 </div>
 
@@ -2143,10 +2152,10 @@
                       <!-- AVERAGE VIEWPORT FOLD DASHED LINE -->
                       <div style="position: absolute; top: 62%; left: 0; right: 0; border-top: 2.5px dashed #dc2626; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; transform: translateY(-50%);">
                         <span style="background: #dc2626; color: #ffffff; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-                          📍 Ortalama Katlanma Çizgisi (Average Fold 760px) — %62.4 Ziyaretçi Erişimi
+                          📍 Average fold (760px) — reached by 62.4% of visitors
                         </span>
                         <span style="background: #ffffff; color: #dc2626; border: 1.5px solid #dc2626; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px;">
-                          ⚠️ Bu Çizginin Altı %37.6 Ziyaretçi Tarafından Görülmüyor
+                          ⚠️ 37.6% of visitors do not see content below this line
                         </span>
                       </div>
 
@@ -2162,11 +2171,11 @@
               <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
                   <div>
-                    <span class="funnel-section-tag">📊 DOM Element Level Breakdown</span>
-                    <h4 class="funnel-section-title">En Çok Tıklanan Elementler &amp; Satın Alma Korelasyonu</h4>
+                    <span class="funnel-section-tag">Element performance</span>
+                    <h4 class="funnel-section-title">Which elements attract attention and drive value?</h4>
                   </div>
                   <div style="display: flex; align-items: center; gap: 10px;">
-                    <input type="text" id="hmElementSearch" oninput="filterHeatmapElements()" placeholder="🔍 Element veya Seçici Ara..." style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; font-size: 12.5px; outline: none; width: 220px;" />
+                    <input type="text" id="hmElementSearch" oninput="filterHeatmapElements()" placeholder="Search elements or selectors" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; font-size: 12.5px; outline: none; width: 220px;" />
                   </div>
                 </div>
 
@@ -2175,14 +2184,14 @@
                     <thead>
                       <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; text-align: left;">
                         <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">#</th>
-                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Element Adı &amp; CSS Seçici</th>
-                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Tür / Sayfa Alanı</th>
-                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Toplam Tıklama</th>
-                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Ziyaretçi Payı (%)</th>
-                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Öfke / Ölü Tıklama</th>
-                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Satın Alma CVR (%)</th>
-                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Atfedilen Ciro (₺)</th>
-                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: center;">Aksiyon Önceliği</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Element &amp; selector</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569;">Type / page area</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Clicks</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Visitor share</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Frustration / dead</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Purchase CVR</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: right;">Attributed revenue</th>
+                        <th style="padding: 12px 14px; font-size: 12px; font-weight: 700; color: #475569; text-align: center;">Priority</th>
                       </tr>
                     </thead>
                     <tbody id="hmElementsTbody">
@@ -3146,8 +3155,8 @@
       heatmap_analytics: {
         title: "Heatmap & UX Analytics",
         desc: {
-          tr: "Kullanıcıların web sitenizde veya uygulamanızda tıkladığı ve dokunduğu alanları, sayfa kaydırma derinliğini, öfke tıklamalarını ve e-ticaret dönüşüm etkisini görselleştirir.",
-          en: "Visualizes user clicks, taps, scroll depth reach, rage click friction, and element-level conversion revenue correlation across your digital storefront and mobile application."
+          tr: "PDP, ürün listeleme veya seçtiğiniz bir page path için tıklama, kaydırma ve kullanıcı sürtünmesini canlı filtrelerle analiz edin.",
+          en: "Filter PDPs, product listings or one exact page path to analyse clicks, scroll reach and visitor friction."
         },
         placeholder: {
           tr: "Örn: En çok tıklanan butonları ve öfke tıklaması alan öğeleri analiz et",
@@ -3362,6 +3371,7 @@
       document.body.classList.toggle("stock-price-active", key === "stock_price_comp");
       document.body.classList.toggle("funnel-analysis-active", key === "funnel_analysis");
       document.body.classList.toggle("excel-wizard-active", key === "business_calculator");
+      document.body.classList.toggle("heatmap-analysis-active", key === "heatmap_analytics");
       const catWorkspace = document.getElementById("categoryWorkspaceContainer");
       if (catWorkspace) catWorkspace.style.display = key === "category_insights" ? "flex" : "none";
       if (key === "category_insights" && window.CategoryAnalysis) window.CategoryAnalysis.init();
@@ -4303,6 +4313,8 @@
        Visual Click/Tap Hotspots, Scroll Depth & Friction CRO
     ══════════════════════════════════════════════════════════ */
     let currentHmPage = 'pdp';
+    let currentHmResolvedPage = 'pdp';
+    let currentHmPath = '';
     let currentHmDevice = 'desktop';
     let currentHmMode = 'click';
     let currentHmSubTab = 'canvas';
@@ -4318,8 +4330,11 @@
     let replayProgressPct = 25;
     let isReplayPlaying = false;
     let replaySpeed = 1;
+    let hmPathTimer = null;
+    let hmPageCatalog = [];
 
     function initHeatmapWorkspace() {
+      loadHeatmapPages();
       loadHeatmapData();
       loadHeatmapInsights();
       loadSessionReplays();
@@ -4329,6 +4344,7 @@
     }
 
     async function loadHeatmapData() {
+      setHeatmapFilterStatus('loading', 'Refreshing view');
       try {
         const mStart = document.getElementById('masterStartDate') ? document.getElementById('masterStartDate').value : '';
         const mEnd = document.getElementById('masterEndDate') ? document.getElementById('masterEndDate').value : '';
@@ -4337,12 +4353,14 @@
         const period = document.getElementById('hmPeriodSelect') ? document.getElementById('hmPeriodSelect').value : '30d';
         
         let url = '/api/heatmap/data?page=' + currentHmPage + '&device=' + currentHmDevice + '&period=' + period + '&segment=' + currentHmSegment;
+        if (currentHmPath) url += '&path=' + encodeURIComponent(currentHmPath);
         if (start && end) {
           url += '&start_date=' + encodeURIComponent(start) + '&end_date=' + encodeURIComponent(end);
         }
 
         const resp = await fetch(url);
         const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || 'The filtered view could not be loaded.');
 
         if (data && data.summary) {
           const s = data.summary;
@@ -4352,12 +4370,20 @@
           const kpiRage = document.getElementById('hmKpiRage');
           const kpiDead = document.getElementById('hmKpiDead');
 
-          if (kpiSessions) kpiSessions.textContent = (s.total_sessions || 84200).toLocaleString();
-          if (kpiClicksSub) kpiClicksSub.textContent = (s.total_clicks || 142500).toLocaleString() + ' toplam etkileşim';
-          if (kpiScroll) kpiScroll.textContent = (s.avg_scroll_depth || 68.4) + '%';
-          if (kpiRage) kpiRage.textContent = (s.rage_click_rate || 2.8) + '%';
-          if (kpiDead) kpiDead.textContent = (s.dead_click_rate || 4.9) + '%';
+          if (kpiSessions) kpiSessions.textContent = Number(s.total_sessions ?? 0).toLocaleString();
+          if (kpiClicksSub) kpiClicksSub.textContent = Number(s.total_clicks ?? 0).toLocaleString() + ' interactions in this scope';
+          if (kpiScroll) kpiScroll.textContent = Number(s.avg_scroll_depth ?? 0).toFixed(1) + '%';
+          if (kpiRage) kpiRage.textContent = Number(s.rage_click_rate ?? 0).toFixed(1) + '%';
+          if (kpiDead) kpiDead.textContent = Number(s.dead_click_rate ?? 0).toFixed(1) + '%';
+          const scrollSub = document.getElementById('hmKpiScrollSub');
+          const rageSub = document.getElementById('hmKpiRageSub');
+          const deadSub = document.getElementById('hmKpiDeadSub');
+          if (scrollSub) scrollSub.textContent = 'Average page reach for this filter';
+          if (rageSub) rageSub.textContent = Math.round((s.total_sessions ?? 0) * (s.rage_click_rate ?? 0) / 100).toLocaleString() + ' sessions show repeated clicks';
+          if (deadSub) deadSub.textContent = Math.round((s.total_sessions ?? 0) * (s.dead_click_rate ?? 0) / 100).toLocaleString() + ' sessions click non-interactive areas';
         }
+
+        updateHeatmapScope(data.page_context || {}, data.summary || {});
 
         hmElementsCache = data.top_elements || [];
         hmHotspotsCache = data.hotspots || [];
@@ -4365,9 +4391,113 @@
 
         renderHeatmapVisualCanvas(hmHotspotsCache, hmScrollLevelsCache);
         renderHeatmapElementsTable(hmElementsCache);
+        setHeatmapFilterStatus('ready', 'View updated');
       } catch (e) {
         console.error('Failed to load heatmap data:', e);
+        setHeatmapFilterStatus('error', e.message || 'Could not load view');
       }
+    }
+
+    function setHeatmapFilterStatus(mode, message) {
+      const status = document.getElementById('hmFilterStatus');
+      if (!status) return;
+      status.className = 'hm-filter-status' + (mode === 'loading' ? ' loading' : mode === 'error' ? ' error' : '');
+      status.innerHTML = '<span></span>' + message;
+    }
+
+    function normaliseHeatmapPath(value) {
+      let path = String(value || '').trim();
+      if (!path) return '';
+      try {
+        if (/^https?:\/\//i.test(path)) path = new URL(path).pathname;
+      } catch (e) {}
+      path = path.split('?')[0].split('#')[0];
+      if (!path.startsWith('/')) path = '/' + path;
+      return path.replace(/\/{2,}/g, '/');
+    }
+
+    async function loadHeatmapPages() {
+      try {
+        const type = currentHmPage === 'custom' ? '' : currentHmPage;
+        const resp = await fetch('/api/heatmap/pages' + (type ? '?page_type=' + encodeURIComponent(type) : ''));
+        if (!resp.ok) return;
+        const data = await resp.json();
+        hmPageCatalog = data.pages || [];
+        const list = document.getElementById('hmPagePathOptions');
+        if (list) {
+          list.innerHTML = '';
+          hmPageCatalog.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item.path;
+            option.label = item.title + ' · ' + String(item.type || '').toUpperCase();
+            list.appendChild(option);
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load heatmap page paths:', e);
+      }
+    }
+
+    function queueHeatmapPathFilter(value) {
+      const clear = document.getElementById('hmPathClear');
+      if (clear) clear.hidden = !String(value || '').trim();
+      window.clearTimeout(hmPathTimer);
+      hmPathTimer = window.setTimeout(() => applyHeatmapPathFilter(), 450);
+    }
+
+    function applyHeatmapPathFilter() {
+      window.clearTimeout(hmPathTimer);
+      const input = document.getElementById('hmPathInput');
+      currentHmPath = normaliseHeatmapPath(input ? input.value : '');
+      if (input) input.value = currentHmPath;
+      const clear = document.getElementById('hmPathClear');
+      if (clear) clear.hidden = !currentHmPath;
+      loadHeatmapData();
+    }
+
+    function clearHeatmapPath() {
+      const input = document.getElementById('hmPathInput');
+      const selector = document.getElementById('hmPageSelect');
+      if (input) input.value = '';
+      if (currentHmPage === 'custom') {
+        currentHmPage = currentHmResolvedPage || 'pdp';
+        if (selector) selector.value = currentHmPage;
+      }
+      currentHmPath = '';
+      const clear = document.getElementById('hmPathClear');
+      if (clear) clear.hidden = true;
+      loadHeatmapPages();
+      loadHeatmapData();
+    }
+
+    function updateHeatmapScope(context, summary) {
+      currentHmResolvedPage = context.page_type || currentHmResolvedPage;
+      const title = document.getElementById('hmScopeTitle');
+      const path = document.getElementById('hmScopePath');
+      const meta = document.getElementById('hmScopeMeta');
+      const simulatedUrl = document.getElementById('hmSimulatedUrl');
+      const group = context.page_type_label || 'Page';
+      if (title) title.textContent = context.scope_title || group;
+      if (path) path.textContent = context.path || (String(currentHmResolvedPage || '').toUpperCase() + ' group · all matching paths');
+      if (meta) meta.textContent = String(context.matching_pages || 1) + (context.matching_pages === 1 ? ' path' : ' discovered paths') + ' · ' + (currentHmDevice === 'mobile' ? 'Mobile' : 'Desktop') + ' · ' + heatmapSegmentLabel();
+      showHeatmapPageView(currentHmResolvedPage);
+      if (simulatedUrl) simulatedUrl.textContent = 'https://injectormarketing.com' + (context.path || defaultHeatmapPath(currentHmResolvedPage));
+      renderHeatmapVisualCanvas(hmHotspotsCache, hmScrollLevelsCache);
+    }
+
+    function heatmapSegmentLabel() {
+      return {all:'All visitors',converters:'Purchased',abandoners:'Cart abandoners',paid:'Paid traffic',returning:'Returning visitors'}[currentHmSegment] || 'All visitors';
+    }
+
+    function defaultHeatmapPath(page) {
+      return {pdp:'/urun/tum-urunler',plp:'/kategori/tum-kategoriler',home:'/',cart:'/cart',checkout:'/checkout'}[page] || '/';
+    }
+
+    function showHeatmapPageView(page) {
+      ['pdp', 'plp', 'cart', 'checkout', 'home'].forEach(key => {
+        const view = document.getElementById('hmCanvasView_' + key);
+        if (view) view.style.display = key === page ? 'block' : 'none';
+      });
     }
 
     function applyCustomDateRange() {
@@ -4444,10 +4574,11 @@
       }
 
       if (heading) {
-        if (currentHmMode === 'click') heading.innerHTML = 'Interactive PDP Click Hotspots &amp; User Retention';
-        else if (currentHmMode === 'scroll') heading.innerHTML = 'Scroll Depth Gradient &amp; Viewport Fold Reach';
-        else if (currentHmMode === 'rage') heading.innerHTML = '⚡ Rage Clicks &amp; Broken Interaction Hotspots';
-        else if (currentHmMode === 'revenue') heading.innerHTML = '💰 Revenue Attribution &amp; High-CVR Button Overlay';
+        const scope = document.getElementById('hmScopeTitle')?.textContent || 'selected pages';
+        if (currentHmMode === 'click') heading.textContent = 'Click concentration · ' + scope;
+        else if (currentHmMode === 'scroll') heading.textContent = 'Scroll reach · ' + scope;
+        else if (currentHmMode === 'rage') heading.textContent = 'Frustration clicks · ' + scope;
+        else if (currentHmMode === 'revenue') heading.textContent = 'Value signals · ' + scope;
       }
 
       if (!overlay) return;
@@ -4527,30 +4658,13 @@
       const frame = document.getElementById('hmViewportFrame');
       const grid = document.getElementById('hmPdpGrid');
 
+      if (btnMobile) btnMobile.classList.toggle('active', device === 'mobile');
+      if (btnDesktop) btnDesktop.classList.toggle('active', device !== 'mobile');
+
       if (device === 'mobile') {
-        if (btnMobile) {
-          btnMobile.style.background = '#ffffff';
-          btnMobile.style.color = '#0f172a';
-          btnMobile.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-        }
-        if (btnDesktop) {
-          btnDesktop.style.background = 'transparent';
-          btnDesktop.style.color = '#64748b';
-          btnDesktop.style.boxShadow = 'none';
-        }
         if (frame) frame.style.maxWidth = '420px';
         if (grid) grid.style.gridTemplateColumns = '1fr';
       } else {
-        if (btnDesktop) {
-          btnDesktop.style.background = '#ffffff';
-          btnDesktop.style.color = '#0f172a';
-          btnDesktop.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-        }
-        if (btnMobile) {
-          btnMobile.style.background = 'transparent';
-          btnMobile.style.color = '#64748b';
-          btnMobile.style.boxShadow = 'none';
-        }
         if (frame) frame.style.maxWidth = '100%';
         if (grid) grid.style.gridTemplateColumns = '1fr 1.2fr';
       }
@@ -4560,18 +4674,20 @@
 
     function switchHeatmapPage(page) {
       currentHmPage = page;
-      const urlEl = document.getElementById('hmSimulatedUrl');
-      if (urlEl) {
-        if (page === 'pdp') urlEl.textContent = 'https://injectormarketing.com/product/bosch-common-rail-0445110';
-        else if (page === 'plp') urlEl.textContent = 'https://injectormarketing.com/kategori/dizel-enjektorler';
-        else if (page === 'home') urlEl.textContent = 'https://injectormarketing.com/';
-        else if (page === 'cart') urlEl.textContent = 'https://injectormarketing.com/cart';
-        else if (page === 'checkout') urlEl.textContent = 'https://injectormarketing.com/checkout';
+      currentHmPath = '';
+      const input = document.getElementById('hmPathInput');
+      const clear = document.getElementById('hmPathClear');
+      if (input) {
+        input.value = '';
+        input.placeholder = page === 'custom' ? '/page/path or full URL' : 'All ' + ({pdp:'product detail pages',plp:'product listing pages',home:'homepage views',cart:'cart views',checkout:'checkout views'}[page] || 'matching pages');
+        if (page === 'custom') input.focus();
       }
-      ['pdp', 'plp', 'cart', 'checkout', 'home'].forEach(p => {
-        const view = document.getElementById('hmCanvasView_' + p);
-        if (view) view.style.display = (p === page) ? 'block' : 'none';
-      });
+      if (clear) clear.hidden = true;
+      if (page !== 'custom') {
+        currentHmResolvedPage = page;
+        showHeatmapPageView(page);
+      }
+      loadHeatmapPages();
       loadHeatmapData();
     }
 
@@ -4586,6 +4702,7 @@
       modes.forEach(m => {
         const btn = document.getElementById('hmMode' + m.charAt(0).toUpperCase() + m.slice(1));
         if (!btn) return;
+        btn.classList.toggle('active', m === mode);
         if (m === mode) {
           btn.style.background = '#eff6ff';
           btn.style.borderColor = '#3b82f6';
@@ -5137,6 +5254,9 @@
     window.renderHeatmapElementsTable = renderHeatmapElementsTable;
     window.switchHeatmapDevice = switchHeatmapDevice;
     window.switchHeatmapPage = switchHeatmapPage;
+    window.queueHeatmapPathFilter = queueHeatmapPathFilter;
+    window.applyHeatmapPathFilter = applyHeatmapPathFilter;
+    window.clearHeatmapPath = clearHeatmapPath;
     window.switchHeatmapSegment = switchHeatmapSegment;
     window.switchHeatmapMode = switchHeatmapMode;
     window.filterHeatmapElements = filterHeatmapElements;

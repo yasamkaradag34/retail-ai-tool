@@ -326,12 +326,15 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertIn('id="funnelWorkspaceLegacyContainer"',response.text)
         self.assertIn('/static/funnel-analysis.css?v=1',response.text)
         self.assertIn('/static/funnel-analysis.js?v=1',response.text)
+        self.assertIn('/static/heatmap-analysis.css?v=1',response.text)
         self.assertIn('Event funnel',response.text)
         self.assertIn('Path exploration',response.text)
         self.assertIn('User exploration',response.text)
         self.assertNotIn('data-key="digital_marketing"',response.text)
         self.assertIn('data-account-mode="test"',response.text)
         self.assertIn('Injector Marketing',response.text)
+        self.assertIn('id="hmPathInput"',response.text)
+        self.assertIn('Live heatmaps',response.text)
 
     @patch.object(main,'GoogleMerchant')
     def test_merchant_route_requires_content_scope_before_provider_call(self,provider):

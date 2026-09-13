@@ -3642,13 +3642,92 @@ async def funnel_insights(request: Request):
     })
 
 
+HEATMAP_PAGE_TYPES = {
+    "pdp": {"label": "Product detail pages", "short_label": "PDP", "icon": "◇"},
+    "plp": {"label": "Product listing pages", "short_label": "PLP", "icon": "▦"},
+    "home": {"label": "Homepage", "short_label": "Home", "icon": "⌂"},
+    "cart": {"label": "Cart", "short_label": "Cart", "icon": "◫"},
+    "checkout": {"label": "Checkout", "short_label": "Checkout", "icon": "✓"},
+}
+
+HEATMAP_PAGE_CATALOG = [
+    {"path": "/", "type": "home", "title": "Homepage", "share": 1.0},
+    {"path": "/urun/bosch-common-rail-0445110", "type": "pdp", "title": "Bosch Common Rail Injector", "share": 0.21},
+    {"path": "/urun/delphi-enjektor-ejbr03301d", "type": "pdp", "title": "Delphi EJBR03301D Injector", "share": 0.17},
+    {"path": "/urun/continental-vdo-a2c59511606", "type": "pdp", "title": "Continental VDO Injector", "share": 0.13},
+    {"path": "/urun/denso-common-rail-095000-5600", "type": "pdp", "title": "Denso Common Rail Injector", "share": 0.10},
+    {"path": "/kategori/dizel-enjektorler", "type": "plp", "title": "Diesel Injectors", "share": 0.34},
+    {"path": "/kategori/common-rail-pompalari", "type": "plp", "title": "Common Rail Pumps", "share": 0.27},
+    {"path": "/kategori/enjektor-yedek-parcalari", "type": "plp", "title": "Injector Spare Parts", "share": 0.19},
+    {"path": "/cart", "type": "cart", "title": "Cart", "share": 1.0},
+    {"path": "/checkout", "type": "checkout", "title": "Checkout", "share": 1.0},
+]
+
+
+def _normalise_heatmap_path(raw_path: str) -> str:
+    """Accept a site-relative path or URL without allowing script-like values."""
+    value = str(raw_path or "").strip()
+    if not value:
+        return ""
+    if len(value) > 240 or any(ord(char) < 32 for char in value):
+        raise HTTPException(status_code=422, detail="Enter a valid page path up to 240 characters.")
+    if "://" in value:
+        parsed = urllib.parse.urlsplit(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise HTTPException(status_code=422, detail="Enter a valid HTTP page URL or site-relative path.")
+        value = parsed.path or "/"
+    value = value.split("?", 1)[0].split("#", 1)[0]
+    if not value.startswith("/"):
+        value = "/" + value
+    while "//" in value:
+        value = value.replace("//", "/")
+    if any(char in value for char in ("<", ">", '"', "'", "\\")):
+        raise HTTPException(status_code=422, detail="Page path contains unsupported characters.")
+    return value
+
+
+def _heatmap_page_type(requested_type: str, page_path: str) -> str:
+    if requested_type in HEATMAP_PAGE_TYPES:
+        return requested_type
+    known = next((item for item in HEATMAP_PAGE_CATALOG if item["path"] == page_path), None)
+    if known:
+        return known["type"]
+    lower = page_path.casefold()
+    if lower in {"/", "/home"}:
+        return "home"
+    if any(part in lower for part in ("/kategori/", "/category/", "/collections/", "/search")):
+        return "plp"
+    if any(part in lower for part in ("/checkout", "/odeme")):
+        return "checkout"
+    if any(part in lower for part in ("/cart", "/sepet")):
+        return "cart"
+    return "pdp"
+
+
+@app.get("/api/heatmap/pages")
+async def heatmap_pages(page_type: str = "", query: str = ""):
+    """Return the available page paths for the Heatmap page picker."""
+    normalized_type = page_type if page_type in HEATMAP_PAGE_TYPES else ""
+    search = str(query or "").strip().casefold()[:80]
+    pages = [item for item in HEATMAP_PAGE_CATALOG if not normalized_type or item["type"] == normalized_type]
+    if search:
+        pages = [item for item in pages if search in item["path"].casefold() or search in item["title"].casefold()]
+    return JSONResponse({
+        "page_types": [{"id": key, **value} for key, value in HEATMAP_PAGE_TYPES.items()],
+        "pages": [{key: value for key, value in item.items() if key != "share"} for item in pages],
+        "total": len(pages),
+    })
+
+
 @app.get("/api/heatmap/data")
-async def heatmap_data(page: str = "pdp", device: str = "desktop", period: str = "30d", start_date: str = None, end_date: str = None, segment: str = "all"):
+async def heatmap_data(page: str = "pdp", path: str = "", device: str = "desktop", period: str = "30d", start_date: str = None, end_date: str = None, segment: str = "all"):
     """
     Return comprehensive visual heatmap coordinates, scroll depth, element performance,
     and friction diagnostics with dynamic custom date range, page type (PDP, PLP, Cart, Checkout, Home),
     and audience segmentation (all, converters, abandoners, paid). Zero cloud storage.
     """
+    page_path = _normalise_heatmap_path(path)
+    page = _heatmap_page_type(page, page_path)
     is_desktop = (device != "mobile")
     
     # Calculate duration scale based on custom date range or fallback period
@@ -3668,6 +3747,11 @@ async def heatmap_data(page: str = "pdp", device: str = "desktop", period: str =
         scale = 0.23
     elif period == "90d":
         scale = 2.95
+
+    path_match = next((item for item in HEATMAP_PAGE_CATALOG if item["path"] == page_path), None)
+    path_seed = int(hashlib.sha256(page_path.encode("utf-8")).hexdigest()[:8], 16) if page_path else 0
+    path_scale = float(path_match["share"]) if path_match else (0.04 + (path_seed % 90) / 1000.0 if page_path else 1.0)
+    scale = round(scale * path_scale, 4)
 
     # Base sessions by page
     page_base_sessions = {
@@ -3718,10 +3802,16 @@ async def heatmap_data(page: str = "pdp", device: str = "desktop", period: str =
         "checkout": 88.0 if is_desktop else 81.2
     }
 
+    scroll_bias = ((path_seed % 13) - 6) * 0.45 if page_path else 0.0
+    average_scroll = max(18.0, min(98.0, page_scroll_defaults.get(page, 68.4) + scroll_bias))
+    type_meta = HEATMAP_PAGE_TYPES[page]
+    matching_pages = sum(1 for item in HEATMAP_PAGE_CATALOG if item["type"] == page)
+    scope_title = path_match["title"] if path_match else (page_path.rsplit("/", 1)[-1].replace("-", " ").title() if page_path != "/" else "Homepage") if page_path else f"All {type_meta['label'].lower()}"
+
     summary = {
         "total_sessions": sessions,
         "total_clicks": clicks,
-        "avg_scroll_depth": page_scroll_defaults.get(page, 68.4),
+        "avg_scroll_depth": round(average_scroll, 1),
         "rage_click_rate": round(min(25.0, (2.8 if is_desktop else 4.6) * rage_mod), 1),
         "dead_click_rate": round(min(30.0, (4.9 if is_desktop else 6.8) * dead_mod), 1),
         "avg_time_on_page": "2m 34s" if is_desktop else "1m 48s",
@@ -4239,6 +4329,15 @@ async def heatmap_data(page: str = "pdp", device: str = "desktop", period: str =
 
     return JSONResponse({
         "status": "success",
+        "page_context": {
+            "page_type": page,
+            "page_type_label": type_meta["label"],
+            "scope_title": scope_title,
+            "path": page_path,
+            "scope": "exact_path" if page_path else "page_group",
+            "matching_pages": 1 if page_path else matching_pages,
+            "known_path": bool(path_match),
+        },
         "summary": summary,
         "scroll_levels": scroll_levels,
         "top_elements": top_elements,
