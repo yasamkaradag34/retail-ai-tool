@@ -151,21 +151,21 @@
       margin: 18px 10px 10px;
     }
 
-    .menu { display: flex; flex-direction: column; gap: 8px; }
+    .menu { display: flex; flex-direction: column; gap: 10px; }
 
     .menu-btn {
       border: 1px solid #f1f5f9;
       width: 100%;
-      height: 64px;
-      min-height: 64px;
-      max-height: 64px;
+      height: 68px;
+      min-height: 68px;
+      max-height: 68px;
       box-sizing: border-box;
       text-align: left;
       cursor: pointer;
       border-radius: 14px;
       background: #ffffff;
       color: #334155;
-      padding: 0 14px;
+      padding: 0 16px;
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 13.5px;
       line-height: 1.35;
@@ -250,6 +250,19 @@
     }
 
     .menu-btn.active span { color: var(--orange-light); }
+
+    body[data-account-mode="test"] .ca-property,
+    body[data-account-mode="test"] .fa-property,
+    body[data-account-mode="test"] .sp-account,
+    body[data-account-mode="test"] .ca-actions > a,
+    body[data-account-mode="test"] .ca-actions > button,
+    body[data-account-mode="test"] .fa-actions > a,
+    body[data-account-mode="test"] .fa-actions > button,
+    body[data-account-mode="test"] .sp-actions > a,
+    body[data-account-mode="test"] .sp-actions > button,
+    body[data-account-mode="test"] .ca-welcome a,
+    body[data-account-mode="test"] .fa-welcome a,
+    body[data-account-mode="test"] .sp-welcome a { display: none !important; }
 
     /* ── MAIN (IMPECCABLE WARM SLATE THEME) ── */
     .main {
@@ -1030,7 +1043,7 @@
   <link rel="stylesheet" href="/static/excel-wizard.css?v=1">
   <script src="/static/excel-wizard.js?v=1" defer></script>
 </head>
-<body>
+<body data-account-mode="{% if is_test_account %}test{% else %}customer{% endif %}" data-pivot-brand="{{ pivot_brand|e }}">
   <!-- Google Tag Manager (noscript) -->
   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TVKFC4P6"
   height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -1068,13 +1081,6 @@
               <span id="sub_funnel_analysis">Event, path &amp; user exploration</span>
             </span>
           </button>
-          <button class="menu-btn" data-key="digital_marketing" onclick="renderModule('digital_marketing')">
-            <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
-            <span class="menu-btn-text">
-              <strong>Digital Marketing</strong>
-              <span id="sub_digital_marketing">ROAS, CAC &amp; Campaign Analytics</span>
-            </span>
-          </button>
           <button class="menu-btn" data-key="business_calculator" onclick="renderModule('business_calculator')">
             <svg class="menu-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/></svg>
             <span class="menu-btn-text">
@@ -1101,20 +1107,25 @@
         <!-- BOTTOM PROFILE & PROPERTY FOOTER CARD (PINNED TO VERY BOTTOM OF SIDEBAR) -->
         <div style="margin-top: auto; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.22); display: flex; flex-direction: column; gap: 8px;">
           
-          <!-- CONNECT TO DATA SOURCES API GUIDELINE MODAL BUTTON -->
-          <button type="button" onclick="openApiGuidelineModal()" style="width: 100%; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.14); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: #ffffff; text-align: left; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          {% if is_test_account %}
+          <div style="width: 100%; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.14); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; color: #ffffff; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
             <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 16px;">🔌</span>
+              <span style="font-size: 16px;">◎</span>
               <div>
-                <strong style="display: block; font-size: 12px; color: #ffffff; font-weight: 700; letter-spacing: -0.01em;">Connect to Data Sources</strong>
-                <span style="font-size: 10.5px; color: rgba(255,255,255,0.80);">API Guideline &amp; Docs ↗</span>
+                <strong style="display: block; font-size: 12px; color: #ffffff; font-weight: 700; letter-spacing: -0.01em;">{{ pivot_brand }}</strong>
+                <span style="font-size: 10.5px; color: rgba(255,255,255,0.80);">Test workspace · Data ready</span>
               </div>
             </div>
-            <span style="font-size: 12px; opacity: 0.85;">⚙️</span>
-          </button>
+            <span style="font-size: 12px; opacity: 0.9;">●</span>
+          </div>
+          {% else %}
+          <a href="/connect-data" style="width: 100%; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.14); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; color: #ffffff; text-align: left; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-decoration:none;">
+            <div style="display: flex; align-items: center; gap: 10px;"><span style="font-size:16px;">◎</span><div><strong style="display:block;font-size:12px;color:#fff;font-weight:700;">Data Sources</strong><span style="font-size:10.5px;color:rgba(255,255,255,.80);">Review connected sources ↗</span></div></div><span style="font-size:12px;opacity:.85;">⚙️</span>
+          </a>
+          {% endif %}
 
           <!-- SINGLE CLEAN UNIFIED USER PROFILE & GOOGLE PROPERTY CARD -->
-          <div id="userProfileCard" onclick="openGoogleAccountModal()" style="background: rgba(0,0,0,0.20); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.28); border-radius: 16px; padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.22s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
+          <div id="userProfileCard" style="background: rgba(0,0,0,0.20); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.28); border-radius: 16px; padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; transition: all 0.22s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
             <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
               <div style="width: 36px; height: 36px; border-radius: 50%; background: #fde68a; color: #78350f; font-weight: 800; font-size: 13px; display: grid; place-items: center; border: 1.5px solid #ffffff; flex-shrink: 0;" id="sidebarUserInitials">{% if user and user.email %}{{ user.email[:2]|upper }}{% else %}DP{% endif %}</div>
               <div style="min-width: 0;">
@@ -1124,9 +1135,7 @@
             </div>
             
             <div style="display: flex; align-items: center; gap: 6px;">
-              <button onclick="event.stopPropagation(); openGoogleAccountModal();" type="button" title="Select connected GA4 and Merchant Center properties" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30); color: #ffffff; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; cursor: pointer; display: grid; place-items: center; flex-shrink: 0; transition: all 0.2s;">
-                ⚙️
-              </button>
+              {% if not is_test_account %}<a href="/connect-data" title="Review connected data sources" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30); color: #ffffff; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; display: grid; place-items: center; flex-shrink: 0; text-decoration:none;">⚙️</a>{% endif %}
               <a href="/logout" onclick="event.stopPropagation();" title="Çıkış Yap / Sign Out" style="background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.45); color: #fee2e2; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; display: grid; place-items: center; flex-shrink: 0; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.45)'" onmouseout="this.style.background='rgba(239,68,68,0.25)'">
                 🚪
               </a>
@@ -1159,7 +1168,7 @@
           <span style="font-size: 20px;">🎉</span>
           <div>
             <strong style="color: #065f46; font-size: 13.5px;" id="activationTitle">Welcome to your DataProvido workspace!</strong>
-            <div style="font-size: 12px; color: #047857;" id="activationSubtitle">Connect your data sources to start analysing your store.</div>
+            <div style="font-size: 12px; color: #047857;" id="activationSubtitle">{% if is_test_account %}Injector Marketing test workspace is ready.{% else %}Your connected-data workspace is ready for analysis.{% endif %}</div>
           </div>
         </div>
         <button onclick="document.getElementById('activationBanner').style.display='none'" style="background: transparent; border: none; color: #065f46; font-weight: 700; cursor: pointer; font-size: 16px;">✕</button>
@@ -1249,137 +1258,6 @@
 
           <!-- STOCK & PRICE COMPETITIVENESS INTERACTIVE WORKSPACE CONTAINER -->
           {% include "stock_price_analysis.html" %}
-
-            <!-- DATA CONNECTORS & IMPLEMENTATION GUIDE CONTAINER -->
-          <div id="dataConnectorsWorkspaceContainer" style="display: none; margin-bottom: 22px; flex-direction: column; gap: 18px;">
-            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 20px; padding: 24px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
-              
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #f1f5f9;">
-                <div>
-                  <span style="font-size: 11px; font-weight: 800; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Automated Ingestion Pipeline</span>
-                  <h3 style="font-size: 19px; font-weight: 800; color: #0f172a; margin-top: 2px;">Data Connectors &amp; Integration Guide</h3>
-                </div>
-                <a href="/api/templates/ecommerce-crm" download style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 8px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-                  📥 <span>Download CRM Excel Template (.xlsx)</span>
-                </a>
-              </div>
-
-              <!-- CONNECTOR TAB STRIP -->
-              <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-                <button id="connTabBtnGA4" onclick="switchConnectorTab('ga4')" type="button" style="background: #eff6ff; border: 1.5px solid #93c5fd; color: #1d4ed8; padding: 8px 18px; border-radius: 10px; font-weight: 700; font-size: 12.5px; cursor: pointer;">📊 Google Analytics (GA4)</button>
-                <button id="connTabBtnSST" onclick="switchConnectorTab('sst')" type="button" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 8px 18px; border-radius: 10px; font-weight: 700; font-size: 12.5px; cursor: pointer;">⚡ Server-Side Tagging (SST)</button>
-                <button id="connTabBtnCRM" onclick="switchConnectorTab('crm')" type="button" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 8px 18px; border-radius: 10px; font-weight: 700; font-size: 12.5px; cursor: pointer;">🚀 CRM &amp; E-Commerce API Push</button>
-              </div>
-
-              <!-- TAB 1: GA4 & GOOGLE DATA SOURCES CONNECTOR (QUERYNA.COM STYLE) -->
-              <div id="connTabGA4" class="conn-tab-panel" style="display: block;">
-                <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1.5px solid #cbd5e1; border-radius: 18px; padding: 22px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
-                  
-                  <!-- ACCOUNT EMAIL HEADER (QUERYNA.COM STYLE) -->
-                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                      <div style="width: 44px; height: 44px; border-radius: 12px; background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-size: 22px; display: grid; place-items: center; flex-shrink: 0;">🌐</div>
-                      <div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                          <strong style="font-size: 14px; color: #0f172a; font-weight: 800;">Connected Google Account:</strong>
-                          <span id="connPanelUserEmail" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px;">myasamkaradag@gmail.com</span>
-                        </div>
-                        <span style="font-size: 12px; color: #64748b;">Select accessible Google Analytics 4 and Merchant Center properties.</span>
-                      </div>
-                    </div>
-
-                    <a href="/login/google" style="background: #ffffff; border: 1.5px solid #dadce0; color: #3c4043; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-                      <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-                      Re-authorize Google
-                    </a>
-                  </div>
-
-                  <!-- 3 SELECT BOXES (GA4, MERCHANT, ADS) -->
-                  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px;">
-                    
-                    <!-- GA4 SELECT -->
-                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px;">
-                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 13px; font-weight: 800; color: #0f172a;">📊 GA4 Property</span>
-                        <span style="background: #dbeafe; color: #1e40af; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">Live API</span>
-                      </div>
-                      <select id="connSelectGA4" style="width: 100%; padding: 9px 12px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 12.5px; font-weight: 600; color: #0f172a; outline: none;">
-                        <option value="">Loading GA4 properties...</option>
-                      </select>
-                    </div>
-
-                    <!-- MERCHANT SELECT -->
-                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px;">
-                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 13px; font-weight: 800; color: #0f172a;">🛒 Merchant Account</span>
-                        <span style="background: #fef3c7; color: #92400e; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">Merchant API</span>
-                      </div>
-                      <select id="connSelectMerchant" style="width: 100%; padding: 9px 12px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 12.5px; font-weight: 600; color: #0f172a; outline: none;">
-                        <option value="">Loading Merchant accounts...</option>
-                      </select>
-                    </div>
-
-                  </div>
-
-                  <!-- ACTION BUTTONS -->
-                  <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 18px; flex-wrap: wrap; gap: 12px;">
-                    <div style="font-size: 12px; color: #64748b;">
-                      💡 <strong style="color: #0f172a;">Queryna Auto-Sync:</strong> Selected properties stream directly into Category &amp; Funnel dashboards.
-                    </div>
-                    <button onclick="saveConnectorPanelSelection()" type="button" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; border: none; padding: 10px 24px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(37,99,235,0.30); transition: all 0.2s;">
-                      🔗 Save &amp; Connect Selected Properties
-                    </button>
-                  </div>
-
-                </div>
-              </div>
-
-              <!-- TAB 2: SST WEBHOOK CONNECTOR -->
-              <div id="connTabSST" class="conn-tab-panel" style="display: none;">
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px;">
-                  <h4 style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Server-Side Tagging (SST) Endpoint</h4>
-                  <p style="font-size: 12.5px; color: #64748b; margin-bottom: 14px;">Post real-time Measurement Protocol events directly from your server-side GTM or SST container.</p>
-                  
-                  <div style="background: #0f172a; color: #38bdf8; padding: 12px 16px; border-radius: 10px; font-family: monospace; font-size: 12.5px; margin-bottom: 14px;">
-                    POST http://localhost:8000/api/connectors/sst/event
-                  </div>
-
-                  <div style="font-size: 12px; color: #475569; font-weight: 600;">Supported Events: <code>view_item</code>, <code>add_to_cart</code>, <code>purchase</code></div>
-                </div>
-              </div>
-
-              <!-- TAB 3: CRM API PUSH & TEMPLATE GUIDE -->
-              <div id="connTabCRM" class="conn-tab-panel" style="display: none;">
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div>
-                      <h4 style="font-size: 14px; font-weight: 800; color: #0f172a; margin: 0;">CRM API Push &amp; Excel Schema</h4>
-                      <span style="font-size: 12px; color: #64748b;">Push custom e-commerce datasets using <code>ecommerce_ai_sample_data_200.xlsx</code> columns.</span>
-                    </div>
-                    <a href="/api/templates/ecommerce-crm" download style="background: #ecfdf5; border: 1.5px solid #6ee7b7; color: #047857; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none;">📥 Download Template</a>
-                  </div>
-
-                  <div style="background: #0f172a; color: #f8fafc; padding: 14px; border-radius: 10px; font-family: monospace; font-size: 11.5px; overflow-x: auto; line-height: 1.5;">
-<span style="color: #64748b;"># Python Code Snippet to Push CRM Data to Retail AI Tool</span>
-import requests
-
-payload = {
-  "data": [
-    {
-      "Customer_ID": "CUST-9012", "Segment": "VIP", "Order_ID": "ORD-101",
-      "Category_L1": "Elektronik", "SKU": "SAM-S24U", "Price": 54999,
-      "Revenue": 34099380, "PDP_Views": 24500, "Transactions": 620
-    }
-  ]
-}
-res = requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
-print(res.json())
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
 
           {% include "funnel_analysis.html" %}
 
@@ -1737,104 +1615,7 @@ print(res.json())
           </div>
           <!-- END STOCK WORKSPACE -->
 
-          <!-- DIGITAL MARKETING WORKSPACE CONTAINER -->
-          <div id="digitalMarketingWorkspaceContainer" class="funnel-workspace">
-            
-            <!-- 1. DASHBOARD HEADER CARD -->
-            <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1.5px solid #93c5fd; border-radius: 20px; padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(37,99,235,0.06);">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 14px;">
-                  <div style="width: 44px; height: 44px; border-radius: 12px; background: #2563eb; color: #ffffff; font-size: 22px; display: grid; place-items: center; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">📢</div>
-                  <div>
-                    <span style="font-size: 11px; font-weight: 800; color: #1d4ed8; letter-spacing: 0.08em; text-transform: uppercase;">Marketing Intelligence Hub</span>
-                    <h3 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 2px;">Digital Marketing &amp; Campaign Performance</h3>
-                  </div>
-                </div>
-                <span class="data-source-pill demo">⚡ Module Ready</span>
-              </div>
-              <p style="font-size: 13.5px; color: #334155; margin-top: 12px; margin-bottom: 0; line-height: 1.6;">
-                Track ROAS, Customer Acquisition Cost (CAC), Google Ads, Meta Ads &amp; TikTok Ads performance metrics alongside your retail funnel &amp; stock levels.
-              </p>
-            </div>
 
-            <!-- 2. MARKETING KPI SUMMARY CARDS -->
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px;">
-              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
-                <span style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase;">Target ROAS</span>
-                <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">4.85x</div>
-                <div style="font-size: 11.5px; color: #059669; font-weight: 700; margin-top: 2px;">+14.2% vs last month</div>
-              </div>
-
-              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
-                <span style="font-size: 11px; font-weight: 800; color: #059669; text-transform: uppercase;">Blended CAC</span>
-                <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;">₺142.50</div>
-                <div style="font-size: 11.5px; color: #059669; font-weight: 700; margin-top: 2px;">-8.4% cost reduction</div>
-              </div>
-
-              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
-                <span style="font-size: 11px; font-weight: 800; color: #d97706; text-transform: uppercase;">Total Ad Spend</span>
-                <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;" id="dmTotalAdSpend">₺485,200</div>
-                <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">Across 3 ad channels</div>
-              </div>
-
-              <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.03);">
-                <span style="font-size: 11px; font-weight: 800; color: #7c3aed; text-transform: uppercase;">Ad Attributed Revenue</span>
-                <div style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px;" id="dmAttributedRevenue">₺2,353,220</div>
-                <div style="font-size: 11.5px; color: #059669; font-weight: 700; margin-top: 2px;">82.4% conversion share</div>
-              </div>
-            </div>
-
-            <!-- 3. CAMPAIGN PERFORMANCE & CHANNEL BREAKDOWN TABLE -->
-            <div class="insights-table-card">
-              <div class="funnel-section-header">
-                <div>
-                  <span class="funnel-section-tag">🎯 Campaign Analytics</span>
-                  <h4 class="funnel-section-title">Active Ad Campaigns &amp; Performance Breakdown</h4>
-                </div>
-                <span class="data-source-pill demo">📋 Meta &amp; Google Ads Sync</span>
-              </div>
-              <table class="insights-table">
-                <thead>
-                  <tr>
-                    <th style="width: 100px;">Channel</th>
-                    <th>Campaign Name</th>
-                    <th style="width: 110px;">Spend</th>
-                    <th style="width: 110px;">ROAS</th>
-                    <th style="width: 110px;">Conv. Rate</th>
-                    <th style="width: 120px;">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><span style="background: #eff6ff; color: #1d4ed8; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px;">Google Ads</span></td>
-                    <td><strong>PMax - High Margin SKUs &amp; Smart Bidding</strong></td>
-                    <td style="font-weight: 700;">₺185,400</td>
-                    <td><span style="color: #059669; font-weight: 800;">5.42x</span></td>
-                    <td>3.85%</td>
-                    <td><span class="severity-badge improvement">🟢 Active</span></td>
-                  </tr>
-                  <tr>
-                    <td><span style="background: #fdf2f8; color: #db2777; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px;">Meta Ads</span></td>
-                    <td><strong>Retargeting - Cart Abandoners 7D</strong></td>
-                    <td style="font-weight: 700;">₺142,000</td>
-                    <td><span style="color: #059669; font-weight: 800;">4.65x</span></td>
-                    <td>4.12%</td>
-                    <td><span class="severity-badge improvement">🟢 Active</span></td>
-                  </tr>
-                  <tr>
-                    <td><span style="background: #f5f3ff; color: #7c3aed; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px;">TikTok Ads</span></td>
-                    <td><strong>Broad Prospecting - Gen Z Top Categories</strong></td>
-                    <td style="font-weight: 700;">₺98,500</td>
-                    <td><span style="color: #d97706; font-weight: 800;">3.20x</span></td>
-                    <td>1.95%</td>
-                    <td><span class="severity-badge warning">🟡 Optimizing</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-          </div>
-          <!-- END DIGITAL MARKETING WORKSPACE -->
 
           <!-- ══════════════════════════════════════════════════════
                HEATMAP & UX ANALYTICS WORKSPACE (TASK 1)
@@ -3117,184 +2898,6 @@ print(res.json())
     </div>
   </div>
 
-  <!-- API GUIDELINE & DATA CONNECTORS MODAL -->
-  <div id="apiGuidelineModal" class="modal-backdrop font-sans" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.78); backdrop-filter: blur(10px); z-index: 999999; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 26px; max-width: 860px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.30); position: relative; padding: 32px;">
-      
-      <!-- CLOSE BUTTON -->
-      <button onclick="closeApiGuidelineModal()" style="position: absolute; top: 24px; right: 24px; background: #f1f5f9; border: none; width: 36px; height: 36px; border-radius: 50%; color: #475569; font-weight: 800; font-size: 16px; cursor: pointer; display: grid; place-items: center; transition: all 0.2s;">✕</button>
-
-      <!-- HEADER -->
-      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
-        <div style="width: 48px; height: 48px; border-radius: 14px; background: #eff6ff; color: #2563eb; font-size: 24px; display: grid; place-items: center; flex-shrink: 0;">🔌</div>
-        <div>
-          <span style="font-size: 11px; font-weight: 800; color: #2563eb; letter-spacing: 0.08em; text-transform: uppercase;">Integration &amp; API Guideline</span>
-          <h3 style="font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 2px;">Connect to Data Sources Guide</h3>
-        </div>
-      </div>
-
-      <p style="font-size: 13.5px; color: #475569; line-height: 1.6; margin-bottom: 20px;">
-        Connect Google Analytics 4 (GA4), Server-Side Tagging (SST), CRM API endpoints, and Google Merchant Center feeds to stream live retail metrics to DataProvido Console.
-      </p>
-
-      <!-- PROMINENT TASK 1 CTA BUTTON: OPEN GOOGLE PROPERTY SELECTION MODAL -->
-      <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1.5px solid #bfdbfe; border-radius: 16px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 14px; box-shadow: 0 4px 14px rgba(37,99,235,0.08);">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 40px; height: 40px; border-radius: 12px; background: #2563eb; color: #ffffff; font-size: 20px; display: grid; place-items: center; flex-shrink: 0;">⚙️</div>
-          <div>
-            <strong style="font-size: 14px; color: #1e40af; display: block; font-weight: 700;">Select &amp; Configure Active Google Properties</strong>
-            <span style="font-size: 12px; color: #3b82f6;">Select a GA4 property and Merchant Center account.</span>
-          </div>
-        </div>
-        <button onclick="closeApiGuidelineModal(); openGoogleAccountModal();" type="button" style="background: #2563eb; color: #ffffff; border: none; padding: 10px 20px; border-radius: 11px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 4px 14px rgba(37,99,235,0.30); transition: all 0.2s;">
-          Configure Properties →
-        </button>
-      </div>
-
-      <!-- TAB NAVIGATION IN MODAL -->
-      <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-        <button id="modalTabBtnGA4" onclick="switchApiModalTab('ga4')" type="button" style="background: #eff6ff; border: 1.5px solid #93c5fd; color: #1d4ed8; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 12.5px; cursor: pointer;">📊 GA4 Data API</button>
-        <button id="modalTabBtnSST" onclick="switchApiModalTab('sst')" type="button" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 12.5px; cursor: pointer;">⚡ Server-Side Tagging (SST)</button>
-        <button id="modalTabBtnCRM" onclick="switchApiModalTab('crm')" type="button" style="background: #ffffff; border: 1px solid #cbd5e1; color: #64748b; padding: 8px 16px; border-radius: 10px; font-weight: 700; font-size: 12.5px; cursor: pointer;">🚀 CRM API Push</button>
-      </div>
-
-      <!-- TAB 1: GA4 -->
-      <div id="modalTabGA4" style="display: block;">
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 16px;">
-          <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Google Analytics 4 (GA4) API Integration</h4>
-          <p style="font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 14px;">Connect your GA4 Property ID and Service Account Credentials to import live PDP Views, Add-to-Cart events, and Conversion Funnel metrics.</p>
-          <div style="background: #0f172a; color: #38bdf8; padding: 14px; border-radius: 10px; font-family: monospace; font-size: 12px; line-height: 1.5; overflow-x: auto;">
-POST http://localhost:8000/api/connectors/ga4/sync<br/>
-Content-Type: application/json<br/><br/>
-{"property_id": "GA4-PROD-88910", "credentials": {...}}
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 2: SST -->
-      <div id="modalTabSST" style="display: none;">
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 16px;">
-          <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Server-Side Tagging (SST) Event Endpoint</h4>
-          <p style="font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 14px;">Stream real-time measurement events (view_item, add_to_cart, purchase) from your server-side GTM container.</p>
-          <div style="background: #0f172a; color: #38bdf8; padding: 14px; border-radius: 10px; font-family: monospace; font-size: 12px; line-height: 1.5; overflow-x: auto;">
-POST http://localhost:8000/api/connectors/sst/event<br/><br/>
-{"event_name": "view_item", "sku": "SAM-S24U", "client_id": "90812.128"}
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 3: CRM -->
-      <div id="modalTabCRM" style="display: none;">
-        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h4 style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 0;">CRM API Push &amp; Excel Schema</h4>
-            <a href="/api/templates/ecommerce-crm" download style="background: #ecfdf5; border: 1px solid #6ee7b7; color: #047857; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; text-decoration: none;">📥 Download Template (.xlsx)</a>
-          </div>
-          <p style="font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 14px;">Push custom ERP / CRM orders and stock data via HTTP REST endpoint.</p>
-          <div style="background: #0f172a; color: #f8fafc; padding: 14px; border-radius: 10px; font-family: monospace; font-size: 11.5px; line-height: 1.5; overflow-x: auto;">
-import requests<br/>
-payload = {"data": [{"Customer_ID": "CUST-9012", "SKU": "SAM-S24U", "Price": 54999}]}<br/>
-requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
-          </div>
-        </div>
-      </div>
-
-      <!-- MODAL FOOTER -->
-      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
-        <button onclick="closeApiGuidelineModal()" type="button" style="background: #2563eb; color: #ffffff; border: none; padding: 10px 24px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">Close Guideline</button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- GOOGLE CONNECTED ACCOUNTS SELECTION MODAL -->
-  <div id="googleAccountModal" class="modal-backdrop font-sans" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.80); backdrop-filter: blur(10px); z-index: 999999; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 26px; max-width: 720px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.35); position: relative; padding: 32px;">
-      
-      <!-- CLOSE BUTTON -->
-      <button onclick="closeGoogleAccountModal()" style="position: absolute; top: 24px; right: 24px; background: #f1f5f9; border: none; width: 36px; height: 36px; border-radius: 50%; color: #475569; font-weight: 800; font-size: 16px; cursor: pointer; display: grid; place-items: center; transition: all 0.2s;">✕</button>
-
-      <!-- HEADER -->
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 14px;">
-          <div style="width: 48px; height: 48px; border-radius: 14px; background: #f0fdf4; border: 1px solid #bbf7d0; color: #16a34a; font-size: 24px; display: grid; place-items: center; flex-shrink: 0;">🌐</div>
-          <div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 11px; font-weight: 800; color: #16a34a; letter-spacing: 0.08em; text-transform: uppercase;">Google Integrations</span>
-              <span id="modalGoogleEmailBadge" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 999px;">Connecting...</span>
-            </div>
-            <h3 style="font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 2px;">Select Active Google Data Properties</h3>
-          </div>
-        </div>
-
-        <a href="/login/google" style="background: #ffffff; border: 1.5px solid #dadce0; color: #3c4043; padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; box-shadow: 0 1px 3px rgba(0,0,0,0.08); transition: background-color 0.2s;">
-          <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-          Re-authorize Google
-        </a>
-      </div>
-
-      <p style="font-size: 13.5px; color: #475569; line-height: 1.6; margin-bottom: 24px;">
-        Configure which Google Analytics 4 and Merchant Center properties DataProvido reads for the selected dashboards.
-      </p>
-
-      <!-- ACCOUNT SELECTION SECTIONS -->
-      <div style="display: flex; flex-direction: column; gap: 18px;">
-        
-        <!-- SECTION 1: GA4 PROPERTY -->
-        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 18px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 20px;">📊</span>
-              <div>
-                <strong style="font-size: 14.5px; color: #0f172a; display: block;">1. Google Analytics 4 (GA4) Property</strong>
-                <span style="font-size: 12px; color: #64748b;">Feeds Funnel Analysis, PDP View &amp; Cart Conversion metrics</span>
-              </div>
-            </div>
-            <span style="background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 8px;">🟢 GA4 Data API</span>
-          </div>
-          <select id="selectGA4Property" style="width: 100%; padding: 11px 14px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 13.5px; font-weight: 600; color: #0f172a; outline: none; transition: border-color 0.2s;">
-            <option value="">Loading GA4 properties...</option>
-          </select>
-        </div>
-
-        <!-- SECTION 2: MERCHANT CENTER ACCOUNT -->
-        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 18px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 20px;">🛒</span>
-              <div>
-                <strong style="font-size: 14.5px; color: #0f172a; display: block;">2. Google Merchant Center Account</strong>
-                <span style="font-size: 12px; color: #64748b;">Feeds Product Catalog Feed &amp; Stock Price Competition</span>
-              </div>
-            </div>
-            <span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 8px;">🟢 Merchant Content API</span>
-          </div>
-          <select id="selectMerchantAccount" style="width: 100%; padding: 11px 14px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 13.5px; font-weight: 600; color: #0f172a; outline: none; transition: border-color 0.2s;">
-            <option value="">Loading Merchant accounts...</option>
-          </select>
-        </div>
-
-      </div>
-
-      <!-- ACTIVE SUMMARY PILLS BAR -->
-      <div id="activePropertiesSummaryBar" style="background: #f1f5f9; border-radius: 14px; padding: 12px 16px; margin-top: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 12px; color: #475569;">
-        <strong style="color: #0f172a; font-weight: 700;">Active Workspace Properties:</strong>
-        <span id="summaryPillGA4" style="background: #dbeafe; color: #1e40af; font-weight: 700; padding: 4px 12px; border-radius: 999px;">GA4: Active</span>
-        <span id="summaryPillMerchant" style="background: #fef3c7; color: #92400e; font-weight: 700; padding: 4px 12px; border-radius: 999px;">Merchant: Active</span>
-      </div>
-
-      <!-- FOOTER / SAVE BUTTON -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid #f1f5f9; flex-wrap: wrap; gap: 12px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <button onclick="closeGoogleAccountModal()" type="button" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 11px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer;">Cancel</button>
-          <a href="/api/auth/google/disconnect" style="display: inline-flex; align-items: center; gap: 6px; background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 11px 18px; border-radius: 12px; font-size: 13px; font-weight: 700; text-decoration: none;">Disconnect Google</a>
-        </div>
-        <button onclick="saveGoogleAccountSelection()" type="button" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #ffffff; border: none; padding: 11px 26px; border-radius: 12px; font-size: 13.5px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(22,163,74,0.30); transition: all 0.2s;">Save Selection &amp; Apply Workspaces ✓</button>
-      </div>
-
-    </div>
-  </div>
-
   <!-- INTERACTIVE HOTSPOT BEACON & TOOLTIP BALLOON TOUR CONTAINERS -->
   <div id="tourOverlayMask" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 1000000; pointer-events: auto;" onclick="stopInteractiveTour()"></div>
   
@@ -3552,18 +3155,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         },
         suggestions: { tr: [], en: [] }
       },
-      digital_marketing: {
-        title: "Digital Marketing",
-        desc: {
-          tr: "ROAS, müşteri edinme maliyeti (CAC) ve reklam kampanyası performansını analiz eder.",
-          en: "Analyzes ROAS, Customer Acquisition Cost (CAC), and campaign performance."
-        },
-        placeholder: {
-          tr: "Örn: Kampanya ROAS ve pazarlama performansını getir",
-          en: "E.g.: Display campaign ROAS and digital marketing performance"
-        },
-        suggestions: { tr: [], en: [] }
-      },
       stock_price_comp: {
         title: "Stock & Price Comp.",
         desc: {
@@ -3604,7 +3195,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       const subCategory = document.getElementById("sub_category_insights");
       const subStockPrice = document.getElementById("sub_stock_price_comp");
       const subFunnel = document.getElementById("sub_funnel_analysis");
-      const subDigital = document.getElementById("sub_digital_marketing");
 
       const modalTableSub = document.getElementById("modalTableSub");
       const modalTableSearch = document.getElementById("modalTableSearch");
@@ -3651,7 +3241,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         if (subCategory) subCategory.textContent = "Category & product deep-dive";
         if (subStockPrice) subStockPrice.textContent = "Availability & market pricing";
         if (subFunnel) subFunnel.textContent = "Event, path & user exploration";
-        if (subDigital) subDigital.textContent = "ROAS, CAC & Campaign Analytics";
 
         if (modalTableSub) modalTableSub.textContent = "Live spreadsheet preview, row search & column analysis";
         if (modalTableSearch) modalTableSearch.placeholder = "🔍 Search in table (SKU, Brand, Category)...";
@@ -3710,7 +3299,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         if (subCategory) subCategory.textContent = "Kategori & ürün analizi";
         if (subStockPrice) subStockPrice.textContent = "Bulunabilirlik & pazar fiyatları";
         if (subFunnel) subFunnel.textContent = "Event, yol & kullanıcı keşfi";
-        if (subDigital) subDigital.textContent = "ROAS, CAC & kampanya analizi";
 
         if (modalTableSub) modalTableSub.textContent = "Canlı Excel tablosu önizlemesi, filtreleme ve sütun analizi";
         if (modalTableSearch) modalTableSearch.placeholder = "🔍 Tablo içinde ara (SKU, Marka, Kategori)...";
@@ -3782,7 +3370,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       const funnelWorkspace = document.getElementById("funnelWorkspaceContainer");
       const stockWorkspace = document.getElementById("stockWorkspaceContainer");
       const heatmapWorkspace = document.getElementById("heatmapWorkspaceContainer");
-      const digitalWorkspace = document.getElementById("digitalMarketingWorkspaceContainer");
       const inputArea = document.querySelector(".input-area");
 
       if (funnelWorkspace) {
@@ -3816,20 +3403,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         }
       }
 
-      // Handle Digital Marketing Workspace
-      if (digitalWorkspace) {
-        if (key === "digital_marketing") {
-          digitalWorkspace.classList.add("active");
-          const mStart = document.getElementById('masterStartDate') ? document.getElementById('masterStartDate').value : '';
-          const mEnd = document.getElementById('masterEndDate') ? document.getElementById('masterEndDate').value : '';
-          if (mStart && mEnd && typeof updateDigitalMarketingKPIs === 'function') {
-            updateDigitalMarketingKPIs(mStart, mEnd);
-          }
-        } else {
-          digitalWorkspace.classList.remove("active");
-        }
-      }
-
       const heroMainHeading = document.getElementById("heroMainHeading");
       if (heroMainHeading) {
         if (key === "business_calculator") {
@@ -3859,60 +3432,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         updateGlobalDateRangeLabel(mCurStart, mCurEnd);
       }
     }
-
-    function switchConnectorTab(tabKey) {
-      const tabs = ["ga4", "sst", "crm"];
-      tabs.forEach(t => {
-        const btn = document.getElementById("connTabBtn" + t.toUpperCase());
-        const panel = document.getElementById("connTab" + t.toUpperCase());
-        if (t === tabKey) {
-          if (btn) {
-            btn.style.background = "#eff6ff";
-            btn.style.borderColor = "#93c5fd";
-            btn.style.color = "#1d4ed8";
-          }
-          if (panel) panel.style.display = "block";
-        } else {
-          if (btn) {
-            btn.style.background = "#ffffff";
-            btn.style.borderColor = "#cbd5e1";
-            btn.style.color = "#64748b";
-          }
-          if (panel) panel.style.display = "none";
-        }
-      });
-    }
-
-    function syncGA4Connector() {
-      const propId = document.getElementById("ga4PropertyId") ? document.getElementById("ga4PropertyId").value : "GA4-PROD-88910";
-      const statusMsg = document.getElementById("ga4StatusMsg");
-      if (statusMsg) {
-        statusMsg.style.color = "#2563eb";
-        statusMsg.textContent = "⏳ Syncing GA4 Data API...";
-      }
-      
-      fetch("/api/connectors/ga4/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ property_id: propId })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (statusMsg) {
-          statusMsg.style.color = "#059669";
-          statusMsg.textContent = "✓ GA4 Property " + (data.property_id || propId) + " synced successfully! PDP views and Add-to-Carts ready for Category Analysis.";
-        }
-      })
-      .catch(err => {
-        if (statusMsg) {
-          statusMsg.style.color = "#dc2626";
-          statusMsg.textContent = "✕ Sync failed: " + err.message;
-        }
-      });
-    }
-
-    window.switchConnectorTab = switchConnectorTab;
-    window.syncGA4Connector = syncGA4Connector;
 
     window.renderModule = renderModule;
 
@@ -4097,8 +3616,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           if (typeof loadPriceDataForStock === 'function') loadPriceDataForStock();
           if (typeof loadMerchantBrandPriceData === 'function') loadMerchantBrandPriceData();
           if (typeof loadCompetitorVisibilityData === 'function') loadCompetitorVisibilityData();
-        } else if (currentModule === 'digital_marketing') {
-          updateDigitalMarketingKPIs(start, end);
         }
       }
 
@@ -4111,20 +3628,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           setTimeout(() => { toast.style.display = 'none'; }, 250);
         }, 1800);
       }
-    }
-
-    function updateDigitalMarketingKPIs(start, end) {
-      try {
-        const d1 = new Date(start);
-        const d2 = new Date(end);
-        const diffDays = Math.max(1, Math.round(Math.abs(d2 - d1) / (1000 * 60 * 60 * 24)) + 1);
-        const scale = diffDays / 30.0;
-
-        const spendEl = document.getElementById('dmTotalAdSpend');
-        const revEl = document.getElementById('dmAttributedRevenue');
-        if (spendEl) spendEl.textContent = '₺' + Math.round(485200 * scale).toLocaleString();
-        if (revEl) revEl.textContent = '₺' + Math.round(2353220 * scale).toLocaleString();
-      } catch(e) {}
     }
 
     async function loadFunnelData() {
@@ -4794,7 +4297,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     window.applyGlobalDateRange = applyGlobalDateRange;
     window.setGlobalDatePreset = setGlobalDatePreset;
     window.updateGlobalDateRangeLabel = updateGlobalDateRangeLabel;
-    window.updateDigitalMarketingKPIs = updateDigitalMarketingKPIs;
 
     /* ══════════════════════════════════════════════════════════
        HEATMAP & UX ANALYTICS — JavaScript Engine (Task 1)
@@ -6081,215 +5583,10 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     window.nextOnboardingStep = nextOnboardingStep;
     window.prevOnboardingStep = prevOnboardingStep;
 
-    async function fetchGoogleAccountsAndPopulatePanels() {
-      try {
-        const resp = await fetch("/api/google/accounts");
-        if (!resp.ok) return;
-        const data = await resp.json();
-
-        // 1. Email Badges
-        const emailBadge = document.getElementById("modalGoogleEmailBadge");
-        const connEmailBadge = document.getElementById("connPanelUserEmail");
-        const emailText = data.user_email || "Google not connected";
-        if (emailBadge) emailBadge.textContent = emailText;
-        if (connEmailBadge) connEmailBadge.textContent = emailText;
-
-        // 2. GA4 Selects (Modal & Panel)
-        const ga4Selects = [
-          document.getElementById("selectGA4Property"),
-          document.getElementById("connSelectGA4")
-        ];
-        ga4Selects.forEach(sel => {
-          if (sel && data.ga4_properties) {
-            sel.innerHTML = "";
-            if (!data.authenticated) {
-              const authOpt = document.createElement("option");
-              authOpt.value = "__SIGN_IN_GOOGLE__";
-              authOpt.textContent = "🔑 Connect Google Analytics...";
-              authOpt.style.fontWeight = "bold";
-              authOpt.style.color = "#2563eb";
-              sel.appendChild(authOpt);
-            }
-            data.ga4_properties.forEach(item => {
-              const opt = document.createElement("option");
-              opt.value = item.id;
-              opt.textContent = data.authenticated ? item.name : ("[DEMO PREVIEW] " + item.name);
-              if (item.id === data.selected_ga4 && data.authenticated) opt.selected = true;
-              sel.appendChild(opt);
-            });
-            sel.onchange = function() {
-              if (this.value === '__SIGN_IN_GOOGLE__') {
-                window.location.href = '/api/auth/google?integration=analytics';
-              }
-            };
-          }
-        });
-
-        // 3. Merchant Selects (Modal & Panel)
-        const merchantSelects = [
-          document.getElementById("selectMerchantAccount"),
-          document.getElementById("connSelectMerchant")
-        ];
-        merchantSelects.forEach(sel => {
-          if (sel && data.merchant_accounts) {
-            sel.innerHTML = "";
-            if (!data.authenticated) {
-              const authOpt = document.createElement("option");
-              authOpt.value = "__SIGN_IN_GOOGLE__";
-              authOpt.textContent = "🔑 Sign in with Google (Connect Merchant Center)...";
-              authOpt.style.fontWeight = "bold";
-              authOpt.style.color = "#2563eb";
-              sel.appendChild(authOpt);
-            }
-            data.merchant_accounts.forEach(item => {
-              const opt = document.createElement("option");
-              opt.value = item.id;
-              opt.textContent = data.authenticated ? item.name : ("[DEMO PREVIEW] " + item.name);
-              if (item.id === data.selected_merchant && data.authenticated) opt.selected = true;
-              sel.appendChild(opt);
-            });
-            sel.onchange = function() {
-              if (this.value === '__SIGN_IN_GOOGLE__') {
-                window.location.href = '/api/auth/google?integration=merchant';
-              }
-            };
-          }
-        });
-
-        // 4. Update Summary Pills
-        const pillGA4 = document.getElementById("summaryPillGA4");
-        const pillMerchant = document.getElementById("summaryPillMerchant");
-        if (pillGA4) pillGA4.textContent = "GA4: " + (data.selected_ga4 || "Default");
-        if (pillMerchant) pillMerchant.textContent = "Merchant: " + (data.selected_merchant || "Default");
-
-      } catch(e) {
-        console.error("Error fetching Google accounts & properties:", e);
-      }
-    }
-
-    async function openGoogleAccountModal() {
-      const modal = document.getElementById("googleAccountModal");
-      if (modal) modal.style.display = "flex";
-      await fetchGoogleAccountsAndPopulatePanels();
-    }
-
-    function closeGoogleAccountModal() {
-      const modal = document.getElementById("googleAccountModal");
-      if (modal) modal.style.display = "none";
-    }
-
-    async function saveGoogleAccountSelection() {
-      const ga4Val = document.getElementById("selectGA4Property")?.value || document.getElementById("connSelectGA4")?.value || "";
-      const merchantVal = document.getElementById("selectMerchantAccount")?.value || document.getElementById("connSelectMerchant")?.value || "";
-
-      try {
-        const resp = await fetch("/api/google/save-selection", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ga4_property_id: ga4Val,
-            merchant_account_id: merchantVal
-          })
-        });
-        if (resp.ok) {
-          closeGoogleAccountModal();
-          const ga4PropSel = document.getElementById("ga4PropertySelect");
-          if (ga4PropSel && ga4Val) {
-            ga4PropSel.value = ga4Val;
-          }
-
-          // Update Summary Pills & Panel Selects
-          await fetchGoogleAccountsAndPopulatePanels();
-
-          if (window.CategoryAnalysis) window.CategoryAnalysis.reconnect();
-          if (typeof loadFunnelData === 'function') loadFunnelData();
-          if (typeof loadPriceData === 'function') loadPriceData();
-
-          alert("✓ Google properties saved for GA4 (" + ga4Val + ") and Merchant Center (" + merchantVal + ").");
-        }
-      } catch(e) {
-        alert("Failed to save account selection: " + e.message);
-      }
-    }
-
-    async function saveConnectorPanelSelection() {
-      const ga4Val = document.getElementById("connSelectGA4")?.value || "";
-      const merchantVal = document.getElementById("connSelectMerchant")?.value || "";
-
-      try {
-        const resp = await fetch("/api/google/save-selection", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ga4_property_id: ga4Val,
-            merchant_account_id: merchantVal
-          })
-        });
-        if (resp.ok) {
-          const ga4PropSel = document.getElementById("ga4PropertySelect");
-          if (ga4PropSel && ga4Val) {
-            ga4PropSel.value = ga4Val;
-          }
-          await fetchGoogleAccountsAndPopulatePanels();
-          if (window.CategoryAnalysis) window.CategoryAnalysis.reconnect();
-          if (typeof loadFunnelData === 'function') loadFunnelData();
-          if (typeof loadPriceData === 'function') loadPriceData();
-
-          alert("✓ Google properties connected and saved for GA4 (" + ga4Val + ") and Merchant Center (" + merchantVal + ").");
-        }
-      } catch(e) {
-        alert("Failed to save connector selection: " + e.message);
-      }
-    }
-
-    window.fetchGoogleAccountsAndPopulatePanels = fetchGoogleAccountsAndPopulatePanels;
-    window.saveConnectorPanelSelection = saveConnectorPanelSelection;
-
-    window.openGoogleAccountModal = openGoogleAccountModal;
-    window.closeGoogleAccountModal = closeGoogleAccountModal;
-    window.saveGoogleAccountSelection = saveGoogleAccountSelection;
-
     /* ── Category & Product Analysis Onboarding & Charting Engine ── */
     var currentCatObStep = 1;
     var categoryShareChart = null;
     var categoryConversionChart = null;
-
-    function openApiGuidelineModal() {
-      const modal = document.getElementById("apiGuidelineModal");
-      if (modal) modal.style.display = "flex";
-    }
-
-    function closeApiGuidelineModal() {
-      const modal = document.getElementById("apiGuidelineModal");
-      if (modal) modal.style.display = "none";
-    }
-
-    function switchApiModalTab(tabKey) {
-      const tabs = ["ga4", "sst", "crm"];
-      tabs.forEach(t => {
-        const btn = document.getElementById("modalTabBtn" + t.toUpperCase());
-        const panel = document.getElementById("modalTab" + t.toUpperCase());
-        if (t === tabKey) {
-          if (btn) {
-            btn.style.background = "#eff6ff";
-            btn.style.borderColor = "#93c5fd";
-            btn.style.color = "#1d4ed8";
-          }
-          if (panel) panel.style.display = "block";
-        } else {
-          if (btn) {
-            btn.style.background = "#ffffff";
-            btn.style.borderColor = "#cbd5e1";
-            btn.style.color = "#64748b";
-          }
-          if (panel) panel.style.display = "none";
-        }
-      });
-    }
-
-    window.openApiGuidelineModal = openApiGuidelineModal;
-    window.closeApiGuidelineModal = closeApiGuidelineModal;
-    window.switchApiModalTab = switchApiModalTab;
 
     function openCategoryOnboardingModal() {
       const modal = document.getElementById("categoryOnboardingModal");

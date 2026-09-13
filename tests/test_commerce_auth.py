@@ -120,21 +120,57 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertEqual(post.call_args.kwargs['json'], {'email': 'dataprovido@gmail.com'})
 
     @patch.object(main,'GoogleAnalytics')
-    def test_selected_property_belongs_to_returned_account(self,provider):
+    def test_test_account_falls_back_to_accessible_property(self,provider):
         self.sign_in(access_token="test",expires_at=time.time()+5000,selected_ga4="999")
         provider.return_value.properties.return_value=[{"id":"123","name":"Store"}]
         response=self.client.get('/api/ga4/properties')
         self.assertEqual(response.status_code,200)
-        self.assertEqual(response.json()['selected_property'],'')
+        self.assertEqual(response.json()['selected_property'],'123')
         self.assertEqual(response.headers['cache-control'],'private, no-store')
 
     @patch.object(main,'has_paid_subscription')
     def test_verified_paid_customer_can_access_journey_and_ga4(self,paid):
         paid.return_value=True
-        self.sign_in(email="customer@example.com",google_verified=True)
+        self.sign_in(email="customer@example.com",google_verified=True,onboarding_complete=True)
         self.assertEqual(self.client.get('/journey',follow_redirects=False).status_code,200)
         self.assertEqual(self.client.get('/api/ga4/properties').status_code,200)
         paid.assert_called_with("customer@example.com")
+
+    @patch.object(main,'has_paid_subscription',return_value=True)
+    def test_paid_customer_completes_data_setup_before_journey(self,paid):
+        self.sign_in(email="customer@example.com",google_verified=True)
+        response=self.client.get('/journey',follow_redirects=False)
+        self.assertEqual(response.status_code,303)
+        self.assertEqual(response.headers['location'],'/connect-data')
+        setup=self.client.get('/connect-data')
+        self.assertEqual(setup.status_code,200)
+        self.assertIn('Connect your data.',setup.text)
+
+    @patch.object(main,'GoogleAnalytics')
+    @patch.object(main,'has_paid_subscription',return_value=True)
+    def test_data_setup_saves_property_and_unlocks_journey(self,paid,analytics):
+        self.sign_in(
+            email="customer@example.com",
+            google_verified=True,
+            access_token="access",
+            expires_at=time.time()+3600,
+            scope="https://www.googleapis.com/auth/analytics.readonly",
+        )
+        response=self.client.post('/connect-data/complete',data={'ga4_property_id':'123'},follow_redirects=False)
+        self.assertEqual(response.status_code,303)
+        self.assertEqual(response.headers['location'],'/journey?activated=true')
+        analytics.return_value.property.assert_called_once_with('123')
+        set_cookie=next(value for value in response.headers.get_list('set-cookie') if value.startswith('gauth='))
+        response_cookie=SimpleCookie(set_cookie)['gauth'].value
+        session=json.loads(main._decrypt_token(response_cookie))
+        self.assertTrue(session['onboarding_complete'])
+        self.assertEqual(session['selected_ga4'],'123')
+
+    def test_test_account_skips_customer_data_setup(self):
+        self.sign_in()
+        response=self.client.get('/connect-data',follow_redirects=False)
+        self.assertEqual(response.status_code,303)
+        self.assertIn('/journey',response.headers['location'])
 
     @patch.object(main,'has_paid_subscription')
     def test_unverified_email_cannot_claim_paid_access(self,paid):
@@ -204,32 +240,69 @@ class CommerceAuthTests(unittest.TestCase):
     @patch.object(main,'has_paid_subscription',return_value=True)
     @patch.object(main.requests,'get')
     @patch.object(main.requests,'post')
-    def test_paid_oauth_callback_goes_directly_to_category(self,post,get,paid):
+    def test_paid_oauth_callback_enters_data_setup(self,post,get,paid):
         self.client.cookies.set('google_oauth_state',main._encrypt_token(json.dumps({'nonce':'state','expires_at':time.time()+600})))
         post.return_value=Mock(status_code=200,json=lambda:{'access_token':'new','refresh_token':'refresh','expires_in':3600})
         get.return_value=Mock(status_code=200,json=lambda:{'email':'customer@example.com','verified_email':True,'name':'Customer'})
         response=self.client.get('/api/auth/google/callback?code=code&state=state',follow_redirects=False)
         self.assertEqual(response.status_code,303)
-        self.assertIn('module=category_insights',response.headers['location'])
+        self.assertIn('/connect-data?connected=analytics',response.headers['location'])
         cookie=next(c for c in self.client.cookies.jar if c.name=='gauth')
         user=decoded_cookie(cookie.value)
         self.assertTrue(user['google_verified'])
         self.assertEqual(user['email'],'customer@example.com')
         self.assertIn('HttpOnly',response.headers['set-cookie'])
-        self.assertEqual(self.client.get('/journey',follow_redirects=False).status_code,200)
+        self.assertEqual(self.client.get('/journey',follow_redirects=False).status_code,303)
 
     @patch.object(main,'has_paid_subscription',return_value=True)
     @patch.object(main.requests,'get')
     @patch.object(main.requests,'post')
-    def test_merchant_oauth_callback_returns_to_stock_workspace(self,post,get,paid):
+    def test_merchant_oauth_callback_returns_to_data_setup(self,post,get,paid):
+        self.sign_in(
+            email='customer@example.com',
+            google_verified=True,
+            scope='https://www.googleapis.com/auth/analytics.readonly',
+        )
         state={'nonce':'merchant-state','integration':'merchant','expires_at':time.time()+600}
         self.client.cookies.set('google_oauth_state',main._encrypt_token(json.dumps(state)))
         post.return_value=Mock(status_code=200,json=lambda:{'access_token':'new','refresh_token':'refresh','expires_in':3600,'scope':'https://www.googleapis.com/auth/content'})
         get.return_value=Mock(status_code=200,json=lambda:{'email':'customer@example.com','verified_email':True,'name':'Customer'})
         response=self.client.get('/api/auth/google/callback?code=code&state=merchant-state',follow_redirects=False)
-        self.assertIn('module=stock_price_comp',response.headers['location'])
-        cookie=next(c for c in self.client.cookies.jar if c.name=='gauth')
-        self.assertIn('/auth/content',decoded_cookie(cookie.value)['scope'])
+        self.assertIn('/connect-data?connected=merchant',response.headers['location'])
+        set_cookie=next(value for value in response.headers.get_list('set-cookie') if value.startswith('gauth='))
+        response_cookie=SimpleCookie(set_cookie)['gauth'].value
+        scopes=json.loads(main._decrypt_token(response_cookie))['scope']
+        self.assertIn('/auth/content',scopes)
+        self.assertIn('analytics.readonly',scopes)
+
+    @patch.object(main,'GoogleAnalytics')
+    @patch.object(main.requests,'get')
+    @patch.object(main.requests,'post')
+    def test_test_account_oauth_selects_injector_marketing_property(self,post,get,analytics):
+        state={'nonce':'test-state','integration':'analytics','expires_at':time.time()+600}
+        self.client.cookies.set('google_oauth_state',main._encrypt_token(json.dumps(state)))
+        post.return_value=Mock(status_code=200,json=lambda:{
+            'access_token':'new',
+            'refresh_token':'refresh',
+            'expires_in':3600,
+            'scope':'https://www.googleapis.com/auth/analytics.readonly',
+        })
+        get.return_value=Mock(status_code=200,json=lambda:{
+            'email':'dataprovido@gmail.com',
+            'verified_email':True,
+            'name':'DataProvido',
+        })
+        analytics.return_value.properties.return_value=[
+            {'id':'111','name':'Other Store'},
+            {'id':'222','name':'Injector Marketing - GA4'},
+        ]
+
+        response=self.client.get('/api/auth/google/callback?code=code&state=test-state',follow_redirects=False)
+
+        self.assertEqual(response.headers['location'],'/journey?module=category_insights&google_connected=true')
+        set_cookie=next(value for value in response.headers.get_list('set-cookie') if value.startswith('gauth='))
+        response_cookie=SimpleCookie(set_cookie)['gauth'].value
+        self.assertEqual(json.loads(main._decrypt_token(response_cookie))['selected_ga4'],'222')
 
     def test_merchant_routes_require_console_and_connection(self):
         self.assertEqual(self.client.get('/api/merchant/accounts').status_code,401)
@@ -256,6 +329,9 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertIn('Event funnel',response.text)
         self.assertIn('Path exploration',response.text)
         self.assertIn('User exploration',response.text)
+        self.assertNotIn('data-key="digital_marketing"',response.text)
+        self.assertIn('data-account-mode="test"',response.text)
+        self.assertIn('Injector Marketing',response.text)
 
     @patch.object(main,'GoogleMerchant')
     def test_merchant_route_requires_content_scope_before_provider_call(self,provider):
@@ -344,8 +420,14 @@ class CommerceAuthTests(unittest.TestCase):
     def test_checkout_return_does_not_claim_payment_verification(self):
         response=self.client.get('/checkout/success?plan=pro&session_id=anything')
         self.assertNotIn('Payment Successful!',response.text)
-        self.assertIn('Continue with Google',response.text)
+        self.assertIn('Connect Your Data',response.text)
         self.assertNotIn('anything',response.text)
+
+    def test_landing_uses_generic_connection_message_and_crm_card(self):
+        response=self.client.get('/')
+        self.assertIn('Connect Your Data',response.text)
+        self.assertIn('Own CRM User Footprint',response.text)
+        self.assertNotIn('DataProvido connects your GA4, Merchant Center and spreadsheet data',response.text)
 
 
 class SubscriptionTests(unittest.TestCase):

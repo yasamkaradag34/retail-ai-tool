@@ -1,6 +1,8 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
+  const testMode = document.body.dataset.accountMode === 'test';
+  const pivotBrand = document.body.dataset.pivotBrand || 'Injector Marketing';
   const state = {initialized: false, demo: false, view: 'categories', tab: 'performance', category: '', properties: [], categories: [], report: null, sort: 'itemRevenue', desc: true, page: 0, request: 0, controller: null};
   const pageSize = 15;
   const metrics = {
@@ -66,8 +68,17 @@
       $('caConnectionText').textContent = data.connected ? data.email : 'Connect your store to load its categories and products.';
       $('caProperty').innerHTML = '<option value="">' + (data.connected ? 'Select your GA4 property' : 'Connect an account first') + '</option>' + state.properties.map(p => `<option value="${esc(p.id)}">${esc(p.name)} · ${esc(p.id)}</option>`).join('');
       $('caProperty').disabled = !state.properties.length;
-      if (!data.connected) { status('Sign in with Google to load your own analytics, or explore the clearly labelled sample.'); return; }
-      if (!state.properties.length) { status('No GA4 properties are available to this Google account. Ask your Analytics administrator for Viewer access, then reconnect.', 'error'); return; }
+      if (!data.connected && testMode) {
+        state.demo = true;
+        $('caProperty').innerHTML = `<option value="sample">${esc(pivotBrand)} · Test dataset</option>`;
+        $('caProperty').value = 'sample';
+        $('caConnectionText').textContent = `${pivotBrand} · Pivot test workspace`;
+        await load();
+        return;
+      }
+      if (!data.connected) { status('Your Analytics connection needs attention. Review data setup from the sidebar.'); return; }
+      if (!state.properties.length && testMode) { state.demo=true;$('caProperty').innerHTML=`<option value="sample">${esc(pivotBrand)} · Test dataset</option>`;$('caProperty').value='sample';await load();return; }
+      if (!state.properties.length) { status('No Analytics properties are available to this account. Review access during data setup.', 'error'); return; }
       const selected = state.properties.some(p => p.id === data.selected_property) ? data.selected_property : state.properties.length === 1 ? state.properties[0].id : '';
       $('caProperty').value = selected;
       if (selected) await load(); else status('Choose a GA4 property above. Its first report will load automatically.');
@@ -102,7 +113,7 @@
       $('caCategoryFilter').value = state.category;
       $('caSource').textContent = state.demo ? 'SAMPLE DATA' : 'GA4 DATA'; $('caSource').className = 'ca-badge ' + (state.demo ? 'sample' : 'live');
       $('caReport').hidden = false; $('caExport').disabled = !report.rows.length;
-      status(state.demo ? 'Sample data only — these illustrative figures do not belong to your store. Connect Google Analytics to see your own results.' : report.rows.length ? 'Report updated. Changes compare the immediately preceding period.' : 'No ecommerce items were returned for this period. Check Measurement for event coverage and tracking guidance.', state.demo ? 'sample' : '');
+      status(state.demo ? `${pivotBrand} test workspace — figures are illustrative and clearly separated from live customer data.` : report.rows.length ? 'Report updated. Changes compare the immediately preceding period.' : 'No ecommerce items were returned for this period. Check Measurement for event coverage and tracking guidance.', state.demo ? 'sample' : '');
       render();
     } catch (error) {
       if (request !== state.request) return;
@@ -230,7 +241,7 @@
       summary[period].cartToViewRate = state.category && rows.length ? rows[0][period].cartToViewRate : period === 'current' ? .212 : .201;
       summary[period].purchaseToViewRate = state.category && rows.length ? rows[0][period].purchaseToViewRate : period === 'current' ? .054 : .049;
     }
-    return {source:'sample',property:{id:'sample',name:'Sample retail store',currency:'USD',time_zone:'UTC'},start_date:iso(start),end_date:iso(end),previous_start:iso(new Date(start.getTime()-length*86400000)),previous_end:iso(new Date(start.getTime()-86400000)),fetched_at:new Date().toISOString(),rows,summary,property_quality:{current:{bounceRate:.418,averageSessionDuration:167},previous:{bounceRate:.449,averageSessionDuration:151}},quality_metrics:qualityKeys,events:{current:{view_item:112790,add_to_cart:26220,begin_checkout:12280,purchase:6450}},warnings:[],list_complete:true};
+    return {source:'sample',property:{id:'sample',name:testMode ? pivotBrand : 'Sample retail store',currency:'USD',time_zone:'UTC'},start_date:iso(start),end_date:iso(end),previous_start:iso(new Date(start.getTime()-length*86400000)),previous_end:iso(new Date(start.getTime()-86400000)),fetched_at:new Date().toISOString(),rows,summary,property_quality:{current:{bounceRate:.418,averageSessionDuration:167},previous:{bounceRate:.449,averageSessionDuration:151}},quality_metrics:qualityKeys,events:{current:{view_item:112790,add_to_cart:26220,begin_checkout:12280,purchase:6450}},warnings:[],list_complete:true};
   }
   function init() {
     if (state.initialized) return;

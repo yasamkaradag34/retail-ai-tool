@@ -1,6 +1,8 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
+  const testMode = document.body.dataset.accountMode === 'test';
+  const pivotBrand = document.body.dataset.pivotBrand || 'Injector Marketing';
   const pageSize = 15;
   const state = {initialized:false,demo:false,report:null,page:0,sort:'clicks',desc:true,tab:'products',request:0,controller:null};
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -49,13 +51,16 @@
       $('spConnectionText').textContent=data.connected?(data.email||'Google account connected'):'Connect your Merchant Center account to analyse product availability, Shopping performance and market pricing.';
       $('spAccount').innerHTML='<option value="">'+(data.connected?'Select a Merchant Center account':'Connect an account first')+'</option>'+(data.accounts||[]).map(item=>`<option value="${esc(item.id)}">${esc(item.name)} · ${esc(item.id)}</option>`).join('');
       $('spAccount').disabled=!(data.accounts||[]).length; $('spRefresh').disabled=false;
-      if(!data.connected){status('Sign in with Google to load Merchant Center reports, or explore the clearly labelled sample.');return;}
-      if(!data.accounts?.length){$('spAccount').innerHTML='<option value="">No accessible Merchant Center account</option>';status('Google sign-in succeeded, but this Google account has no accessible Merchant Center account. Choose Change Google account, or add this email under Merchant Center → People and access.','error');return;}
+      if(!data.connected&&testMode){state.demo=true;$('spAccount').innerHTML=`<option value="sample">${esc(pivotBrand)} · Test catalog</option>`;$('spAccount').value='sample';$('spConnectionText').textContent=`${pivotBrand} · Pivot test workspace`;await load();return;}
+      if(!data.connected){status('Your catalog connection needs attention. Review data setup from the sidebar.');return;}
+      if(!data.accounts?.length&&testMode){state.demo=true;$('spAccount').innerHTML=`<option value="sample">${esc(pivotBrand)} · Test catalog</option>`;$('spAccount').value='sample';await load();return;}
+      if(!data.accounts?.length){$('spAccount').innerHTML='<option value="">No accessible catalog account</option>';status('No catalog account is available. Review access during data setup.','error');return;}
       const selected=data.accounts.some(item=>item.id===data.selected_account)?data.selected_account:data.accounts.length===1?data.accounts[0].id:'';
       $('spAccount').value=selected;
       if(selected) await load(); else status('Choose a Merchant Center account above. Its report will load automatically.');
     } catch(error) {
       if(request!==state.request)return;
+      if(testMode){state.demo=true;$('spAccount').innerHTML=`<option value="sample">${esc(pivotBrand)} · Test catalog</option>`;$('spAccount').value='sample';$('spConnectionText').textContent=`${pivotBrand} · Pivot test workspace`;await load();return;}
       const labels={merchant_scope_required:'Merchant permission required',merchant_developer_registration:'Developer registration required',merchant_api_disabled:'Merchant API setup required',merchant_reporting_permission:'Reporting permission required',google_reconnect:'Reconnect Google account'};
       $('spSource').textContent='NOT CONNECTED'; $('spSource').className='sp-badge';
       $('spAccount').innerHTML=`<option value="">${labels[error.code]||'Merchant connection required'}</option>`; $('spRefresh').disabled=false;
@@ -75,7 +80,7 @@
       const report=await api('/api/merchant/insights?'+params,{signal:controller.signal}); if(request!==state.request)return;
       state.report=report; state.page=0; $('spReport').hidden=false; $('spWelcome').hidden=true; $('spExport').disabled=!report.rows.length;
       $('spSource').textContent=state.demo?'SAMPLE DATA':'MERCHANT DATA'; $('spSource').className='sp-badge '+(state.demo?'sample':'live');
-      status(state.demo?'Sample data only — these illustrative figures do not belong to your store. Connect Merchant Center to see your own reports.':report.rows.length?'Merchant report updated. Catalog and benchmark values are current snapshots.':'No products were returned. Check the account selection and Merchant Center product feed.',state.demo?'sample':'');
+      status(state.demo?`${pivotBrand} test workspace — figures are illustrative and clearly separated from live customer data.`:report.rows.length?'Catalog report updated. Availability and benchmark values are current snapshots.':'No products were returned. Check the selected catalog account.',state.demo?'sample':'');
       render();
       if(!state.demo&&state.report?.account.id===account){try{await api('/api/merchant/selection',{method:'POST',body:JSON.stringify({account_id:account})});}catch{} }
     } catch(error) {

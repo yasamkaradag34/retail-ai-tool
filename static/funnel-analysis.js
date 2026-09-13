@@ -1,6 +1,8 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
+  const testMode = document.body.dataset.accountMode === 'test';
+  const pivotBrand = document.body.dataset.pivotBrand || 'Injector Marketing';
   const state = {initialized:false,demo:false,report:null,properties:[],request:0,activeTab:'event',pathStep:1};
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const numeric = value => typeof value === 'number' && Number.isFinite(value);
@@ -35,8 +37,10 @@
       $('faConnectionText').textContent=data.connected?(data.email||'Google Analytics connected'):'Connect a GA4 property to explore ordered event funnels, next actions and aggregate user quality.';
       $('faProperty').innerHTML='<option value="">'+(data.connected?'Select your GA4 property':'Connect an account first')+'</option>'+state.properties.map(item=>`<option value="${esc(item.id)}">${esc(item.name)} · ${esc(item.id)}</option>`).join('');
       $('faProperty').disabled=!state.properties.length;$('faRefresh').disabled=false;
-      if(!data.connected){status('Sign in with Google to load your funnel, or explore the clearly labelled sample.');return;}
-      if(!state.properties.length){status('No GA4 properties are available to this Google account. Ask an Analytics administrator for Viewer access, then reconnect.','error');return;}
+      if(!data.connected&&testMode){state.demo=true;$('faProperty').innerHTML=`<option value="sample">${esc(pivotBrand)} · Test dataset</option>`;$('faProperty').value='sample';$('faProperty').disabled=false;$('faConnectionText').textContent=`${pivotBrand} · Pivot test workspace`;await load();return;}
+      if(!data.connected){status('Your Analytics connection needs attention. Review data setup from the sidebar.');return;}
+      if(!state.properties.length&&testMode){state.demo=true;$('faProperty').innerHTML=`<option value="sample">${esc(pivotBrand)} · Test dataset</option>`;$('faProperty').value='sample';$('faProperty').disabled=false;await load();return;}
+      if(!state.properties.length){status('No Analytics properties are available to this account. Review access during data setup.','error');return;}
       const selected=state.properties.some(item=>item.id===data.selected_property)?data.selected_property:state.properties.length===1?state.properties[0].id:'';
       $('faProperty').value=selected;
       if(selected)await load();else status('Choose a GA4 property. Its first funnel report will load automatically.');
@@ -53,7 +57,7 @@
       const report=await api('/api/ga4/funnel-report?'+params);if(request!==state.request)return;
       state.report=report;state.pathStep=report.steps?.[0]?.step||1;$('faReport').hidden=false;$('faWelcome').hidden=true;
       $('faSource').textContent=state.demo?'SAMPLE DATA':'GA4 DATA';$('faSource').className='fa-badge '+(state.demo?'sample':'live');
-      status(state.demo?'Sample data only — these figures are illustrative and do not belong to your GA4 property.':report.steps?.some(step=>step.users)?'Funnel report updated from Google Analytics 4.':'No users completed this sequence in the selected range. Try an open funnel or another journey.',state.demo?'sample':'');
+      status(state.demo?`${pivotBrand} test workspace — figures are illustrative and clearly separated from live customer data.`:report.steps?.some(step=>step.users)?'Funnel report updated from the selected Analytics property.':'No users completed this sequence in the selected range. Try an open funnel or another journey.',state.demo?'sample':'');
       render();
       if(!state.demo&&report.property?.id===property){try{await api('/api/ga4/selection',{method:'POST',body:JSON.stringify({property_id:property})});}catch{}}
     }catch(error){if(request!==state.request)return;$('faSource').textContent='REPORT UNAVAILABLE';$('faSource').className='fa-badge';status(error.message,'error');$('faWelcome').hidden=false;}
@@ -62,7 +66,7 @@
   function render(){
     const report=state.report,summary=report.summary||{};
     $('faPeriodLabel').textContent=`Performance: ${report.start_date} – ${report.end_date} · Prior: ${report.previous_start} – ${report.previous_end}`;
-    $('faPropertyLabel').textContent=`${report.property?.name||'GA4 property'} · ${report.source==='sample'?'Illustrative sample':`Property ${report.property?.id}`}`;
+    $('faPropertyLabel').textContent=`${state.demo&&testMode?pivotBrand:(report.property?.name||'Analytics property')} · ${report.source==='sample'?'Illustrative test data':`Property ${report.property?.id}`}`;
     const change=summary.conversion_change_pp;
     const delta=numeric(change)?`<span class="fa-delta ${change<0?'down':''}">${change>=0?'+':''}${change.toFixed(2)} pp vs prior</span>`:'No prior comparison';
     $('faKpis').innerHTML=[

@@ -1,18 +1,18 @@
 <section id="categoryWorkspaceContainer" class="ca-workspace" aria-label="Category and product analytics" style="display:none">
   <div class="ca-connection">
-    <div class="ca-connection-copy"><span class="ca-source-icon" aria-hidden="true">▥</span><div><strong>Google Analytics 4</strong><p id="caConnectionText">Connect your store to load its categories and products.</p><p style="font-size:12px;margin-top:6px;">DataProvido requests read-only access to aggregate GA4 reporting data. <a href="/google-data" target="_blank" rel="noopener noreferrer">How Google data is used ↗</a></p></div></div>
-    <div class="ca-actions"><span id="caSource" class="ca-badge">NOT CONNECTED</span><a class="ca-button ca-primary" id="caConnect" href="/api/auth/google?integration=analytics">Connect Google Analytics <span aria-hidden="true">↗</span></a><button id="caDemo" class="ca-button" type="button">Explore sample data</button></div>
+    <div class="ca-connection-copy"><span class="ca-source-icon" aria-hidden="true">▥</span><div><strong>{% if is_test_account %}{{ pivot_brand }}{% else %}Commerce analytics{% endif %}</strong><p id="caConnectionText">{% if is_test_account %}Pivot brand selected for this test workspace.{% else %}Your selected store powers category and product analysis.{% endif %}</p><p style="font-size:12px;margin-top:6px;">Aggregate, read-only reporting data. <a href="/google-data" target="_blank" rel="noopener noreferrer">How data is used ↗</a></p></div></div>
+    <div class="ca-actions"><span id="caSource" class="ca-badge {% if is_test_account %}live{% endif %}">{% if is_test_account %}TEST WORKSPACE{% else %}CHECKING SOURCE{% endif %}</span><a class="ca-button ca-primary" id="caConnect" href="/connect-data" hidden>Review data setup <span aria-hidden="true">↗</span></a><button id="caDemo" class="ca-button" type="button" hidden>Explore sample data</button></div>
   </div>
   <div class="ca-controls">
-    <label class="ca-property">GA4 property<select id="caProperty" disabled><option value="">Connect an account first</option></select></label>
+    <label class="ca-property">Analytics property<select id="caProperty" disabled><option value="">Loading your selected property</option></select></label>
     <label>Date range<select id="caPeriod"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="custom">Custom range</option></select></label>
     <div id="caCustomDates" class="ca-custom-dates" hidden><label>From<input id="caStart" type="date"></label><label>To<input id="caEnd" type="date"></label></div>
     <button id="caRefresh" class="ca-button ca-refresh" type="button" disabled>↻ Refresh data</button>
   </div>
-  <p id="caStatus" class="ca-status" role="status" aria-live="polite">Your first report loads automatically after connecting Google Analytics.</p>
+  <p id="caStatus" class="ca-status" role="status" aria-live="polite">Loading the selected store data…</p>
   <div id="caWelcome" class="ca-welcome">
-    <div><span class="ca-eyebrow">FROM DISCOVERY TO PURCHASE</span><h3>Find what sells.<br><span>Understand what holds it back.</span></h3><p>Bring category demand, product conversion and visit quality into one workspace.</p><p style="font-size:12px;">Connecting grants read-only access to the GA4 properties you select. You can disconnect at any time. <a href="/google-data" target="_blank" rel="noopener noreferrer">Review data use ↗</a></p><a class="ca-button ca-primary" href="/api/auth/google?integration=analytics">Connect your GA4 property <span aria-hidden="true">→</span></a></div>
-    <ol class="ca-steps"><li><span>01</span><div><strong>Sign in with Google</strong><p>Use the Google email associated with your subscription.</p></div></li><li><span>02</span><div><strong>Select your store</strong><p>Choose a property you can access. A single property loads automatically.</p></div></li><li><span>03</span><div><strong>Explore your performance</strong><p>Open a category to inspect products, conversion and engagement.</p></div></li></ol>
+    <div><span class="ca-eyebrow">FROM DISCOVERY TO PURCHASE</span><h3>Find what sells.<br><span>Understand what holds it back.</span></h3><p>Your selected source loads category demand, product conversion and visit quality into one workspace.</p></div>
+    <ol class="ca-steps"><li><span>01</span><div><strong>Review the overview</strong><p>See revenue, conversion and visit quality together.</p></div></li><li><span>02</span><div><strong>Open a category</strong><p>Move from category-level trends to product detail.</p></div></li><li><span>03</span><div><strong>Prioritise action</strong><p>Compare performance with the previous period.</p></div></li></ol>
   </div>
   <div id="caReport" hidden>
     <div class="ca-report-meta"><span id="caReportScope"></span><span id="caFreshness"></span></div>

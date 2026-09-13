@@ -2902,6 +2902,32 @@ GOOGLE_SCOPES = [
 MERCHANT_SCOPE = "https://www.googleapis.com/auth/content"
 
 ALLOWED_LOGIN_EMAILS = {"dataprovido@gmail.com", "myasamkaradag@gmail.com"}
+TEST_ACCOUNT_EMAILS = {
+    email.strip().lower()
+    for email in os.getenv("DATAPROVIDO_TEST_EMAILS", "dataprovido@gmail.com").split(",")
+    if email.strip()
+}
+TEST_GA4_BRAND = os.getenv("DATAPROVIDO_TEST_GA4_BRAND", "Injector Marketing").strip()
+
+
+def _is_test_account(email: str) -> bool:
+    return str(email or "").strip().lower() in TEST_ACCOUNT_EMAILS
+
+
+def _preferred_ga4_property(properties, selected="", email=""):
+    """Keep a valid choice, then prefer the configured pivot brand for test accounts."""
+    valid_ids = {str(item.get("id") or "") for item in properties}
+    selected = str(selected or "")
+    if selected in valid_ids:
+        return selected
+    if _is_test_account(email):
+        pivot = TEST_GA4_BRAND.casefold()
+        match = next((item for item in properties if pivot in str(item.get("name") or "").casefold()), None)
+        if match:
+            return str(match.get("id") or "")
+        if properties:
+            return str(properties[0].get("id") or "")
+    return str(properties[0].get("id") or "") if len(properties) == 1 else ""
 
 def _encrypt_token(token_json: str) -> str:
     """Encrypt and authenticate session contents before browser storage."""
@@ -2961,7 +2987,7 @@ async def persist_refreshed_google_session(request: Request, call_next):
 
 @app.get("/login/google")
 @app.get("/api/auth/google")
-def google_auth_redirect(request: Request, integration: str = ""):
+def google_auth_redirect(request: Request, integration: str = "", flow: str = ""):
     """Bind OAuth consent to a short-lived browser state and request only the selected integration."""
     from fastapi.responses import RedirectResponse
     if not GOOGLE_CLIENT_ID:
@@ -2978,7 +3004,8 @@ def google_auth_redirect(request: Request, integration: str = ""):
               "response_type": "code", "scope": " ".join(scopes), "access_type": "offline",
               "prompt": "consent select_account", "include_granted_scopes": "true", "state": nonce}
     response = RedirectResponse("https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params))
-    response.set_cookie("google_oauth_state", _encrypt_token(json.dumps({"nonce": nonce, "integration": integration, "expires_at": int(_time.time()) + 600})),
+    flow = "connect_data" if flow == "connect_data" else ""
+    response.set_cookie("google_oauth_state", _encrypt_token(json.dumps({"nonce": nonce, "integration": integration, "flow": flow, "expires_at": int(_time.time()) + 600})),
                         httponly=True, secure=request.url.hostname not in ("localhost", "127.0.0.1", "::1"), samesite="lax", max_age=600, path="/api/auth/google/callback")
     return response
 
@@ -3025,17 +3052,32 @@ def google_auth_callback(request: Request, code: str = None, error: str = None, 
     prior = _session_payload(request) or {}
     same_account = prior.get("email", "").strip().lower() == email
     integration = saved.get("integration") if saved.get("integration") in {"analytics", "merchant"} else "analytics"
+    granted_scopes = set(str(tokens.get("scope") or "").split())
+    if same_account:
+        granted_scopes.update(str(prior.get("scope") or "").split())
     cookie_data = {"access_token": tokens["access_token"],
                    "refresh_token": tokens.get("refresh_token") or (prior.get("refresh_token", "") if same_account else ""),
                    "expires_at": int(_time.time()) + int(tokens.get("expires_in", 3600)),
-                   "scope": tokens.get("scope", ""), "email": email, "name": user_info.get("name", ""),
+                   "scope": " ".join(sorted(granted_scopes)), "email": email, "name": user_info.get("name", ""),
                    "picture": user_info.get("picture", ""), "google_verified": True}
     if same_account:
-        for selection in ("selected_ga4", "selected_merchant"):
+        for selection in ("selected_ga4", "selected_merchant", "onboarding_complete"):
             if prior.get(selection):
                 cookie_data[selection] = prior[selection]
+    if _is_test_account(email) and integration == "analytics":
+        try:
+            properties = GoogleAnalytics(tokens["access_token"]).properties()
+            preferred = _preferred_ga4_property(properties, cookie_data.get("selected_ga4"), email)
+            if preferred:
+                cookie_data["selected_ga4"] = preferred
+        except HTTPException:
+            pass
     target = {"merchant": "stock_price_comp"}.get(integration, "category_insights")
-    response = RedirectResponse(f"/journey?module={target}&google_connected=true", status_code=303)
+    if saved.get("flow") == "connect_data" or (not _is_test_account(email) and not cookie_data.get("onboarding_complete")):
+        redirect_url = f"/connect-data?connected={integration}"
+    else:
+        redirect_url = f"/journey?module={target}&google_connected=true"
+    response = RedirectResponse(redirect_url, status_code=303)
     _set_auth_cookie(response, request, cookie_data)
     response.delete_cookie("google_oauth_state", path="/api/auth/google/callback")
     return response
@@ -3147,11 +3189,17 @@ async def google_get_accounts(request: Request):
     if selected_merchant not in {account["id"] for account in merchant_accounts}:
         selected_merchant = merchant_accounts[0]["id"] if len(merchant_accounts) == 1 else ""
 
+    selected_ga4 = _preferred_ga4_property(
+        ga4_properties,
+        tokens.get("selected_ga4", ""),
+        user.get("email", ""),
+    )
+
     return JSONResponse({
         "authenticated": is_authenticated,
         "user_email": user.get("email", ""),
         "user_name": user.get("name", ""),
-        "selected_ga4": tokens.get("selected_ga4", ga4_properties[0]["id"] if len(ga4_properties) == 1 else ""),
+        "selected_ga4": selected_ga4,
         "selected_merchant": selected_merchant,
         "ga4_properties": ga4_properties,
         "merchant_accounts": merchant_accounts,
@@ -3211,10 +3259,9 @@ def ga4_properties(request: Request):
     if not tokens or not tokens.get("access_token"):
         return {"connected": False, "properties": [], "selected_property": ""}
     properties = GoogleAnalytics(tokens["access_token"]).properties()
-    valid_ids = {p["id"] for p in properties}
-    selected = tokens.get("selected_ga4", "")
+    selected = _preferred_ga4_property(properties, tokens.get("selected_ga4", ""), user.get("email", ""))
     return {"connected": True, "email": user["email"], "properties": properties,
-            "selected_property": selected if selected in valid_ids else ""}
+            "selected_property": selected}
 
 
 class GA4PropertySelection(BaseModel):
@@ -4607,13 +4654,72 @@ def journey(request: Request, activated: str = None, plan: str = None, demo: str
         reason = "subscription_unavailable" if error.status_code == 503 else "subscription_required" if error.status_code == 403 else "login_required"
         return RedirectResponse(url="/login?error=" + reason, status_code=303)
 
+    is_test_account = _is_test_account(user_data.get("email", ""))
+    if not is_test_account and user_data.get("onboarding_complete") is not True:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/connect-data", status_code=303)
+
     return templates.TemplateResponse("journey.html", {
         "request": request,
         "activated": activated or "true",
         "plan": plan,
         "demo": demo,
-        "user": user_data
+        "user": user_data,
+        "is_test_account": is_test_account,
+        "pivot_brand": TEST_GA4_BRAND if is_test_account else "",
     })
+
+
+@app.get("/connect-data", response_class=HTMLResponse)
+def connect_data_page(request: Request, connected: str = "", plan: str = "", error: str = ""):
+    session = _get_google_tokens(request) or _session_payload(request) or {}
+    email = str(session.get("email") or "").strip().lower()
+    if _is_test_account(email):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/journey?activated=true", status_code=303)
+
+    scopes = set(str(session.get("scope") or "").split())
+    has_token = bool(session.get("access_token"))
+    return templates.TemplateResponse("connect_data.html", {
+        "request": request,
+        "user": session,
+        "plan": plan,
+        "connected": connected,
+        "error": error,
+        "analytics_connected": has_token and "https://www.googleapis.com/auth/analytics.readonly" in scopes,
+        "merchant_connected": has_token and MERCHANT_SCOPE in scopes,
+    })
+
+
+@app.post("/connect-data/complete")
+async def complete_connect_data(request: Request):
+    from fastapi.responses import RedirectResponse
+    user = require_console_user(request)
+    tokens = _get_google_tokens(request) or {}
+    if _is_test_account(user.get("email", "")):
+        return RedirectResponse(url="/journey?activated=true", status_code=303)
+    scopes = set(str(tokens.get("scope") or "").split())
+    if not tokens.get("access_token") or "https://www.googleapis.com/auth/analytics.readonly" not in scopes:
+        return RedirectResponse(url="/connect-data?error=analytics_required", status_code=303)
+
+    form_data = await request.form()
+    ga4_property_id = str(form_data.get("ga4_property_id") or "").strip()
+    merchant_account_id = str(form_data.get("merchant_account_id") or "").strip()
+    if not ga4_property_id:
+        return RedirectResponse(url="/connect-data?error=ga4_property_required", status_code=303)
+    pid = validate_ga4_property_id(ga4_property_id)
+    GoogleAnalytics(tokens["access_token"]).property(pid)
+    tokens["selected_ga4"] = pid
+    if merchant_account_id:
+        if MERCHANT_SCOPE not in scopes:
+            return RedirectResponse(url="/connect-data?error=merchant_permission", status_code=303)
+        mid = validate_merchant_account_id(merchant_account_id)
+        GoogleMerchant(tokens["access_token"]).account(mid)
+        tokens["selected_merchant"] = mid
+    tokens["onboarding_complete"] = True
+    response = RedirectResponse(url="/journey?activated=true", status_code=303)
+    _set_auth_cookie(response, request, tokens)
+    return response
 
 
 def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_width="960px"):
@@ -5009,7 +5115,8 @@ async def email_password_login(request: Request):
         "login_type": "email",
         "role": "admin"
     })
-    response = RedirectResponse(url="/journey?activated=true", status_code=303)
+    destination = "/journey?activated=true" if _is_test_account(email) else "/connect-data"
+    response = RedirectResponse(url=destination, status_code=303)
     _set_auth_cookie(response, request, json.loads(cookie_data))
     return response
 
@@ -5121,7 +5228,7 @@ def pricing():
             <ul style="list-style: none; padding: 0; margin: 0 0 12px 0; font-size: 13px; color: var(--text-700); line-height: 1.8; flex: 1; display: flex; flex-direction: column; gap: 9px;">
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>6 Core Commercial Analytics Suites:</strong> Category Insights, Stock Risk &amp; Price Benchmark, Funnel Analysis, Heatmap UX, Digital Marketing, and Excel Wizard</span>
+                <span><strong>6 Core Commercial Analytics Suites:</strong> Category &amp; Product, Stock &amp; Price, Funnel Analysis, Heatmap UX, App Benchmark, and Excel Wizard</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
@@ -5662,8 +5769,8 @@ def checkout_success(plan: str = "standard", session_id: str = ""):
   <!-- End Google Tag Manager (noscript) -->
   <div class="success-card">
     <div class="success-badge">✓</div>
-    <h1>Connect your subscription</h1>
-    <p>Continue with the Google email you used at checkout. We will verify your active subscription and connect your Google Analytics properties.</p>
+    <h1>Your workspace is ready</h1>
+    <p>Use the guided setup to connect the business data you want DataProvido to analyse. Your subscription is verified with the Google email used at checkout.</p>
 
     <div class="plan-box">
       <div class="plan-row">
@@ -5683,8 +5790,8 @@ def checkout_success(plan: str = "standard", session_id: str = ""):
     {"<div class='support-box'><div><strong>📅 Weekly 1.5h Support Included:</strong><div style='font-size: 12px; color: #9a3412;'>Book your dedicated weekly 1-on-1 strategy &amp; technical consultation.</div></div><a href='mailto:info@dataprovido.com?subject=Schedule%20Weekly%201.5h%20Live%20Support%20Session' style='background: #f26f26; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 12px; white-space: nowrap;'>Book Session →</a></div><br>" if is_pro else ""}
 
     <div style="margin-top: 16px;">
-      <a href="/api/auth/google?integration=analytics" class="btn-launch">
-        Continue with Google &nbsp;→
+      <a href="/connect-data?plan={'pro' if is_pro else 'standard'}" class="btn-launch">
+        Connect Your Data &nbsp;→
       </a>
     </div>
   </div>

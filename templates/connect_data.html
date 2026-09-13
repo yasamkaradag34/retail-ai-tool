@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Connect Your Data – DataProvido</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root { --orange:#f26f26; --orange-dark:#d85c18; --navy:#0f172a; --slate:#475569; --muted:#64748b; --line:#e2e8f0; --blue:#2563eb; --green:#059669; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { min-height:100vh; color:var(--navy); font-family:Inter,sans-serif; background:radial-gradient(circle at 10% 0%,rgba(242,111,38,.13),transparent 34%),radial-gradient(circle at 100% 100%,rgba(37,99,235,.12),transparent 38%),#f8fafc; }
+    a { color:inherit; }
+    .topbar { height:74px; display:flex; align-items:center; justify-content:space-between; padding:0 6vw; border-bottom:1px solid rgba(226,232,240,.9); background:rgba(255,255,255,.86); backdrop-filter:blur(16px); }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:800; text-decoration:none; letter-spacing:-.02em; }
+    .brand img { width:38px; height:38px; object-fit:contain; }
+    .secure { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:12px; font-weight:700; }
+    .shell { width:min(1180px,calc(100% - 32px)); margin:0 auto; padding:54px 0 70px; }
+    .eyebrow { display:inline-flex; align-items:center; gap:8px; color:var(--orange-dark); background:#fff4ed; border:1px solid #fed7c3; padding:7px 13px; border-radius:999px; font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+    .hero { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr); gap:54px; align-items:end; margin-bottom:34px; }
+    h1 { font:700 clamp(38px,5vw,66px)/1.02 'Playfair Display',serif; letter-spacing:-.04em; margin:18px 0 16px; }
+    .hero p { max-width:680px; color:var(--slate); font-size:16px; line-height:1.75; }
+    .progress { background:#fff; border:1px solid var(--line); border-radius:20px; padding:22px; box-shadow:0 14px 40px rgba(15,23,42,.06); }
+    .progress strong { display:block; font-size:13px; margin-bottom:14px; }
+    .progress-row { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:12px; font-weight:700; }
+    .progress-row span { width:26px; height:26px; border-radius:50%; display:grid; place-items:center; background:#f1f5f9; }
+    .progress-row.active { color:var(--navy); }
+    .progress-row.active span { color:#fff; background:var(--orange); }
+    .progress-line { width:2px; height:17px; margin:3px 0 3px 12px; background:var(--line); }
+    .notice { margin-bottom:20px; border:1px solid #fecaca; background:#fff1f2; color:#b91c1c; border-radius:14px; padding:13px 16px; font-size:13px; font-weight:600; }
+    .success-notice { border-color:#a7f3d0; background:#ecfdf5; color:#047857; }
+    .connections { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; }
+    .card { min-height:330px; display:flex; flex-direction:column; background:#fff; border:1px solid var(--line); border-radius:22px; padding:26px; box-shadow:0 10px 30px rgba(15,23,42,.055); position:relative; overflow:hidden; }
+    .card.required::before { content:''; position:absolute; inset:0 auto 0 0; width:4px; background:var(--orange); }
+    .card.connected::before { content:''; position:absolute; inset:0 auto 0 0; width:4px; background:#10b981; }
+    .card-top { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:22px; }
+    .icon { width:46px; height:46px; display:grid; place-items:center; border-radius:14px; font-size:22px; background:#fff4ed; }
+    .status { border-radius:999px; padding:5px 9px; background:#f1f5f9; color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.06em; }
+    .status.live { background:#ecfdf5; color:#047857; }
+    .card h2 { font-size:19px; letter-spacing:-.02em; margin-bottom:9px; }
+    .card p { color:var(--slate); font-size:13px; line-height:1.65; margin-bottom:18px; }
+    .card small { color:var(--muted); font-size:11px; line-height:1.55; }
+    .card-action { margin-top:auto; }
+    .button { width:100%; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px; border:0; border-radius:12px; padding:12px 16px; color:#fff; background:var(--orange); font:700 13px Inter,sans-serif; text-decoration:none; cursor:pointer; box-shadow:0 7px 18px rgba(242,111,38,.22); }
+    .button:hover { background:var(--orange-dark); }
+    .button.secondary { color:#1d4ed8; background:#eff6ff; box-shadow:none; border:1px solid #bfdbfe; }
+    .select-wrap { display:block; margin-top:12px; }
+    .select-wrap span { display:block; margin-bottom:7px; color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+    select { width:100%; min-height:44px; padding:10px 12px; border:1px solid #cbd5e1; border-radius:11px; background:#fff; color:var(--navy); font:600 12px Inter,sans-serif; }
+    .footer-panel { margin-top:22px; display:flex; justify-content:space-between; align-items:center; gap:20px; padding:20px 22px; background:#fff; border:1px solid var(--line); border-radius:18px; }
+    .footer-panel p { color:var(--slate); font-size:12px; line-height:1.6; }
+    .continue { min-width:220px; }
+    .continue:disabled { cursor:not-allowed; opacity:.45; box-shadow:none; }
+    @media(max-width:900px) { .hero{grid-template-columns:1fr;gap:24px}.connections{grid-template-columns:1fr}.card{min-height:0}.footer-panel{align-items:stretch;flex-direction:column}.continue{width:100%}.shell{padding-top:34px} }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><img src="/logo.png" alt="DataProvido"><span>DataProvido</span></a>
+    <div class="secure">🔒 Read-only connection setup</div>
+  </header>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">✦ Workspace setup</span>
+        <h1>Connect your data.</h1>
+        <p>Choose the sources that power your retail workspace. DataProvido verifies access, lets you select the right store, and keeps the connection read-only wherever the provider supports it.</p>
+      </div>
+      <aside class="progress" aria-label="Setup progress">
+        <strong>Your setup path</strong>
+        <div class="progress-row active"><span>1</span> Verify your Google subscription email</div><div class="progress-line"></div>
+        <div class="progress-row {% if analytics_connected %}active{% endif %}"><span>2</span> Select the store data you want to analyse</div><div class="progress-line"></div>
+        <div class="progress-row"><span>3</span> Enter your ready-to-use workspace</div>
+      </aside>
+    </section>
+
+    {% if error %}<div class="notice">Setup needs attention. Please connect Analytics and select an accessible GA4 property before continuing.</div>{% endif %}
+    {% if connected %}<div class="notice success-notice">Connection updated. Review the source below, then continue when your workspace is ready.</div>{% endif %}
+
+    <form id="dataSetupForm" method="post" action="/connect-data/complete">
+      <section class="connections">
+        <article class="card required {% if analytics_connected %}connected{% endif %}">
+          <div class="card-top"><span class="icon">📊</span><span class="status {% if analytics_connected %}live{% endif %}">{% if analytics_connected %}CONNECTED{% else %}REQUIRED{% endif %}</span></div>
+          <h2>Commerce analytics</h2>
+          <p>Use your GA4 ecommerce data for category, product, funnel, engagement and session-quality analysis.</p>
+          <small>DataProvido requests Google Analytics read-only access and cannot edit your Analytics configuration.</small>
+          <div class="card-action">
+            {% if analytics_connected %}
+            <label class="select-wrap"><span>Analytics property</span><select id="ga4Property" name="ga4_property_id" required><option value="">Loading properties…</option></select></label>
+            {% else %}
+            <a class="button" href="/api/auth/google?integration=analytics&amp;flow=connect_data">Connect Analytics <span>→</span></a>
+            {% endif %}
+          </div>
+        </article>
+
+        <article class="card {% if merchant_connected %}connected{% endif %}">
+          <div class="card-top"><span class="icon">🛒</span><span class="status {% if merchant_connected %}live{% endif %}">{% if merchant_connected %}CONNECTED{% else %}OPTIONAL{% endif %}</span></div>
+          <h2>Catalog &amp; market context</h2>
+          <p>Add Merchant Center catalog, availability, Shopping performance and eligible market-price reports.</p>
+          <small>You can continue without Merchant Center and add it later from this setup page.</small>
+          <div class="card-action">
+            {% if merchant_connected %}
+            <label class="select-wrap"><span>Merchant account</span><select id="merchantAccount" name="merchant_account_id"><option value="">Loading accounts…</option></select></label>
+            {% else %}
+            <a class="button secondary" href="/api/auth/google?integration=merchant&amp;flow=connect_data">Add Merchant Center <span>→</span></a>
+            {% endif %}
+          </div>
+        </article>
+
+        <article class="card connected">
+          <div class="card-top"><span class="icon">◎</span><span class="status live">READY</span></div>
+          <h2>Own CRM &amp; files</h2>
+          <p>Bring consented CRM audience signals, Excel workbooks or CSV exports into your workspace when you need them.</p>
+          <small>No extra setup is required now. Upload controls appear inside the relevant workspace.</small>
+          <div class="card-action"><div class="button secondary" aria-disabled="true">Available in your workspace ✓</div></div>
+        </article>
+      </section>
+
+      <div class="footer-panel">
+        <p><strong>Your data stays under your control.</strong><br>Review <a href="/google-data">Google Data Use</a>, <a href="/privacy">Privacy</a> and <a href="/terms">Terms</a>.</p>
+        <button id="continueButton" class="button continue" type="submit" {% if not analytics_connected %}disabled{% endif %}>Open My Workspace →</button>
+      </div>
+    </form>
+  </main>
+  {% if analytics_connected %}
+  <script>
+    (async function loadAccounts(){
+      const button=document.getElementById('continueButton');
+      const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+      try {
+        const response=await fetch('/api/google/accounts',{credentials:'same-origin',headers:{Accept:'application/json'}});
+        if(!response.ok) throw new Error('account lookup failed');
+        const data=await response.json();
+        const ga4=document.getElementById('ga4Property');
+        const merchant=document.getElementById('merchantAccount');
+        const ga4Rows=data.ga4_properties||[];
+        ga4.innerHTML='<option value="">Select your Analytics property</option>'+ga4Rows.map(item=>`<option value="${esc(item.id)}">${esc(item.name)} · ${esc(item.id)}</option>`).join('');
+        ga4.value=data.selected_ga4||((ga4Rows.length===1&&ga4Rows[0].id)||'');
+        if(merchant){
+          const merchantRows=data.merchant_accounts||[];
+          merchant.innerHTML='<option value="">Continue without Merchant Center</option>'+merchantRows.map(item=>`<option value="${esc(item.id)}">${esc(item.name)} · ${esc(item.id)}</option>`).join('');
+          merchant.value=data.selected_merchant||((merchantRows.length===1&&merchantRows[0].id)||'');
+        }
+        const update=()=>{button.disabled=!ga4.value;};
+        ga4.addEventListener('change',update); update();
+      } catch(error) {
+        button.disabled=true;
+        document.getElementById('ga4Property').innerHTML='<option value="">Properties could not be loaded — reconnect Analytics</option>';
+      }
+    })();
+  </script>
+  {% endif %}
+</body>
+</html>
