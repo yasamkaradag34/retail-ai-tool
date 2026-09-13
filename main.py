@@ -4465,9 +4465,9 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
     nav_privacy_cls = "nav-link active" if active_nav == "privacy" else "nav-link"
 
     cta_url = "/pricing"
-    cta_label = "Start Journey &nbsp;→"
+    cta_label = "Start Journey"
     bottom_cta_url = "/login" if active_nav == "pricing" else "/pricing"
-    bottom_cta_label = "Login to Console &nbsp;→" if active_nav == "pricing" else "Start Journey &nbsp;→"
+    bottom_cta_label = "Login to Console →" if active_nav == "pricing" else "Start Journey"
 
     template = templates.env.get_template("base_page.html")
     return template.render(
