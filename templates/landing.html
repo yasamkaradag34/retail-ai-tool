@@ -31,16 +31,16 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DataProvido – Retail analytics with customer-controlled data</title>
-  <meta name="description" content="Turn customer-controlled files and optional Google Analytics and Merchant Center connections into practical retail insights.">
-  <meta property="og:title" content="DataProvido – Retail analytics with customer-controlled data">
-  <meta property="og:description" content="Turn customer-controlled files and optional Google Analytics and Merchant Center connections into practical retail insights.">
+  <title>DataProvido – Retail data. Real trends. Clear decisions.</title>
+  <meta name="description" content="Connect GA4, Merchant Center and spreadsheet data in one retail intelligence workspace. Ask a question and get numbers, trends and clear next actions.">
+  <meta property="og:title" content="DataProvido – Retail data. Real trends. Clear decisions.">
+  <meta property="og:description" content="Connect GA4, Merchant Center and spreadsheet data in one retail intelligence workspace.">
   <meta property="og:image" content="https://www.dataprovido.com/logo.png">
   <meta property="og:url" content="https://www.dataprovido.com/">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="DataProvido – Retail analytics with customer-controlled data">
-  <meta name="twitter:description" content="Turn customer-controlled files and optional Google Analytics and Merchant Center connections into practical retail insights.">
+  <meta name="twitter:title" content="DataProvido – Retail data. Real trends. Clear decisions.">
+  <meta name="twitter:description" content="Connect GA4, Merchant Center and spreadsheet data in one retail intelligence workspace.">
   <meta name="twitter:image" content="https://www.dataprovido.com/logo.png">
   <link rel="icon" type="image/png" href="/logo.png">
   <link rel="shortcut icon" type="image/png" href="/logo.png">
@@ -288,6 +288,124 @@
     }
     .footer-logo { font-weight: 700; color: var(--text-900); font-size: 15px; }
     .footer-copy { color: var(--text-500); }
+
+    /* PRODUCT WALKTHROUGH */
+    .product-tour-section { padding: 88px 40px; background: #fff; }
+    .product-tour-shell {
+      max-width: 1120px; margin: 0 auto; overflow: hidden; border-radius: 26px;
+      color: #f8fafc; background: #101112; border: 1px solid #26282b;
+      box-shadow: 0 28px 70px rgba(15,23,42,.18);
+    }
+    .product-tour-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 15px 20px; border-bottom: 1px solid #292b2e; color: #a1a1aa;
+      font-size: 12px; font-weight: 700;
+    }
+    .tour-status { display: inline-flex; align-items: center; gap: 8px; }
+    .tour-status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #83d391; box-shadow: 0 0 0 4px rgba(131,211,145,.12); }
+    .tour-layout { display: grid; grid-template-columns: 180px minmax(0,1fr); min-height: 430px; }
+    .tour-nav { padding: 22px 16px; border-right: 1px solid #292b2e; }
+    .tour-brand { color: #fff; font-size: 13px; font-weight: 800; margin: 0 8px 20px; }
+    .tour-nav-item { display: flex; gap: 9px; align-items: center; padding: 10px 12px; margin-bottom: 4px; border-radius: 9px; color: #8f9298; font-size: 12px; font-weight: 700; }
+    .tour-nav-item.active { color: #0f172a; background: #dceeff; }
+    .tour-main { padding: 26px; min-width: 0; }
+    .tour-prompt { border: 1px solid #26496f; border-radius: 10px; color: #f8fafc; padding: 13px 15px; font-size: 13px; }
+    .tour-prompt span { color: #6aaef5; margin-right: 8px; }
+    .tour-kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin: 14px 0; }
+    .tour-kpi { border: 1px solid #303236; border-radius: 12px; padding: 15px; background: #171819; }
+    .tour-kpi strong { display: block; font-size: 22px; margin-bottom: 5px; }
+    .tour-kpi small { color: #8f9298; font-size: 11px; }
+    .tour-kpi em { display: block; color: #73d59c; font-size: 11px; font-style: normal; margin-top: 8px; }
+    .tour-chart { border: 1px solid #303236; border-radius: 13px; padding: 17px; background: #171819; }
+    .tour-chart-title { font-size: 12px; color: #a1a1aa; margin-bottom: 18px; }
+    .tour-bars { height: 115px; display: flex; gap: 14px; align-items: end; }
+    .tour-bar { flex: 1; min-width: 16px; border-radius: 5px 5px 2px 2px; background: #a9cff5; }
+    .tour-bar.accent { background: #2f83d2; }
+    .tour-footer {
+      padding: 15px 20px; border-top: 1px solid #292b2e; display: flex;
+      justify-content: space-between; align-items: center;
+    }
+    .tour-play { border: 0; background: transparent; color: #e5e7eb; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; gap: 9px; align-items: center; }
+    .tour-play:hover { color: #fff; }
+    .tour-built { max-width: 1120px; margin: 24px auto 0; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 24px; color: #667085; font-size: 12px; font-weight: 600; }
+    .tour-built strong { color: #111827; }
+    .tour-dialog {
+      width: min(760px, calc(100vw - 32px)); border: 1px solid #303236; border-radius: 22px;
+      padding: 0; background: #111214; color: #fff; box-shadow: 0 40px 100px rgba(0,0,0,.45);
+    }
+    .tour-dialog::backdrop { background: rgba(2,6,23,.75); backdrop-filter: blur(5px); }
+    .tour-dialog-head { display: flex; justify-content: space-between; gap: 20px; padding: 24px 26px; border-bottom: 1px solid #2b2d31; }
+    .tour-dialog h3 { font-size: 21px; }
+    .tour-dialog p { color: #a1a1aa; font-size: 13px; margin-top: 6px; }
+    .tour-close { border: 1px solid #3b3e43; background: #1d1f22; color: #fff; border-radius: 50%; width: 34px; height: 34px; cursor: pointer; }
+    .tour-scenes { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; padding: 26px; }
+    .tour-scene { padding: 18px; border: 1px solid #303236; border-radius: 14px; background: #171819; }
+    .tour-scene b { display: block; color: #f59e42; font-size: 11px; letter-spacing: .08em; margin-bottom: 10px; }
+    .tour-scene strong { display: block; font-size: 15px; margin-bottom: 7px; }
+    .tour-scene span { color: #a1a1aa; font-size: 12px; line-height: 1.55; }
+
+    /* DARK WORKSPACE SHOWCASE */
+    .dark-showcase { background: #0d0e0f; border-color: #242629; color: #fff; }
+    .dark-showcase .showcase-header { text-align: center; margin: 0 auto 54px; }
+    .dark-showcase .section-tag { color: #f4a35e; border-color: rgba(244,163,94,.25); background: rgba(244,163,94,.08); }
+    .dark-showcase .section-title { color: #f8fafc; }
+    .dark-showcase .section-desc { color: #999da3; max-width: 690px; margin: 0 auto; }
+    .dark-showcase .showcase-body { grid-template-columns: 300px minmax(0,1fr); gap: 34px; }
+    .dark-showcase .sc-tab { color: #9b9da2; border-color: transparent; }
+    .dark-showcase .sc-tab:hover { background: #151617; border-color: #303236; }
+    .dark-showcase .sc-tab.active { background: #171819; border-color: #34363a; box-shadow: none; }
+    .dark-showcase .sc-tab-title { color: #f4f4f5; }
+    .dark-showcase .sc-tab:not(.active) .sc-tab-title { color: #c2c4c8; }
+    .dark-showcase .sc-tab-desc { color: #7f8389; }
+    .dark-showcase .sc-panel { background: #171819; border-color: #34363a; box-shadow: none; min-height: 570px; }
+    .dark-showcase .sc-slide { padding: 38px 42px; justify-content: flex-start; }
+    .dark-showcase .sc-slide h3 { color: #f8fafc; font-family: Inter,sans-serif; font-size: clamp(26px,3vw,38px); max-width: 620px; }
+    .dark-showcase .sc-slide p { color: #a6a8ad; max-width: 680px; margin-bottom: 22px; }
+    .dark-showcase .sc-slide-tag { background: #222; border-color: #3b3d40; color: #fff; text-transform: none; letter-spacing: 0; font-size: 12px; }
+    .dark-showcase .sc-metrics { margin-bottom: 22px; }
+    .dark-showcase .sc-metric { flex: 1; background: #141516; border-color: #34363a; min-width: 130px; }
+    .dark-showcase .sc-metric-val { color: #f8fafc; font-size: 18px; }
+    .dark-showcase .sc-metric-label { color: #85888e; }
+    .workspace-visual { margin-top: auto; border: 1px solid #34363a; border-radius: 14px; background: #111213; padding: 17px; width: 100%; }
+    .visual-label { color: #8b8e94; font-size: 11px; margin-bottom: 13px; }
+    .funnel-row { display: grid; grid-template-columns: 110px minmax(0,1fr) 44px; gap: 10px; align-items: center; margin: 7px 0; color: #b8bbc0; font-size: 11px; }
+    .funnel-track { height: 24px; background: #08090a; border-radius: 5px; overflow: hidden; }
+    .funnel-fill { height: 100%; min-width: 18px; border-radius: 5px; background: #70aee8; display: flex; align-items: center; padding-left: 9px; color: #fff; font-weight: 800; }
+    .funnel-row:first-of-type .funnel-fill { background: #2d78bd; }
+    .mini-table { width: 100%; border-collapse: collapse; color: #d5d7da; font-size: 11px; }
+    .mini-table th,.mini-table td { padding: 8px 7px; border-bottom: 1px solid #303236; text-align: left; }
+    .mini-table th { color: #85888e; font-weight: 500; }
+    .trend-up,.position-good { color: #5fd0ad; }
+    .trend-down,.position-high { color: #f38163; }
+    .rating-stars { color: #f5a623; letter-spacing: 1px; }
+    .chat-line { padding: 11px 13px; border: 1px solid #303236; border-radius: 10px; color: #d5d7da; font-size: 12px; margin: 8px 0; max-width: 85%; line-height: 1.45; }
+    .chat-line.user { margin-left: auto; background: #dfefff; color: #174f82; border-color: #dfefff; }
+
+    /* WHY DATAPROVIDO */
+    .why-dark { background: #090a0b; color: #fff; padding: 100px 40px; }
+    .why-dark .section-inner { max-width: 1120px; }
+    .why-dark .section-title { color: #f8fafc; font-family: Inter,sans-serif; max-width: 660px; }
+    .why-dark .section-desc { color: #8e9298; max-width: 700px; }
+    .comparison-table { display: grid; grid-template-columns: 1fr 1fr; margin-top: 44px; border: 1px solid #2d2f32; border-radius: 18px; overflow: hidden; }
+    .comparison-column + .comparison-column { border-left: 1px solid #2d2f32; }
+    .comparison-head { padding: 18px 26px; border-bottom: 1px solid #2d2f32; color: #777b81; font-size: 13px; font-weight: 800; }
+    .comparison-column.after .comparison-head { color: #f59e0b; }
+    .comparison-row { padding: 19px 26px; min-height: 68px; display: flex; gap: 13px; align-items: center; border-bottom: 1px solid #242629; color: #70747a; font-size: 14px; }
+    .comparison-row:last-child { border-bottom: 0; }
+    .comparison-column.after .comparison-row { color: #e6e7e9; }
+    .comparison-icon { width: 22px; flex: 0 0 22px; color: #46494e; }
+    .comparison-column.after .comparison-icon { color: #f59e0b; }
+    .question-title { margin: 54px 0 18px; color: #71747a; font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .question-list { display: grid; gap: 10px; }
+    .question-item { border: 1px solid #292b2e; border-radius: 14px; background: #111214; overflow: hidden; }
+    .question-item[open] { border-color: rgba(245,158,11,.5); background: #15120e; }
+    .question-item summary { list-style: none; cursor: pointer; padding: 18px 22px; display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center; color: #d2d4d7; font-size: 14px; font-weight: 700; }
+    .question-item summary::-webkit-details-marker { display: none; }
+    .question-item[open] summary { color: #fff; border-bottom: 1px solid #292b2e; }
+    .question-badge { color: #f59e0b; background: rgba(245,158,11,.11); border-radius: 8px; width: 32px; height: 32px; display: grid; place-items: center; }
+    .question-module { border: 1px solid #33363a; border-radius: 7px; padding: 5px 9px; color: #85888e; font-size: 10px; font-weight: 700; }
+    .question-answer { padding: 18px 22px 21px 68px; color: #9da0a5; font-size: 13px; line-height: 1.65; }
+    .question-answer strong { color: #fff; }
 
     /* HAMBURGER & MOBILE DRAWER */
     .nav-hamburger {
@@ -589,6 +707,33 @@
         gap: 6px;
       }
       .footer-right { font-size: 12px; }
+
+      .product-tour-section { padding: 44px 16px; }
+      .product-tour-shell { border-radius: 18px; }
+      .tour-layout { grid-template-columns: 1fr; min-height: auto; }
+      .tour-nav { display: none; }
+      .tour-main { padding: 16px; }
+      .tour-kpis { grid-template-columns: 1fr; }
+      .tour-bars { height: 92px; gap: 8px; }
+      .tour-footer { align-items: flex-start; gap: 8px; }
+      .tour-built { gap: 10px 16px; font-size: 10px; }
+      .tour-scenes { grid-template-columns: 1fr; }
+
+      .dark-showcase .showcase-body { display: flex; }
+      .dark-showcase .sc-tab { background: #171819; border-color: #303236; }
+      .dark-showcase .sc-tab.active { background: #f26f26; border-color: #f26f26; }
+      .dark-showcase .sc-panel { min-height: auto; }
+      .dark-showcase .sc-slide { padding: 24px 18px !important; }
+      .dark-showcase .sc-metric { min-width: calc(50% - 8px); }
+      .funnel-row { grid-template-columns: 78px minmax(0,1fr) 35px; }
+
+      .why-dark { padding: 54px 16px; }
+      .comparison-table { grid-template-columns: 1fr; margin-top: 28px; }
+      .comparison-column + .comparison-column { border-left: 0; border-top: 1px solid #2d2f32; }
+      .comparison-row { min-height: 58px; padding: 15px 18px; font-size: 12px; }
+      .question-item summary { grid-template-columns: 34px 1fr; padding: 15px; font-size: 12px; }
+      .question-module { grid-column: 2; justify-self: start; }
+      .question-answer { padding: 15px 18px 18px; font-size: 12px; }
     }
   </style>
 </head>
@@ -606,8 +751,8 @@
   <div class="nav-links">
     <a href="/pricing" class="nav-link">Pricing</a>
     <a href="/contact" class="nav-link">Contact</a>
-    <a href="/who-we-are" class="nav-link">Who We Are?</a>
-    <a href="/how-works" class="nav-link">How Works?</a>
+    <a href="/who-we-are" class="nav-link">Who We Are</a>
+    <a href="/how-works" class="nav-link">How It Works</a>
     <a href="/privacy" class="nav-link">Privacy Policy</a>
   </div>
   <div class="nav-desktop-actions" style="display: flex; align-items: center; gap: 16px;">
@@ -624,8 +769,8 @@
 <div class="mobile-drawer" id="mobileDrawer">
   <a href="/pricing" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Pricing</span> <span>›</span></a>
   <a href="/contact" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Contact</span> <span>›</span></a>
-  <a href="/who-we-are" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Who We Are?</span> <span>›</span></a>
-  <a href="/how-works" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>How Works?</span> <span>›</span></a>
+  <a href="/who-we-are" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Who We Are</span> <span>›</span></a>
+  <a href="/how-works" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>How It Works</span> <span>›</span></a>
   <a href="/privacy" class="mobile-drawer-link" onclick="toggleMobileMenu()"><span>Privacy Policy</span> <span>›</span></a>
   <div class="mobile-drawer-divider"></div>
   <a href="/login" class="mobile-drawer-btn btn-ghost" style="border: 1.5px solid var(--border); color: var(--text-900); font-weight: 700;">Log In</a>
@@ -634,128 +779,190 @@
 
 <section class="hero" id="hero">
   <div class="hero-content">
-    <div class="hero-badge">✦ Local Intelligence. Zero Compromise.</div>
-    <h1>We read your data, spot the trends,<br><span>tell you what's next.</span></h1>
-    <p class="hero-sub" style="max-width: 680px;">DataProvido combines customer-controlled files with optional Google Analytics and Merchant Center connections to deliver clear retail insights and practical next actions.</p>
+    <div class="hero-badge">✦ Retail intelligence. One workspace.</div>
+    <h1>Retail data. Real trends.<br><span>Clear decisions.</span></h1>
+    <p class="hero-sub">DataProvido connects your GA4, Merchant Center and spreadsheet data in one workspace. Ask a business question in plain language and get a precise answer with numbers, trends and what to do next.</p>
     <div class="hero-actions" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
-      <a href="/pricing" class="btn-primary">Start Journey</a>
-      <a href="/login" class="btn-ghost" style="font-weight: 700;">Log In</a>
-      <a href="/how-works" class="btn-ghost">See How It Works</a>
+      <a href="/pricing" class="btn-primary">Try It Free <span aria-hidden="true">→</span></a>
+      <a href="#product-tour" class="btn-ghost">See How It Works</a>
     </div>
   </div>
 </section>
 
 <div class="stats-strip reveal">
   <div class="stats-inner">
-    <div class="stat-item"><div class="stat-number">3.2×</div><div class="stat-label">Average increase in insight speed</div></div>
-    <div class="stat-item"><div class="stat-number">2</div><div class="stat-label">Scoped Google data integrations</div></div>
-    <div class="stat-item"><div class="stat-number">15+</div><div class="stat-label">Pre-built analytical modules</div></div>
-    <div class="stat-item"><div class="stat-number">&lt;30s</div><div class="stat-label">Average query response time</div></div>
+    <div class="stat-item"><div class="stat-number">7</div><div class="stat-label">Workspaces, one question</div></div>
+    <div class="stat-item"><div class="stat-number">2</div><div class="stat-label">GA4 + Merchant Center, read-only</div></div>
+    <div class="stat-item"><div class="stat-number">&lt;30s</div><div class="stat-label">Plain-language answers</div></div>
+    <div class="stat-item"><div class="stat-number">1 click</div><div class="stat-label">Export-ready results</div></div>
   </div>
 </div>
 
-<section class="showcase">
+<section class="product-tour-section" id="product-tour">
+  <div class="product-tour-shell reveal" aria-label="DataProvido product preview">
+    <div class="product-tour-topbar">
+      <span class="tour-status">Live workspace preview</span>
+      <span>Sample data</span>
+    </div>
+    <div class="tour-layout">
+      <aside class="tour-nav" aria-label="Preview workspace navigation">
+        <div class="tour-brand">DataProvido Console</div>
+        <div class="tour-nav-item active"><span>⇊</span> Funnel</div>
+        <div class="tour-nav-item"><span>◇</span> Category</div>
+        <div class="tour-nav-item"><span>⬡</span> Stock &amp; Price</div>
+        <div class="tour-nav-item"><span>▣</span> App Benchmark</div>
+        <div class="tour-nav-item"><span>▤</span> Excel Wizard</div>
+      </aside>
+      <div class="tour-main">
+        <div class="tour-prompt"><span>⌕</span>Which product categories have the highest drop-off at checkout?</div>
+        <div class="tour-kpis">
+          <div class="tour-kpi"><strong>₺2.4M</strong><small>Revenue this week</small><em>↑ 12% vs last week</em></div>
+          <div class="tour-kpi"><strong>3.8%</strong><small>Checkout conversion</small><em style="color:#f38163">↓ 0.4pp funnel loss</em></div>
+          <div class="tour-kpi"><strong>GSM</strong><small>Top drop-off category</small><em style="color:#f38163">Cart abandon: 68%</em></div>
+        </div>
+        <div class="tour-chart">
+          <div class="tour-chart-title">Funnel drop-off by category · sample view</div>
+          <div class="tour-bars" aria-hidden="true">
+            <div class="tour-bar" style="height:36%"></div><div class="tour-bar accent" style="height:82%"></div>
+            <div class="tour-bar" style="height:48%"></div><div class="tour-bar" style="height:58%"></div>
+            <div class="tour-bar" style="height:31%"></div><div class="tour-bar" style="height:67%"></div>
+            <div class="tour-bar" style="height:43%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tour-footer">
+      <button class="tour-play" type="button" onclick="openProductTour()"><span aria-hidden="true">▶</span> Open the product walkthrough</button>
+      <span style="color:#777b81;font-size:12px">3 steps</span>
+    </div>
+  </div>
+  <div class="tour-built reveal">
+    <strong>Built on</strong><span>▣ Read-only Google access</span><span>▤ Any Excel or CSV file</span><span>◷ Answers in seconds</span><span>⇩ One-click export</span>
+  </div>
+</section>
+
+<dialog class="tour-dialog" id="productTourDialog" aria-labelledby="tourDialogTitle">
+  <div class="tour-dialog-head">
+    <div><h3 id="tourDialogTitle">From retail data to a clear next action</h3><p>A quick look at the DataProvido workflow.</p></div>
+    <button class="tour-close" type="button" onclick="closeProductTour()" aria-label="Close walkthrough">×</button>
+  </div>
+  <div class="tour-scenes">
+    <div class="tour-scene"><b>01 · CONNECT</b><strong>Choose your source</strong><span>Connect read-only GA4 or Merchant Center access, or upload Excel and CSV files.</span></div>
+    <div class="tour-scene"><b>02 · ASK</b><strong>Use plain language</strong><span>Ask the business question your team needs answered. No SQL or report building.</span></div>
+    <div class="tour-scene"><b>03 · ACT</b><strong>Get evidence and next steps</strong><span>Review the numbers, trends and recommendation, then export the result in one click.</span></div>
+  </div>
+</dialog>
+
+<section class="showcase dark-showcase" id="workspaces">
   <div class="showcase-inner">
     <div class="showcase-header reveal">
-      <div class="section-tag">✦ Core Capabilities</div>
-      <h2 class="section-title">Everything your retail team<br>needs in one place</h2>
-      <p class="section-desc">From CRM pipelines to funnel drop-offs — ask any business question and get a precise, actionable answer in seconds.</p>
+      <div class="section-tag">✦ Five focused workspaces</div>
+      <h2 class="section-title">One place for the questions<br>retail teams ask every day</h2>
+      <p class="section-desc">Stop switching between reports. Choose a workspace, ask a question and see the metric, comparison and next action together.</p>
     </div>
     <div class="showcase-body">
 
       <div class="sc-tabs" id="scTabs">
         <div class="sc-tab active" data-sc="0">
           <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
-          <div class="sc-tab-head"><span class="sc-tab-icon">📊</span><span class="sc-tab-title">CRM Data to Insights</span></div>
-          <div class="sc-tab-desc">Surface underperforming deals and campaigns instantly.</div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">⇊</span><span class="sc-tab-title">Funnel Analysis</span></div>
+          <div class="sc-tab-desc">Where do customers drop off before checkout?</div>
         </div>
         <div class="sc-tab" data-sc="1">
           <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
-          <div class="sc-tab-head"><span class="sc-tab-icon">🛒</span><span class="sc-tab-title">Funnel &amp; Conversion</span></div>
-          <div class="sc-tab-desc">Track PDP &rarr; Cart &rarr; Checkout drop-offs in seconds.</div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">◇</span><span class="sc-tab-title">Category &amp; Product</span></div>
+          <div class="sc-tab-desc">Which categories and SKUs are driving growth?</div>
         </div>
         <div class="sc-tab" data-sc="2">
           <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
-          <div class="sc-tab-head"><span class="sc-tab-icon">📦</span><span class="sc-tab-title">Stock Intelligence</span></div>
-          <div class="sc-tab-desc">Live stock levels, alerts and turnover velocity.</div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">⬡</span><span class="sc-tab-title">Stock &amp; Price</span></div>
+          <div class="sc-tab-desc">How does your pricing compare to the market?</div>
         </div>
         <div class="sc-tab" data-sc="3">
           <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
-          <div class="sc-tab-head"><span class="sc-tab-icon">💰</span><span class="sc-tab-title">Price Radar</span></div>
-          <div class="sc-tab-desc">Compare prices against market benchmarks per SKU.</div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">▣</span><span class="sc-tab-title">App Benchmark</span></div>
+          <div class="sc-tab-desc">How does your app compare to competitors?</div>
         </div>
         <div class="sc-tab" data-sc="4">
           <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
-          <div class="sc-tab-head"><span class="sc-tab-icon">🏷️</span><span class="sc-tab-title">Category &amp; Product Analysis</span></div>
-          <div class="sc-tab-desc">Brand rankings and SKU-level competitive positioning.</div>
-        </div>
-        <div class="sc-tab" data-sc="5">
-          <div class="sc-tab-bar"></div><div class="sc-tab-progress"></div>
-          <div class="sc-tab-head"><span class="sc-tab-icon">⚡</span><span class="sc-tab-title">Action Executor</span></div>
-          <div class="sc-tab-desc">Recommended actions you can execute directly from chat.</div>
+          <div class="sc-tab-head"><span class="sc-tab-icon">▤</span><span class="sc-tab-title">Excel Wizard</span></div>
+          <div class="sc-tab-desc">Analyse any file with a plain-language question.</div>
         </div>
       </div>
 
       <div class="sc-panel" id="scPanel">
         <div class="sc-slide active" data-panel="0">
-          <div class="sc-slide-tag">📊 Business Intelligence</div>
-          <h3>Turn CRM data into<br>clear next actions</h3>
-          <p>Connect your CRM pipeline and instantly surface which deals, segments, or campaigns are underperforming — with recommended actions attached. No SQL. No analyst queue.</p>
+          <div class="sc-slide-tag">⇊ Funnel Analysis</div>
+          <h3>Pinpoint exactly where customers leave</h3>
+          <p>See the purchase journey from product view to checkout. Compare closed and open funnels by device, channel, country and new versus returning visitors.</p>
           <div class="sc-metrics">
-            <div class="sc-metric"><div class="sc-metric-val">3.2×</div><div class="sc-metric-label">Faster insights</div></div>
-            <div class="sc-metric"><div class="sc-metric-val">&lt;30s</div><div class="sc-metric-label">Query response</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">4 steps</div><div class="sc-metric-label">Full funnel tracked</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Device+</div><div class="sc-metric-label">Channel and country</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">GA4</div><div class="sc-metric-label">Read-only source</div></div>
           </div>
-          <div class="sc-slide-visual">📊</div>
+          <div class="workspace-visual"><div class="visual-label">Purchase funnel · sample view</div>
+            <div class="funnel-row"><span>Product view</span><div class="funnel-track"><div class="funnel-fill" style="width:100%">48,200</div></div><span>100%</span></div>
+            <div class="funnel-row"><span>Add to cart</span><div class="funnel-track"><div class="funnel-fill" style="width:62%">29,900</div></div><span>62%</span></div>
+            <div class="funnel-row"><span>Checkout</span><div class="funnel-track"><div class="funnel-fill" style="width:28%">13,400</div></div><span>28%</span></div>
+            <div class="funnel-row"><span>Purchase</span><div class="funnel-track"><div class="funnel-fill" style="width:11%">5,300</div></div><span class="trend-down">11%</span></div>
+          </div>
         </div>
         <div class="sc-slide" data-panel="1">
-          <div class="sc-slide-tag">🛒 Funnel Analytics</div>
-          <h3>Pinpoint exactly where<br>customers drop off</h3>
-          <p>Track PDP View → Add to Cart → Checkout flows. Identify conversion blockers and get actionable recommendations to improve your funnel rate.</p>
+          <div class="sc-slide-tag">◇ Category &amp; Product Analysis</div>
+          <h3>See which categories and SKUs are actually growing</h3>
+          <p>Compare views, add-to-carts, purchases, revenue, bounce rate and engagement at category and product level, side by side.</p>
           <div class="sc-metrics">
-            <div class="sc-metric"><div class="sc-metric-val">+18%</div><div class="sc-metric-label">Avg. conversion lift</div></div>
-            <div class="sc-metric"><div class="sc-metric-val">4 steps</div><div class="sc-metric-label">Full funnel tracked</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">SKU level</div><div class="sc-metric-label">Granularity</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Period</div><div class="sc-metric-label">Comparison built in</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">CSV</div><div class="sc-metric-label">Export ready</div></div>
           </div>
-          <div class="sc-slide-visual">🛒</div>
+          <div class="workspace-visual"><div class="visual-label">Top categories by revenue · sample view</div>
+            <table class="mini-table"><thead><tr><th>Category</th><th>Revenue</th><th>Conv. rate</th><th>vs prior period</th></tr></thead>
+            <tbody><tr><td>Notebook</td><td>₺1.2M</td><td>4.1%</td><td class="trend-up">↑ 18%</td></tr><tr><td>GSM</td><td>₺980K</td><td>2.8%</td><td class="trend-down">↓ 6%</td></tr><tr><td>Tablet</td><td>₺640K</td><td>3.5%</td><td class="trend-up">↑ 9%</td></tr><tr><td>Monitor</td><td>₺410K</td><td>5.2%</td><td class="trend-up">↑ 3%</td></tr></tbody></table>
+          </div>
         </div>
         <div class="sc-slide" data-panel="2">
-          <div class="sc-slide-tag">📦 Inventory</div>
-          <h3>Real-time stock visibility<br>across all SKUs</h3>
-          <p>Get live stock levels, low-stock alerts, out-of-stock reports, and turnover velocity — all answered in plain language. Never miss a stockout again.</p>
+          <div class="sc-slide-tag">⬡ Stock &amp; Price</div>
+          <h3>Know where your pricing stands against the market</h3>
+          <p>Connect Merchant Center for catalog availability and Google's eligible price benchmark reports. Find products below, within or above the market range.</p>
           <div class="sc-metrics">
-            <div class="sc-metric"><div class="sc-metric-val">100%</div><div class="sc-metric-label">SKU coverage</div></div>
-            <div class="sc-metric"><div class="sc-metric-val">Real-time</div><div class="sc-metric-label">Data freshness</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Merchant</div><div class="sc-metric-label">Center connected</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">SKU-level</div><div class="sc-metric-label">Price positioning</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Read-only</div><div class="sc-metric-label">No listing changes</div></div>
           </div>
-          <div class="sc-slide-visual">📦</div>
+          <div class="workspace-visual"><div class="visual-label">Price position vs market benchmark · sample view</div>
+            <table class="mini-table"><thead><tr><th>Product</th><th>Your price</th><th>Benchmark</th><th>Position</th></tr></thead>
+            <tbody><tr><td>MacBook Air M3</td><td>₺42,999</td><td>₺44,200</td><td class="position-good">Below market</td></tr><tr><td>Samsung S24</td><td>₺28,500</td><td>₺27,900</td><td>Competitive</td></tr><tr><td>iPad 10th Gen</td><td>₺19,999</td><td>₺18,400</td><td class="position-high">Above market</td></tr><tr><td>Sony WH-1000XM5</td><td>₺8,200</td><td>₺8,250</td><td>Competitive</td></tr></tbody></table>
+          </div>
         </div>
         <div class="sc-slide" data-panel="3">
-          <div class="sc-slide-tag">💰 Pricing</div>
-          <h3>Stay ahead with intelligent<br>price monitoring</h3>
-          <p>Compare your pricing against market benchmarks automatically. Identify price gaps per SKU and brand, and act before competitors capture your customers.</p>
+          <div class="sc-slide-tag">▣ App Benchmark</div>
+          <h3>Compare your app against up to four competitors</h3>
+          <p>Use public App Store data to compare ratings, review volume, version freshness, pricing and language coverage, including sentiment from recent written reviews.</p>
           <div class="sc-metrics">
-            <div class="sc-metric"><div class="sc-metric-val">Daily</div><div class="sc-metric-label">Market updates</div></div>
-            <div class="sc-metric"><div class="sc-metric-val">SKU-level</div><div class="sc-metric-label">Granularity</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">4 rivals</div><div class="sc-metric-label">Side-by-side</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Public</div><div class="sc-metric-label">App Store data</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Sentiment</div><div class="sc-metric-label">Review analysis</div></div>
           </div>
-          <div class="sc-slide-visual">💰</div>
+          <div class="workspace-visual"><div class="visual-label">App ratings · Turkey App Store · sample view</div>
+            <table class="mini-table"><tbody><tr><td>Your app</td><td class="rating-stars">★★★★★</td><td class="trend-up">4.7</td><td>12.4K</td></tr><tr><td>Competitor A</td><td class="rating-stars">★★★★☆</td><td>4.3</td><td>31.2K</td></tr><tr><td>Competitor B</td><td class="rating-stars">★★★★☆</td><td>4.1</td><td>8.9K</td></tr><tr><td>Competitor C</td><td class="rating-stars">★★★★☆</td><td class="trend-down">3.8</td><td>5.1K</td></tr></tbody></table>
+          </div>
         </div>
         <div class="sc-slide" data-panel="4">
-          <div class="sc-slide-tag">🏷️ Category Intelligence</div>
-          <h3>Dominate your category<br>with product insights</h3>
-          <p>Upload product datasets and instantly get brand performance rankings, category share analysis, and SKU-level competitive positioning — without touching a spreadsheet.</p>
+          <div class="sc-slide-tag">▤ Excel Wizard</div>
+          <h3>Ask any file a business question</h3>
+          <p>Upload an Excel or CSV file, ask in English or Turkish and download the result as a structured table when the answer is ready.</p>
           <div class="sc-metrics">
-            <div class="sc-metric"><div class="sc-metric-val">Auto</div><div class="sc-metric-label">Report parsing</div></div>
-            <div class="sc-metric"><div class="sc-metric-val">Brand+SKU</div><div class="sc-metric-label">Two-level view</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">EN + TR</div><div class="sc-metric-label">Both languages</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Any file</div><div class="sc-metric-label">Excel or CSV</div></div>
+            <div class="sc-metric"><div class="sc-metric-val">Export</div><div class="sc-metric-label">Download result table</div></div>
           </div>
-          <div class="sc-slide-visual">🏷️</div>
-        </div>
-        <div class="sc-slide" data-panel="5">
-          <div class="sc-slide-tag">⚡ Automation</div>
-          <h3>From insight to action<br>in one click</h3>
-          <p>Go beyond insights — DataProvido recommends specific business actions and lets you execute them directly from the chat interface. Analyse, decide, act — all in one place.</p>
-          <div class="sc-metrics">
-            <div class="sc-metric"><div class="sc-metric-val">1-click</div><div class="sc-metric-label">Action execution</div></div>
-            <div class="sc-metric"><div class="sc-metric-val">15+</div><div class="sc-metric-label">Action types</div></div>
+          <div class="workspace-visual"><div class="visual-label">Sample conversation</div>
+            <div class="chat-line user">Which brands have the highest cart-to-detail rate this week?</div>
+            <div class="chat-line">Based on your file: Samsung 8.2%, Apple 7.6%, Sony 5.9%. Want the full table?</div>
+            <div class="chat-line user">Yes, export as Excel.</div>
+            <div class="chat-line">Your file is ready — 23 rows with brand, rate and weekly change.</div>
           </div>
-          <div class="sc-slide-visual">⚡</div>
         </div>
       </div>
 
@@ -763,20 +970,38 @@
   </div>
 </section>
 
-<section class="section">
+<section class="why-dark" id="why-dataprovido">
   <div class="section-inner">
     <div class="reveal">
       <div class="section-tag">✦ Why DataProvido</div>
       <h2 class="section-title">Built for retail teams,<br>not data scientists</h2>
-      <p class="section-desc">No SQL, no dashboards, no waiting. Just ask your question in plain language and get a precise answer with recommended next steps.</p>
+      <p class="section-desc">No SQL and no analyst queue. Ask a question in plain language and get a precise answer in seconds.</p>
     </div>
-    <div class="features-grid">
-      <div class="feat-card reveal"><div class="feat-icon">🔒</div><div class="feat-title">Privacy-Controlled</div><div class="feat-desc">Uploaded files can run in a customer-controlled environment. Optional Google data is requested in context, encrypted in transit and used only for visible analytics features.</div></div>
-      <div class="feat-card reveal"><div class="feat-icon">⚡</div><div class="feat-title">Instant Answers</div><div class="feat-desc">From question to insight in under 30 seconds. No waiting for reports or analyst queues — just real-time business intelligence.</div></div>
-      <div class="feat-card reveal"><div class="feat-icon">🎯</div><div class="feat-title">Action-Oriented Output</div><div class="feat-desc">Every answer comes with a recommended next action. Not just "what happened" but "what to do next" — ready to execute.</div></div>
-      <div class="feat-card reveal"><div class="feat-icon">📈</div><div class="feat-title">Revenue Intelligence</div><div class="feat-desc">Track B2D, C2D, revenue per category, brand performance and more. Full financial picture without touching a single spreadsheet.</div></div>
-      <div class="feat-card reveal"><div class="feat-icon">🗣️</div><div class="feat-title">Natural Language Interface</div><div class="feat-desc">Ask "Which SKUs are underperforming in GSM?" and get a ranked list with context — no training required.</div></div>
-      <div class="feat-card reveal"><div class="feat-icon">📤</div><div class="feat-title">Export Ready</div><div class="feat-desc">Download any analysis as a formatted Excel report with one click — branded, structured, and ready to share with stakeholders.</div></div>
+    <div class="comparison-table reveal" aria-label="Before and after DataProvido">
+      <div class="comparison-column before">
+        <div class="comparison-head">Before DataProvido</div>
+        <div class="comparison-row"><span class="comparison-icon">□</span>Open GA4, Merchant Center and Excel separately</div>
+        <div class="comparison-row"><span class="comparison-icon">□</span>Wait days for a manually prepared report</div>
+        <div class="comparison-row"><span class="comparison-icon">□</span>Translate a question into filters and dashboards</div>
+        <div class="comparison-row"><span class="comparison-icon">□</span>Reformat the result before sharing it</div>
+        <div class="comparison-row"><span class="comparison-icon">□</span>Guess where customers drop off</div>
+      </div>
+      <div class="comparison-column after">
+        <div class="comparison-head">With DataProvido</div>
+        <div class="comparison-row"><span class="comparison-icon">✓</span>One workspace, one question</div>
+        <div class="comparison-row"><span class="comparison-icon">✓</span>See the answer in seconds</div>
+        <div class="comparison-row"><span class="comparison-icon">✓</span>Ask in plain language</div>
+        <div class="comparison-row"><span class="comparison-icon">✓</span>Export a share-ready result in one click</div>
+        <div class="comparison-row"><span class="comparison-icon">✓</span>See the exact funnel step, with numbers</div>
+      </div>
+    </div>
+    <div class="question-title">Questions DataProvido answers</div>
+    <div class="question-list reveal">
+      <details class="question-item" open><summary><span class="question-badge">⇊</span><span>Which product categories had the biggest drop-off last week?</span><span class="question-module">Funnel</span></summary><div class="question-answer">Funnel Analysis identifies the step and category with the highest loss, then shows the exact rate by device, channel and audience. <strong>You see where to investigate first.</strong></div></details>
+      <details class="question-item"><summary><span class="question-badge">⬡</span><span>Are my prices competitive against the market right now?</span><span class="question-module">Stock &amp; Price</span></summary><div class="question-answer">Compare eligible Merchant Center price benchmarks with your catalog and group SKUs as below market, competitive or above market.</div></details>
+      <details class="question-item"><summary><span class="question-badge">◇</span><span>Which brands are growing in cart-to-detail rate this month?</span><span class="question-module">Category</span></summary><div class="question-answer">See period-over-period category and product movement together with revenue, engagement, bounce rate and conversion quality.</div></details>
+      <details class="question-item"><summary><span class="question-badge">▣</span><span>How does our app compare with competitors in Turkey?</span><span class="question-module">App Benchmark</span></summary><div class="question-answer">Compare public store ratings, review volume, update freshness, pricing, language coverage and recent review sentiment.</div></details>
+      <details class="question-item"><summary><span class="question-badge">▤</span><span>What is in the Excel file I just uploaded?</span><span class="question-module">Excel Wizard</span></summary><div class="question-answer">Ask a plain-language question, review a concise answer and export the supporting rows as a structured workbook.</div></details>
     </div>
   </div>
 </section>
@@ -830,11 +1055,11 @@
 <div class="cta-banner reveal">
   <h2>Ready to turn your data<br>into decisions?</h2>
   <p>Start exploring your retail data with clear access controls and practical analytics.</p>
-  <a href="/pricing" class="btn-primary" style="margin: 0 auto; display: inline-flex;">Start Journey</a>
+  <a href="/pricing" class="btn-primary" style="margin: 0 auto; display: inline-flex;">Try It Free <span aria-hidden="true">→</span></a>
 </div>
 
 <footer class="site-footer">
-  <div class="footer-left" style="display: flex; align-items: center; gap: 10px;"><img src="/logo.png" alt="DataProvido" style="height: 28px; width: 28px; object-fit: contain; border-radius: 6px;" /><span class="footer-logo">DataProvido</span><span class="footer-copy">· Local Intelligence. Zero Compromise.</span></div>
+  <div class="footer-left" style="display: flex; align-items: center; gap: 10px;"><img src="/logo.png" alt="DataProvido" style="height: 28px; width: 28px; object-fit: contain; border-radius: 6px;" /><span class="footer-logo">DataProvido</span><span class="footer-copy">· Retail intelligence. One workspace.</span></div>
   <div class="footer-right"><a href="/privacy" style="color: inherit;">Privacy</a> &nbsp;·&nbsp; <a href="/terms" style="color: inherit;">Terms</a> &nbsp;·&nbsp; <a href="/google-data" style="color: inherit;">Google Data Use</a></div>
 </footer>
 
@@ -903,6 +1128,23 @@
   });
 
   scTimer = setInterval(scNext, 5000);
+
+  function openProductTour() {
+    const dialog = document.getElementById('productTourDialog');
+    if (dialog && typeof dialog.showModal === 'function') dialog.showModal();
+  }
+
+  function closeProductTour() {
+    const dialog = document.getElementById('productTourDialog');
+    if (dialog) dialog.close();
+  }
+
+  const productTourDialog = document.getElementById('productTourDialog');
+  if (productTourDialog) {
+    productTourDialog.addEventListener('click', (event) => {
+      if (event.target === productTourDialog) closeProductTour();
+    });
+  }
 </script>
 </body>
 </html>
