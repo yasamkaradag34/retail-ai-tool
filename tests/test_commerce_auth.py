@@ -2,6 +2,9 @@ import json
 import os
 import time
 import unittest
+import base64
+import hashlib
+import hmac
 from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlparse
 from http.cookies import SimpleCookie
@@ -179,6 +182,25 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertNotIn('adwords',params['scope'][0])
         self.assertEqual(params['include_granted_scopes'],['true'])
 
+    @patch.object(main,'GOOGLE_CLIENT_ID','test-client')
+    def test_unknown_integration_falls_back_to_analytics_without_ads(self):
+        response=self.client.get('/api/auth/google?integration=ads',follow_redirects=False)
+        params=parse_qs(urlparse(response.headers['location']).query)
+        self.assertIn('analytics.readonly',params['scope'][0])
+        self.assertNotIn('adwords',params['scope'][0])
+        self.assertNotIn('/content',params['scope'][0])
+
+    def test_session_cookie_is_encrypted_and_legacy_plaintext_is_rejected(self):
+        payload=json.dumps({'email':'dataprovido@gmail.com','access_token':'secret-google-token'})
+        sealed=main._encrypt_token(payload)
+        self.assertTrue(sealed.startswith('v2.'))
+        self.assertNotIn('dataprovido',sealed)
+        self.assertNotIn('secret-google-token',sealed)
+        self.assertEqual(main._decrypt_token(sealed),payload)
+        legacy_body=base64.urlsafe_b64encode(payload.encode()).decode()
+        legacy_signature=hmac.new(main.COOKIE_SECRET.encode(),legacy_body.encode(),hashlib.sha256).hexdigest()[:16]
+        self.assertIsNone(main._decrypt_token(legacy_signature+'.'+legacy_body))
+
     @patch.object(main,'has_paid_subscription',return_value=True)
     @patch.object(main.requests,'get')
     @patch.object(main.requests,'post')
@@ -285,6 +307,28 @@ class CommerceAuthTests(unittest.TestCase):
             response=self.client.get('/api/ga4/properties')
             self.assertFalse(response.json()['connected'])
             provider.assert_not_called()
+
+    @patch.object(main.requests,'post')
+    def test_disconnect_revokes_google_grant_and_clears_session(self,post):
+        self.sign_in(access_token='access-token',refresh_token='refresh-token',expires_at=time.time()+3600)
+        response=self.client.get('/api/auth/google/disconnect',follow_redirects=False)
+        self.assertEqual(response.status_code,303)
+        self.assertIn('google_disconnected',response.headers['location'])
+        self.assertEqual(post.call_args.args[0],'https://oauth2.googleapis.com/revoke')
+        self.assertEqual(post.call_args.kwargs['data'],{'token':'refresh-token'})
+        self.assertIn('gauth=',response.headers['set-cookie'])
+        self.assertIn('Max-Age=0',response.headers['set-cookie'])
+
+    def test_public_oauth_policy_pages_are_complete(self):
+        terms=self.client.get('/terms')
+        disclosure=self.client.get('/google-data')
+        privacy=self.client.get('/privacy')
+        self.assertEqual((terms.status_code,disclosure.status_code,privacy.status_code),(200,200,200))
+        self.assertIn('Terms of Service',terms.text)
+        self.assertIn('analytics.readonly',disclosure.text)
+        self.assertIn('/auth/content',disclosure.text)
+        self.assertIn('Disconnect Google',disclosure.text)
+        self.assertIn('Google API Data Use',privacy.text)
 
     @patch.object(main,'GoogleAnalytics')
     def test_save_rechecks_property_access_and_origin(self,provider):

@@ -1,6 +1,6 @@
 <section id="categoryWorkspaceContainer" class="ca-workspace" aria-label="Category and product analytics" style="display:none">
   <div class="ca-connection">
-    <div class="ca-connection-copy"><span class="ca-source-icon" aria-hidden="true">▥</span><div><strong>Google Analytics 4</strong><p id="caConnectionText">Connect your store to load its categories and products.</p></div></div>
+    <div class="ca-connection-copy"><span class="ca-source-icon" aria-hidden="true">▥</span><div><strong>Google Analytics 4</strong><p id="caConnectionText">Connect your store to load its categories and products.</p><p style="font-size:12px;margin-top:6px;">DataProvido requests read-only access to aggregate GA4 reporting data. <a href="/google-data" target="_blank" rel="noopener noreferrer">How Google data is used ↗</a></p></div></div>
     <div class="ca-actions"><span id="caSource" class="ca-badge">NOT CONNECTED</span><a class="ca-button ca-primary" id="caConnect" href="/api/auth/google?integration=analytics">Connect Google Analytics <span aria-hidden="true">↗</span></a><button id="caDemo" class="ca-button" type="button">Explore sample data</button></div>
   </div>
   <div class="ca-controls">
@@ -11,7 +11,7 @@
   </div>
   <p id="caStatus" class="ca-status" role="status" aria-live="polite">Your first report loads automatically after connecting Google Analytics.</p>
   <div id="caWelcome" class="ca-welcome">
-    <div><span class="ca-eyebrow">FROM DISCOVERY TO PURCHASE</span><h3>Find what sells.<br><span>Understand what holds it back.</span></h3><p>Bring category demand, product conversion and visit quality into one workspace.</p><a class="ca-button ca-primary" href="/api/auth/google?integration=analytics">Connect your GA4 property <span aria-hidden="true">→</span></a></div>
+    <div><span class="ca-eyebrow">FROM DISCOVERY TO PURCHASE</span><h3>Find what sells.<br><span>Understand what holds it back.</span></h3><p>Bring category demand, product conversion and visit quality into one workspace.</p><p style="font-size:12px;">Connecting grants read-only access to the GA4 properties you select. You can disconnect at any time. <a href="/google-data" target="_blank" rel="noopener noreferrer">Review data use ↗</a></p><a class="ca-button ca-primary" href="/api/auth/google?integration=analytics">Connect your GA4 property <span aria-hidden="true">→</span></a></div>
     <ol class="ca-steps"><li><span>01</span><div><strong>Sign in with Google</strong><p>Use the Google email associated with your subscription.</p></div></li><li><span>02</span><div><strong>Select your store</strong><p>Choose a property you can access. A single property loads automatically.</p></div></li><li><span>03</span><div><strong>Explore your performance</strong><p>Open a category to inspect products, conversion and engagement.</p></div></li></ol>
   </div>
   <div id="caReport" hidden>

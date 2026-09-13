@@ -77,7 +77,7 @@
 #
 #  KEY DESIGN DECISIONS
 #  ─────────────────────
-#  • 100% local: no external API calls; model runs via Ollama on localhost
+#  • Customer-controlled analytics with optional Google API connectors
 #  • Tool-calling: LLM decides which function to call based on user query
 #  • Excel-first: all data sources are .xlsx / .csv, parsed with Pandas
 #  • In-memory session: conversation history lives in the Python process
@@ -102,6 +102,7 @@ from datetime import datetime
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 import openpyxl
+from cryptography.fernet import Fernet, InvalidToken
 
 LOG_TOOL_JSON_TO_TERMINAL = True
 SHOW_RAW_JSON_IN_UI = False
@@ -2699,8 +2700,8 @@ async def sst_event_collector(request: Request):
 
 
 # ─────────────────────────────────────────────────────────────
-#  GOOGLE OAUTH 2.0 — Single consent for GA4 + Merchant Center
-#  Analytics data is not stored; OAuth tokens use the signed HttpOnly cookie
+#  GOOGLE OAUTH 2.0 — Scoped consent for GA4 and Merchant Center
+#  Report data is processed on demand; OAuth tokens use an encrypted HttpOnly cookie
 # ─────────────────────────────────────────────────────────────
 import hashlib, hmac, base64, urllib.parse, time as _time, secrets
 from functions.account_access import has_paid_subscription
@@ -2720,7 +2721,6 @@ SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "").strip()
 GOOGLE_SCOPES = [
     "https://www.googleapis.com/auth/analytics.readonly",
     "https://www.googleapis.com/auth/content",
-    "https://www.googleapis.com/auth/adwords",
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/userinfo.profile",
     "openid"
@@ -2730,20 +2730,19 @@ MERCHANT_SCOPE = "https://www.googleapis.com/auth/content"
 ALLOWED_LOGIN_EMAILS = {"dataprovido@gmail.com", "myasamkaradag@gmail.com"}
 
 def _encrypt_token(token_json: str) -> str:
-    """Simple HMAC-signed base64 encoding for cookie storage."""
-    b64 = base64.urlsafe_b64encode(token_json.encode()).decode()
-    sig = hmac.new(COOKIE_SECRET.encode(), b64.encode(), hashlib.sha256).hexdigest()[:16]
-    return f"{sig}.{b64}"
+    """Encrypt and authenticate session contents before browser storage."""
+    key = base64.urlsafe_b64encode(hashlib.sha256(COOKIE_SECRET.encode()).digest())
+    return "v2." + Fernet(key).encrypt(token_json.encode()).decode()
 
-def _decrypt_token(signed: str) -> Optional[str]:
-    """Verify and decode signed cookie."""
+def _decrypt_token(sealed: str) -> Optional[str]:
+    """Decrypt an authenticated v2 session; reject legacy plaintext cookies."""
     try:
-        sig, b64 = signed.split(".", 1)
-        expected = hmac.new(COOKIE_SECRET.encode(), b64.encode(), hashlib.sha256).hexdigest()[:16]
-        if not hmac.compare_digest(sig, expected):
+        version, ciphertext = sealed.split(".", 1)
+        if version != "v2":
             return None
-        return base64.urlsafe_b64decode(b64.encode()).decode()
-    except Exception:
+        key = base64.urlsafe_b64encode(hashlib.sha256(COOKIE_SECRET.encode()).digest())
+        return Fernet(key).decrypt(ciphertext.encode()).decode()
+    except (ValueError, InvalidToken, UnicodeDecodeError):
         return None
 
 def _session_payload(request: Request):
@@ -2794,13 +2793,11 @@ def google_auth_redirect(request: Request, integration: str = ""):
     if not GOOGLE_CLIENT_ID:
         return RedirectResponse("/login?error=google_not_configured", status_code=303)
     nonce = secrets.token_urlsafe(32)
-    integration = integration if integration in {"analytics", "merchant", "ads"} else "all"
+    integration = integration if integration in {"analytics", "merchant"} else "analytics"
     identity_scopes = [s for s in GOOGLE_SCOPES if s in ("https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile", "openid")]
     integration_scopes = {
         "analytics": ["https://www.googleapis.com/auth/analytics.readonly"],
         "merchant": ["https://www.googleapis.com/auth/content"],
-        "ads": ["https://www.googleapis.com/auth/adwords"],
-        "all": GOOGLE_SCOPES[:3],
     }
     scopes = integration_scopes[integration] + identity_scopes
     params = {"client_id": GOOGLE_CLIENT_ID, "redirect_uri": GOOGLE_REDIRECT_URI,
@@ -2853,17 +2850,17 @@ def google_auth_callback(request: Request, code: str = None, error: str = None, 
         return fail("google_connection_failed")
     prior = _session_payload(request) or {}
     same_account = prior.get("email", "").strip().lower() == email
-    integration = saved.get("integration") if saved.get("integration") in {"analytics", "merchant", "ads", "all"} else "analytics"
+    integration = saved.get("integration") if saved.get("integration") in {"analytics", "merchant"} else "analytics"
     cookie_data = {"access_token": tokens["access_token"],
                    "refresh_token": tokens.get("refresh_token") or (prior.get("refresh_token", "") if same_account else ""),
                    "expires_at": int(_time.time()) + int(tokens.get("expires_in", 3600)),
                    "scope": tokens.get("scope", ""), "email": email, "name": user_info.get("name", ""),
                    "picture": user_info.get("picture", ""), "google_verified": True}
     if same_account:
-        for selection in ("selected_ga4", "selected_merchant", "selected_google_ads"):
+        for selection in ("selected_ga4", "selected_merchant"):
             if prior.get(selection):
                 cookie_data[selection] = prior[selection]
-    target = {"merchant": "stock_price_comp", "ads": "digital_marketing"}.get(integration, "category_insights")
+    target = {"merchant": "stock_price_comp"}.get(integration, "category_insights")
     response = RedirectResponse(f"/journey?module={target}&google_connected=true", status_code=303)
     _set_auth_cookie(response, request, cookie_data)
     response.delete_cookie("google_oauth_state", path="/api/auth/google/callback")
@@ -2913,11 +2910,26 @@ async def google_auth_status(request: Request):
     return JSONResponse({"connected": False})
 
 @app.get("/api/auth/google/disconnect")
-async def google_disconnect():
-    """Remove Google auth cookie."""
+@app.post("/api/auth/google/disconnect")
+def google_disconnect(request: Request):
+    """Revoke the Google grant and remove the local encrypted session."""
     from fastapi.responses import RedirectResponse
-    response = RedirectResponse(url="/login?notice=logged_out")
+    data = _session_payload(request) or {}
+    token = data.get("refresh_token") or data.get("access_token")
+    if token:
+        try:
+            requests.post(
+                "https://oauth2.googleapis.com/revoke",
+                data={"token": token},
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=(5, 15),
+            )
+        except requests.RequestException:
+            pass
+    response = RedirectResponse(url="/login?notice=google_disconnected", status_code=303)
     response.delete_cookie("gauth", path="/")
+    response.delete_cookie("google_oauth_state", path="/api/auth/google/callback")
+    response.headers["Cache-Control"] = "private, no-store"
     return response
 
 @app.get("/logout")
@@ -2933,19 +2945,17 @@ def logout(request: Request = None):
 
 @app.get("/api/google/accounts")
 async def google_get_accounts(request: Request):
-    """Fetch accessible GA4 properties, Merchant Center accounts, and Google Ads Customer IDs for connected user."""
+    """Fetch accessible GA4 properties and Merchant Center accounts for the connected user."""
     user = require_console_user(request)
     tokens = _get_google_tokens(request) or {}
     is_authenticated = bool(tokens and tokens.get("access_token"))
     
     ga4_properties = []
     merchant_accounts = []
-    google_ads_accounts = []
     
     if is_authenticated:
         access_token = tokens["access_token"]
-        headers = {"Authorization": f"Bearer {access_token}"}
-        
+
         # Real accessible properties only; no synthetic choices for connected users.
         try:
             ga4_properties = GoogleAnalytics(access_token).properties()
@@ -2959,29 +2969,6 @@ async def google_get_accounts(request: Request):
         except HTTPException:
             merchant_accounts = []
 
-        # 3. Google Ads Accessible Customers
-        try:
-            ads_resp = requests.get(
-                "https://googleads.googleapis.com/v18/customers:listAccessibleCustomers",
-                headers=headers,
-                timeout=4
-            )
-            if ads_resp.status_code == 200:
-                for c_name in ads_resp.json().get("resourceNames", []):
-                    cid = c_name.replace("customers/", "")
-                    google_ads_accounts.append({
-                        "id": cid,
-                        "name": f"Google Ads Account (ID: {cid})"
-                    })
-        except Exception as e:
-            print("Error fetching Ads accounts:", e)
-
-    if not google_ads_accounts:
-        google_ads_accounts = [
-            {"id": "481-902-1142", "name": "DataProvido Digital Performance Ads (ID: 481-902-1142)"},
-            {"id": "912-304-5819", "name": "Google Search & Performance Max (ID: 912-304-5819)"}
-        ]
-
     selected_merchant = str(tokens.get("selected_merchant") or "")
     if selected_merchant not in {account["id"] for account in merchant_accounts}:
         selected_merchant = merchant_accounts[0]["id"] if len(merchant_accounts) == 1 else ""
@@ -2992,10 +2979,9 @@ async def google_get_accounts(request: Request):
         "user_name": user.get("name", ""),
         "selected_ga4": tokens.get("selected_ga4", ga4_properties[0]["id"] if len(ga4_properties) == 1 else ""),
         "selected_merchant": selected_merchant,
-        "selected_google_ads": tokens.get("selected_google_ads", google_ads_accounts[0]["id"]),
         "ga4_properties": ga4_properties,
         "merchant_accounts": merchant_accounts,
-        "google_ads_accounts": google_ads_accounts
+        "google_ads_accounts": []
     })
 
 @app.post("/api/google/save-selection")
@@ -3019,7 +3005,6 @@ async def save_google_account_selection(request: Request):
         GoogleMerchant(tokens["access_token"]).account(validate_merchant_account_id(merchant_id))
     tokens["selected_ga4"] = pid
     tokens["selected_merchant"] = merchant_id
-    tokens["selected_google_ads"] = data.get("google_ads_account_id", "")
     
     response = JSONResponse({"status": "success", "selection": data})
     _set_auth_cookie(response, request, tokens)
@@ -4487,22 +4472,103 @@ def simple_page(title, body, kicker="DataProvido", active_nav="pricing", max_wid
         bottom_cta_label=bottom_cta_label
     )
 
+@app.get("/google-data", response_class=HTMLResponse)
+def google_data_use():
+    return simple_page(
+        "How DataProvido Uses Google Data",
+        """
+        <p class="page-subhead">This notice explains the Google account information and business data DataProvido requests, why it is needed, and the controls available to you.</p>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">Access is optional and requested in context</h2>
+        <p style="margin-bottom: 14px;">You choose whether to connect Google Analytics 4 or Google Merchant Center. Each connector starts its own Google authorization flow and requests only the permission needed for that workspace.</p>
+
+        <h3 style="font-size: 17px; margin: 22px 0 8px;">Google Analytics 4</h3>
+        <p style="margin-bottom: 12px;"><code>https://www.googleapis.com/auth/analytics.readonly</code></p>
+        <p style="margin-bottom: 14px;">DataProvido reads the Analytics accounts and properties available to the connected user and requests reporting dimensions and metrics such as sessions, active users, engagement, bounce rate, average session duration, ecommerce events, item performance and revenue. The data is used only to display the Category &amp; Product Analysis and Funnel Analysis features selected by the user. DataProvido cannot change the Analytics property.</p>
+
+        <h3 style="font-size: 17px; margin: 22px 0 8px;">Google Merchant Center</h3>
+        <p style="margin-bottom: 12px;"><code>https://www.googleapis.com/auth/content</code></p>
+        <p style="margin-bottom: 14px;">DataProvido reads accessible Merchant Center accounts and the catalog, availability, Shopping performance, price competitiveness and eligible price insight reports needed for Stock &amp; Price Comparison. Google provides this permission as a read/write scope; DataProvido's current Merchant integration performs read operations only and does not create, update or delete listings.</p>
+
+        <h3 style="font-size: 17px; margin: 22px 0 8px;">Identity information</h3>
+        <p style="margin-bottom: 14px;">OpenID, email and profile permissions identify the connected Google account, show the user which account is active and associate the authorized connection with the correct DataProvido subscription.</p>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">Storage, sharing and retention</h2>
+        <ul style="padding-left: 22px; line-height: 1.8; margin-bottom: 16px;">
+          <li>Authorization tokens are encrypted before storage in a Secure, HttpOnly session cookie and are transmitted only over HTTPS in production.</li>
+          <li>Google report responses are processed on demand for the visible dashboard and are not retained as a permanent cross-customer report database.</li>
+          <li>Connected Google data is not sold, used for targeted advertising, or used to train general-purpose AI or machine-learning models.</li>
+          <li>Data is disclosed only to infrastructure providers when necessary to operate the requested user-facing feature, or when legally required.</li>
+          <li>The encrypted session expires after 30 days at the latest. You can disconnect sooner from the Google Integrations dialog.</li>
+        </ul>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">Your controls</h2>
+        <p style="margin-bottom: 14px;">Use <strong>Disconnect Google</strong> in the Google Integrations dialog to revoke the Google grant and remove the DataProvido session. You can also revoke access from your <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" style="color: var(--orange); font-weight: 600;">Google Account permissions</a>. To request deletion or ask a privacy question, email <a href="mailto:dataprovido@gmail.com" style="color: var(--orange); font-weight: 600;">dataprovido@gmail.com</a>.</p>
+
+        <p style="margin-top: 24px;"><a href="/privacy" style="color: var(--orange); font-weight: 700;">Privacy Policy</a> · <a href="/terms" style="color: var(--orange); font-weight: 700;">Terms of Service</a></p>
+        """,
+        kicker="Google API Disclosure",
+        active_nav="privacy",
+        max_width="1040px"
+    )
+
+
+@app.get("/terms", response_class=HTMLResponse)
+def terms_of_service():
+    return simple_page(
+        "Terms of Service",
+        """
+        <p class="page-subhead"><strong>Effective date: 13 September 2026.</strong> These Terms govern access to and use of the DataProvido retail analytics service.</p>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">1. Service and eligibility</h2>
+        <p style="margin-bottom: 14px;">DataProvido provides analytics workspaces for customer-controlled files and optional third-party data connections. You must have authority to upload, connect and analyse the business data used with the service. You are responsible for the accuracy and legality of the data and instructions you provide.</p>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">2. Accounts and access</h2>
+        <p style="margin-bottom: 14px;">Keep your credentials secure and notify us if you suspect unauthorized access. Google connections are optional and subject to Google's terms. You can disconnect Google access at any time. DataProvido may suspend access needed to protect the service, users or third parties.</p>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">3. Subscriptions and payments</h2>
+        <p style="margin-bottom: 14px;">Paid features are provided according to the plan and billing period shown at checkout. Stripe processes payment information under its own terms and privacy policy. Taxes, cancellation rights and any refund terms required by applicable law remain applicable.</p>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">4. Acceptable use</h2>
+        <p style="margin-bottom: 14px;">You must not attempt unauthorized access, interfere with the service, upload malicious material, violate another person's rights, or use the service or connected APIs contrary to law or provider policies.</p>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">5. Customer data and Google data</h2>
+        <p style="margin-bottom: 14px;">You retain rights in your customer data. You authorize DataProvido to process that data only to provide the features you request. Use of Google user data is described in our <a href="/google-data" style="color: var(--orange); font-weight: 600;">Google Data Use notice</a> and <a href="/privacy" style="color: var(--orange); font-weight: 600;">Privacy Policy</a>.</p>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">6. Analytics output</h2>
+        <p style="margin-bottom: 14px;">Analytics, forecasts and recommendations support business decisions but may be incomplete or affected by source-data quality, API availability and statistical limitations. You remain responsible for decisions and actions taken from the output.</p>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">7. Availability and changes</h2>
+        <p style="margin-bottom: 14px;">We work to keep the service available and secure, but uninterrupted operation is not guaranteed. Features may change to improve security, comply with law or provider policies, or reflect third-party API changes.</p>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">8. Termination</h2>
+        <p style="margin-bottom: 14px;">You may stop using the service and disconnect third-party accounts at any time. After termination, access ends and data is handled according to the Privacy Policy and applicable retention duties.</p>
+
+        <h2 style="font-size: 22px; margin: 28px 0 12px;">9. Governing law and contact</h2>
+        <p style="margin-bottom: 14px;">These Terms are governed by the laws of Türkiye, subject to mandatory consumer and data-protection rights that apply to you. Questions may be sent to <a href="mailto:dataprovido@gmail.com" style="color: var(--orange); font-weight: 600;">dataprovido@gmail.com</a>.</p>
+        """,
+        kicker="Legal",
+        active_nav="terms",
+        max_width="1040px"
+    )
+
+
 @app.get("/privacy", response_class=HTMLResponse)
 def privacy():
     return simple_page(
         "Privacy & Cookie Documentation",
         """
         <p class="page-subhead">
-          Comprehensive compliance framework governing DataProvido local intelligence architecture, GDPR (EU) and KVKK (TR) dual-regime protection, sub-processors, and cookie preferences.
+          How DataProvido handles account information, optional Google API connections, customer-provided data, service providers, retention and cookie preferences.
         </p>
 
         <!-- SUMMARY BADGES -->
         <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px;">
           <div style="background: #ecfdf5; border: 1px solid #6ee7b7; color: #047857; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;">
-            🛡️ Dual GDPR &amp; KVKK Compliant
+            🛡️ GDPR &amp; KVKK Privacy Controls
           </div>
           <div style="background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;">
-            🔒 Zero Data Uploading (100% Local AI)
+            🔒 Encrypted Google OAuth Sessions
           </div>
           <div style="background: #fff7ed; border: 1px solid #fdba74; color: #c2410c; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;">
             🍪 Google Consent Mode v2 &amp; Meta Pixel
@@ -4517,26 +4583,26 @@ def privacy():
 
           <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.1 Who We Are</h3>
           <p style="margin-bottom: 14px;">
-            DataProvido ("we", "us", "the Platform") is operated by <strong>DataProvido Inc.</strong>, registered in Türkiye. Contact: <a href="mailto:privacy@dataprovido.com" style="color: var(--orange); font-weight: 600;">privacy@dataprovido.com</a>.
+            DataProvido ("we", "us", "the Platform") is a retail analytics service operated from Türkiye. Contact: <a href="mailto:dataprovido@gmail.com" style="color: var(--orange); font-weight: 600;">dataprovido@gmail.com</a>.
           </p>
           <p style="margin-bottom: 14px;">
             If you are located in the European Economic Area (EEA), your personal data is processed under the General Data Protection Regulation (GDPR). If you are located in Türkiye, your personal data is processed under Law No. 6698 on the Protection of Personal Data (KVKK).
           </p>
 
-          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.1a Cross-Border &amp; Extraterritorial Scope</h3>
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.1a Cross-Border Processing</h3>
           <p style="margin-bottom: 14px;">
-            DataProvido is established in Türkiye. However, because we run advertising campaigns (Google Ads, Meta) targeting individuals located in the European Union/EEA, GDPR applies to us extraterritorially under <strong>Article 3(2)</strong>.
+            Some service providers may process data outside Türkiye. Where applicable, DataProvido uses the contractual and technical safeguards offered by those providers and applies the rights required by the laws that govern the user and the processing.
           </p>
           <ul style="list-style-type: disc; padding-left: 24px; margin-bottom: 16px; line-height: 1.7;">
-            <li><strong>EU Representative (GDPR Art. 27):</strong> We maintain a designated EU representative for supervisory authority contact. Representative details: <code>privacy@dataprovido.com</code>.</li>
-            <li><strong>Dual Regime:</strong> Turkish visitors are governed by KVKK; EU-based visitors reached via EU campaigns are governed by GDPR. Both apply concurrently.</li>
+            <li><strong>Privacy contact:</strong> Questions and rights requests can be sent to <code>dataprovido@gmail.com</code>.</li>
+            <li><strong>Applicable protections:</strong> Turkish visitors have rights under KVKK. GDPR rights apply where the GDPR has territorial scope.</li>
             <li><strong>Lead Authority:</strong> EU data subjects may lodge complaints with the supervisory authority of their Member State of residence.</li>
           </ul>
 
           <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.2 Two Roles: Website Visitor Data vs. Customer Business Data</h3>
           <ul style="list-style-type: disc; padding-left: 24px; margin-bottom: 16px; line-height: 1.7;">
             <li><strong>As a Data Controller:</strong> For website visitors and subscribing accounts (billing/contact details), DataProvido determines processing purpose and means.</li>
-            <li><strong>As a Data Processor:</strong> Subscribing brands connect their own CRM, GA, and retail data to their self-serve 100% local workspace. We do not access or store the content of your retail data; the subscribing brand remains the Data Controller under a separate Data Processing Agreement (DPA).</li>
+            <li><strong>As a Data Processor:</strong> Subscribing brands can provide files and optionally connect Google Analytics or Merchant Center. DataProvido processes the requested information to generate the visible reports. The subscribing brand remains responsible for its source data and may enter into a separate Data Processing Agreement where applicable.</li>
           </ul>
 
           <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.3 What We Collect</h3>
@@ -4564,6 +4630,21 @@ def privacy():
                   <td style="padding: 12px 16px; font-weight: 600;">Technical Data</td>
                   <td style="padding: 12px 16px;">IP address, device type, location</td>
                   <td style="padding: 12px 16px;">Security, fraud prevention, infrastructure</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Google Analytics Data</td>
+                  <td style="padding: 12px 16px;">Accessible accounts and properties; aggregate session, engagement, event, item and revenue reporting metrics</td>
+                  <td style="padding: 12px 16px;">Category, product and funnel dashboards requested by the user</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Google Merchant Data</td>
+                  <td style="padding: 12px 16px;">Accessible accounts; catalog, availability, Shopping performance, price competitiveness and eligible price insights</td>
+                  <td style="padding: 12px 16px;">Stock and price comparison reports requested by the user</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Google OAuth Credentials</td>
+                  <td style="padding: 12px 16px;">Encrypted access and refresh tokens, granted scopes and connected-account identity</td>
+                  <td style="padding: 12px 16px;">Maintain the connection, refresh access and show which account is active</td>
                 </tr>
                 <tr>
                   <td style="padding: 12px 16px; font-weight: 600;">Marketing Data</td>
@@ -4594,9 +4675,21 @@ def privacy():
               </thead>
               <tbody>
                 <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Railway</td>
+                  <td style="padding: 12px 16px;">Application hosting and delivery of requested reports</td>
+                  <td style="padding: 12px 16px;">Encrypted requests and transient application processing</td>
+                  <td style="padding: 12px 16px;">Provider infrastructure</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 12px 16px; font-weight: 600;">Supabase</td>
+                  <td style="padding: 12px 16px;">Email authentication and account recovery</td>
+                  <td style="padding: 12px 16px;">Account email and authentication records</td>
+                  <td style="padding: 12px 16px;">Provider infrastructure</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
                   <td style="padding: 12px 16px; font-weight: 600;">Google Analytics (GA4)</td>
-                  <td style="padding: 12px 16px;">Website usage analytics</td>
-                  <td style="padding: 12px 16px;">Anonymized IP, behavioral events</td>
+                  <td style="padding: 12px 16px;">Website usage analytics; optional customer-authorized reporting source</td>
+                  <td style="padding: 12px 16px;">Consent-controlled site events; requested customer reporting data</td>
                   <td style="padding: 12px 16px;">Google EU/US (SCCs)</td>
                 </tr>
                 <tr style="border-bottom: 1px solid var(--border);">
@@ -4623,8 +4716,19 @@ def privacy():
 
           <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.6 Data Retention &amp; Rights</h3>
           <p style="margin-bottom: 14px;">
-            Account data is retained for active subscription duration + 5 years for tax compliance. Under GDPR (Art. 15–22) and KVKK (Art. 11), you may request access, rectification, erasure, or portability of your data by emailing <a href="mailto:privacy@dataprovido.com" style="color: var(--orange); font-weight: 600;">privacy@dataprovido.com</a>.
+            Account and billing records are retained for the active subscription and any additional period required by applicable tax or accounting law. Google authorization sessions expire after 30 days at the latest and are removed earlier when the user disconnects. Google report responses are processed on demand and are not retained as a permanent cross-customer report database. Under applicable GDPR and KVKK rights, you may request access, rectification, erasure or portability by emailing <a href="mailto:dataprovido@gmail.com" style="color: var(--orange); font-weight: 600;">dataprovido@gmail.com</a>.
           </p>
+
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--text-900); margin: 20px 0 10px;">1.7 Google API Data Use</h3>
+          <p style="margin-bottom: 14px;">Google access is optional and requested when a user selects a connected workspace. Analytics read-only data is used for category, product and funnel reporting. Merchant data is used for catalog availability, Shopping performance and price comparison reporting. DataProvido's current Merchant implementation performs read operations only.</p>
+          <ul style="list-style-type: disc; padding-left: 24px; margin-bottom: 16px; line-height: 1.7;">
+            <li>Google user data is used only to provide or improve user-facing features initiated by the user.</li>
+            <li>Google user data is not sold, used for targeted advertising, or used to train general-purpose AI or machine-learning models.</li>
+            <li>OAuth tokens are encrypted before storage in a Secure, HttpOnly session cookie and transmitted only over HTTPS in production.</li>
+            <li>Data is disclosed to infrastructure providers only when necessary to operate the requested feature, or when legally required.</li>
+            <li>Users can choose <strong>Disconnect Google</strong> to revoke the authorization and remove the DataProvido session, or revoke access from Google Account permissions.</li>
+          </ul>
+          <p style="margin-bottom: 14px;">See the dedicated <a href="/google-data" style="color: var(--orange); font-weight: 600;">Google Data Use notice</a> for the requested scopes, report categories and controls.</p>
         </div>
 
         <!-- SECTION 2: COOKIE POLICY -->
@@ -4671,11 +4775,11 @@ def privacy():
             3. Data Processing Agreement (DPA) Summary for Subscribing Brands
           </h2>
           <p style="font-size: 13.5px; line-height: 1.7; color: var(--text-700); margin-bottom: 12px;">
-            Subscribing enterprise brands connect their commercial Excel and CRM data directly into their private local environment. Under our B2B DPA:
+            Subscribing brands can use customer-controlled files and optional connected services. Under an applicable B2B DPA:
           </p>
           <ul style="list-style-type: check; padding-left: 20px; font-size: 13.5px; line-height: 1.8; color: var(--text-700);">
             <li><strong>DataProvido acts solely as Data Processor;</strong> the customer retains full Data Controller ownership.</li>
-            <li><strong>Zero Third-Party LLM Transmission:</strong> All analytical queries execute 100% locally on dedicated LLaMA 3.1 architecture.</li>
+            <li><strong>No generalized AI training:</strong> Customer-provided or Google API data is not used to train general-purpose AI models.</li>
             <li><strong>No Cross-Tenant Data Access:</strong> Your enterprise data is strictly isolated and never used to train global AI models.</li>
           </ul>
         </div>
@@ -4863,7 +4967,7 @@ def pricing():
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>
-                <span><strong>Live Connectors:</strong> Direct Google Analytics 4 (GA4), Merchant Center, Google Ads API &amp; Excel/CSV auto-sync</span>
+                <span><strong>Live Connectors:</strong> Direct Google Analytics 4 (GA4), Merchant Center &amp; Excel/CSV auto-sync</span>
               </li>
               <li style="display: flex; align-items: flex-start; gap: 10px;">
                 <span style="color: #10b981; font-weight: 800; font-size: 15px;">✓</span>

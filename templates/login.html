@@ -540,6 +540,13 @@
       const banner = document.getElementById('loggedOutBanner');
       if (banner) banner.style.display = 'block';
     }
+    if (urlParams.get('notice') === 'google_disconnected') {
+      const banner = document.getElementById('loggedOutBanner');
+      if (banner) {
+        banner.textContent = '✓ Google access was revoked and the local session was removed.';
+        banner.style.display = 'block';
+      }
+    }
     if (urlParams.get('notice') === 'password_reset_success') {
       const banner = document.getElementById('passwordResetBanner');
       if (banner) banner.style.display = 'block';

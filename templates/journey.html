@@ -1122,7 +1122,7 @@
             </div>
             
             <div style="display: flex; align-items: center; gap: 6px;">
-              <button onclick="event.stopPropagation(); openGoogleAccountModal();" type="button" title="Select Connected GA4, Merchant &amp; Ads Properties" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30); color: #ffffff; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; cursor: pointer; display: grid; place-items: center; flex-shrink: 0; transition: all 0.2s;">
+              <button onclick="event.stopPropagation(); openGoogleAccountModal();" type="button" title="Select connected GA4 and Merchant Center properties" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30); color: #ffffff; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; cursor: pointer; display: grid; place-items: center; flex-shrink: 0; transition: all 0.2s;">
                 ⚙️
               </button>
               <a href="/logout" onclick="event.stopPropagation();" title="Çıkış Yap / Sign Out" style="background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.45); color: #fee2e2; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; display: grid; place-items: center; flex-shrink: 0; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.45)'" onmouseout="this.style.background='rgba(239,68,68,0.25)'">
@@ -1143,6 +1143,7 @@
 
           <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 4px;">
             <a href="/privacy" style="color: rgba(255,255,255,0.70); text-decoration: none; font-size: 10.5px;">Privacy Policy</a>
+            <a href="/terms" style="color: rgba(255,255,255,0.70); text-decoration: none; font-size: 10.5px;">Terms</a>
             <span style="color: rgba(255,255,255,0.40); font-size: 10.5px;">v2.4 Enterprise</span>
           </div>
 
@@ -1281,7 +1282,7 @@
                           <strong style="font-size: 14px; color: #0f172a; font-weight: 800;">Connected Google Account:</strong>
                           <span id="connPanelUserEmail" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px;">myasamkaradag@gmail.com</span>
                         </div>
-                        <span style="font-size: 12px; color: #64748b;">Select accessible Google Analytics 4, Merchant Center &amp; Ads properties (Queryna-style Live Sync).</span>
+                        <span style="font-size: 12px; color: #64748b;">Select accessible Google Analytics 4 and Merchant Center properties.</span>
                       </div>
                     </div>
 
@@ -1292,7 +1293,7 @@
                   </div>
 
                   <!-- 3 SELECT BOXES (GA4, MERCHANT, ADS) -->
-                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px;">
+                  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px;">
                     
                     <!-- GA4 SELECT -->
                     <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px;">
@@ -1313,17 +1314,6 @@
                       </div>
                       <select id="connSelectMerchant" style="width: 100%; padding: 9px 12px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 12.5px; font-weight: 600; color: #0f172a; outline: none;">
                         <option value="">Loading Merchant accounts...</option>
-                      </select>
-                    </div>
-
-                    <!-- ADS SELECT -->
-                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px;">
-                      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="font-size: 13px; font-weight: 800; color: #0f172a;">📣 Google Ads Account</span>
-                        <span style="background: #dcfce7; color: #166534; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">Ads API</span>
-                      </div>
-                      <select id="connSelectAds" style="width: 100%; padding: 9px 12px; background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 12.5px; font-weight: 600; color: #0f172a; outline: none;">
-                        <option value="">Loading Google Ads accounts...</option>
                       </select>
                     </div>
 
@@ -3149,7 +3139,7 @@ print(res.json())
           <div style="width: 40px; height: 40px; border-radius: 12px; background: #2563eb; color: #ffffff; font-size: 20px; display: grid; place-items: center; flex-shrink: 0;">⚙️</div>
           <div>
             <strong style="font-size: 14px; color: #1e40af; display: block; font-weight: 700;">Select &amp; Configure Active Google Properties</strong>
-            <span style="font-size: 12px; color: #3b82f6;">Select GA4 Property ID, Merchant Center ID &amp; Google Ads Customer Account.</span>
+            <span style="font-size: 12px; color: #3b82f6;">Select a GA4 property and Merchant Center account.</span>
           </div>
         </div>
         <button onclick="closeApiGuidelineModal(); openGoogleAccountModal();" type="button" style="background: #2563eb; color: #ffffff; border: none; padding: 10px 20px; border-radius: 11px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 4px 14px rgba(37,99,235,0.30); transition: all 0.2s;">
@@ -3240,7 +3230,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
       </div>
 
       <p style="font-size: 13.5px; color: #475569; line-height: 1.6; margin-bottom: 24px;">
-        Configure which Google Analytics 4, Merchant Center, and Google Ads properties stream into your DataProvido workspace dashboards in real-time.
+        Configure which Google Analytics 4 and Merchant Center properties DataProvido reads for the selected dashboards.
       </p>
 
       <!-- ACCOUNT SELECTION SECTIONS -->
@@ -3280,23 +3270,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           </select>
         </div>
 
-        <!-- SECTION 3: GOOGLE ADS ACCOUNT -->
-        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 18px; padding: 18px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <span style="font-size: 20px;">📣</span>
-              <div>
-                <strong style="font-size: 14.5px; color: #0f172a; display: block;">3. Google Ads Customer Account</strong>
-                <span style="font-size: 12px; color: #64748b;">Feeds Digital Marketing campaign ROAS, CAC &amp; Impression share</span>
-              </div>
-            </div>
-            <span style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 8px;">🟢 Google Ads API</span>
-          </div>
-          <select id="selectGoogleAdsAccount" style="width: 100%; padding: 11px 14px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 13.5px; font-weight: 600; color: #0f172a; outline: none; transition: border-color 0.2s;">
-            <option value="">Loading Google Ads accounts...</option>
-          </select>
-        </div>
-
       </div>
 
       <!-- ACTIVE SUMMARY PILLS BAR -->
@@ -3304,14 +3277,13 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         <strong style="color: #0f172a; font-weight: 700;">Active Workspace Properties:</strong>
         <span id="summaryPillGA4" style="background: #dbeafe; color: #1e40af; font-weight: 700; padding: 4px 12px; border-radius: 999px;">GA4: Active</span>
         <span id="summaryPillMerchant" style="background: #fef3c7; color: #92400e; font-weight: 700; padding: 4px 12px; border-radius: 999px;">Merchant: Active</span>
-        <span id="summaryPillAds" style="background: #dcfce7; color: #166534; font-weight: 700; padding: 4px 12px; border-radius: 999px;">Ads: Active</span>
       </div>
 
       <!-- FOOTER / SAVE BUTTON -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid #f1f5f9; flex-wrap: wrap; gap: 12px;">
         <div style="display: flex; align-items: center; gap: 10px;">
           <button onclick="closeGoogleAccountModal()" type="button" style="background: #ffffff; border: 1px solid #cbd5e1; color: #475569; padding: 11px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer;">Cancel</button>
-          <a href="/logout" style="display: inline-flex; align-items: center; gap: 6px; background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 11px 18px; border-radius: 12px; font-size: 13px; font-weight: 700; text-decoration: none;">🚪 Oturumu Kapat / Exit</a>
+          <a href="/api/auth/google/disconnect" style="display: inline-flex; align-items: center; gap: 6px; background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 11px 18px; border-radius: 12px; font-size: 13px; font-weight: 700; text-decoration: none;">Disconnect Google</a>
         </div>
         <button onclick="saveGoogleAccountSelection()" type="button" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #ffffff; border: none; padding: 11px 26px; border-radius: 12px; font-size: 13.5px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 14px rgba(22,163,74,0.30); transition: all 0.2s;">Save Selection &amp; Apply Workspaces ✓</button>
       </div>
@@ -6097,7 +6069,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
         // 1. Email Badges
         const emailBadge = document.getElementById("modalGoogleEmailBadge");
         const connEmailBadge = document.getElementById("connPanelUserEmail");
-        const emailText = data.authenticated ? (data.user_email || "myasamkaradag@gmail.com") : (data.user_email || "myasamkaradag@gmail.com");
+        const emailText = data.user_email || "Google not connected";
         if (emailBadge) emailBadge.textContent = emailText;
         if (connEmailBadge) connEmailBadge.textContent = emailText;
 
@@ -6112,7 +6084,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
             if (!data.authenticated) {
               const authOpt = document.createElement("option");
               authOpt.value = "__SIGN_IN_GOOGLE__";
-              authOpt.textContent = "🔑 Sign in with Google (Connect myasamkaradag@gmail.com properties)...";
+              authOpt.textContent = "🔑 Connect Google Analytics...";
               authOpt.style.fontWeight = "bold";
               authOpt.style.color = "#2563eb";
               sel.appendChild(authOpt);
@@ -6126,7 +6098,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
             });
             sel.onchange = function() {
               if (this.value === '__SIGN_IN_GOOGLE__') {
-                window.location.href = '/api/auth/google';
+                window.location.href = '/api/auth/google?integration=analytics';
               }
             };
           }
@@ -6157,50 +6129,17 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
             });
             sel.onchange = function() {
               if (this.value === '__SIGN_IN_GOOGLE__') {
-                window.location.href = '/api/auth/google';
+                window.location.href = '/api/auth/google?integration=merchant';
               }
             };
           }
         });
 
-        // 4. Google Ads Selects (Modal & Panel)
-        const adsSelects = [
-          document.getElementById("selectGoogleAdsAccount"),
-          document.getElementById("connSelectAds")
-        ];
-        adsSelects.forEach(sel => {
-          if (sel && data.google_ads_accounts) {
-            sel.innerHTML = "";
-            if (!data.authenticated) {
-              const authOpt = document.createElement("option");
-              authOpt.value = "__SIGN_IN_GOOGLE__";
-              authOpt.textContent = "🔑 Sign in with Google (Connect Google Ads)...";
-              authOpt.style.fontWeight = "bold";
-              authOpt.style.color = "#2563eb";
-              sel.appendChild(authOpt);
-            }
-            data.google_ads_accounts.forEach(item => {
-              const opt = document.createElement("option");
-              opt.value = item.id;
-              opt.textContent = data.authenticated ? item.name : ("[DEMO PREVIEW] " + item.name);
-              if (item.id === data.selected_google_ads && data.authenticated) opt.selected = true;
-              sel.appendChild(opt);
-            });
-            sel.onchange = function() {
-              if (this.value === '__SIGN_IN_GOOGLE__') {
-                window.location.href = '/api/auth/google';
-              }
-            };
-          }
-        });
-
-        // 5. Update Summary Pills
+        // 4. Update Summary Pills
         const pillGA4 = document.getElementById("summaryPillGA4");
         const pillMerchant = document.getElementById("summaryPillMerchant");
-        const pillAds = document.getElementById("summaryPillAds");
         if (pillGA4) pillGA4.textContent = "GA4: " + (data.selected_ga4 || "Default");
         if (pillMerchant) pillMerchant.textContent = "Merchant: " + (data.selected_merchant || "Default");
-        if (pillAds) pillAds.textContent = "Ads: " + (data.selected_google_ads || "Default");
 
       } catch(e) {
         console.error("Error fetching Google accounts & properties:", e);
@@ -6221,7 +6160,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     async function saveGoogleAccountSelection() {
       const ga4Val = document.getElementById("selectGA4Property")?.value || document.getElementById("connSelectGA4")?.value || "";
       const merchantVal = document.getElementById("selectMerchantAccount")?.value || document.getElementById("connSelectMerchant")?.value || "";
-      const adsVal = document.getElementById("selectGoogleAdsAccount")?.value || document.getElementById("connSelectAds")?.value || "";
 
       try {
         const resp = await fetch("/api/google/save-selection", {
@@ -6229,8 +6167,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ga4_property_id: ga4Val,
-            merchant_account_id: merchantVal,
-            google_ads_account_id: adsVal
+            merchant_account_id: merchantVal
           })
         });
         if (resp.ok) {
@@ -6247,7 +6184,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           if (typeof loadFunnelData === 'function') loadFunnelData();
           if (typeof loadPriceData === 'function') loadPriceData();
 
-          alert("✓ Google Properties saved! Workspace dashboards updated for GA4 (" + ga4Val + "), Merchant (" + merchantVal + ") and Ads (" + adsVal + ").");
+          alert("✓ Google properties saved for GA4 (" + ga4Val + ") and Merchant Center (" + merchantVal + ").");
         }
       } catch(e) {
         alert("Failed to save account selection: " + e.message);
@@ -6257,7 +6194,6 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
     async function saveConnectorPanelSelection() {
       const ga4Val = document.getElementById("connSelectGA4")?.value || "";
       const merchantVal = document.getElementById("connSelectMerchant")?.value || "";
-      const adsVal = document.getElementById("connSelectAds")?.value || "";
 
       try {
         const resp = await fetch("/api/google/save-selection", {
@@ -6265,8 +6201,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ga4_property_id: ga4Val,
-            merchant_account_id: merchantVal,
-            google_ads_account_id: adsVal
+            merchant_account_id: merchantVal
           })
         });
         if (resp.ok) {
@@ -6279,7 +6214,7 @@ requests.post("http://localhost:8000/api/connectors/crm/push", json=payload)
           if (typeof loadFunnelData === 'function') loadFunnelData();
           if (typeof loadPriceData === 'function') loadPriceData();
 
-          alert("✓ Queryna-style Google Properties connected & saved! Dashboards updated for GA4 (" + ga4Val + "), Merchant (" + merchantVal + ") and Ads (" + adsVal + ").");
+          alert("✓ Google properties connected and saved for GA4 (" + ga4Val + ") and Merchant Center (" + merchantVal + ").");
         }
       } catch(e) {
         alert("Failed to save connector selection: " + e.message);
