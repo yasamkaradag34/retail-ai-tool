@@ -1157,9 +1157,9 @@ class ExcelWizardV2UIMarkerTests(unittest.TestCase):
             "SUMIFS",
             "XLOOKUP",
             "Pivot",
-            "Koşullu Biçimlendirme",
-            "Veri Doğrulama",
-            "Grafik",
+            "Conditional Formatting",
+            "Data Validation",
+            "Create Chart",
         ):
             self.assertIn(label.casefold(), normalized)
 

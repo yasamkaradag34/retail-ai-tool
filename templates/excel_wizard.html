@@ -54,61 +54,61 @@
         <article class="xw-capability-group">
           <header><span class="blue">∑</span><div><strong>Hesaplama ve mantık</strong><small>1–5</small></div></header>
           <div class="xw-capability-list">
-            <button data-xw-operation="sum" data-xw-prompt="Revenue kolonunu TOPLA ve sonucu yeni bir özet sayfasına yaz">TOPLA <small>SUM</small></button>
-            <button data-xw-operation="average" data-xw-prompt="Price kolonunun ORTALAMASINI hesapla">ORTALAMA <small>AVERAGE</small></button>
-            <button data-xw-operation="if" data-xw-prompt="Stock 10'dan küçükse Kritik, değilse Normal yazan EĞER kolonu oluştur">EĞER <small>IF</small></button>
-            <button data-xw-operation="ifs" data-xw-prompt="Revenue değerine göre Yüksek, Orta ve Düşük segmentleri oluşturan ÇOKEĞER kolonu ekle">ÇOKEĞER <small>IFS</small></button>
-            <button data-xw-operation="sumproduct" data-xw-prompt="Quantity ve Price kolonlarını TOPLA.ÇARPIM ile hesaplayıp toplam satış değerini bul">TOPLA.ÇARPIM <small>SUMPRODUCT</small></button>
+            <button data-xw-operation="sum" data-xw-prompt="SUM the Revenue column and write the result to a new summary sheet">SUM</button>
+            <button data-xw-operation="average" data-xw-prompt="Calculate the AVERAGE of the Price column">AVERAGE</button>
+            <button data-xw-operation="if" data-xw-prompt="Create an IF column that returns Critical when Stock is below 10 and Normal otherwise">IF</button>
+            <button data-xw-operation="ifs" data-xw-prompt="Use IFS to segment Revenue values as High, Medium or Low">IFS</button>
+            <button data-xw-operation="sumproduct" data-xw-prompt="Use SUMPRODUCT on the Quantity and Price columns to calculate total sales value">SUMPRODUCT</button>
           </div>
         </article>
         <article class="xw-capability-group">
           <header><span class="orange">≧</span><div><strong>Koşullu hesaplar</strong><small>6–10</small></div></header>
           <div class="xw-capability-list">
-            <button data-xw-operation="sumif" data-xw-prompt="Brand APPLE olan satırların Revenue değerini ETOPLA ile hesapla">ETOPLA <small>SUMIF</small></button>
-            <button data-xw-operation="sumifs" data-xw-prompt="Brand APPLE ve Category Telefon olan satırların Revenue değerini ÇOKETOPLA ile hesapla">ÇOKETOPLA <small>SUMIFS</small></button>
-            <button data-xw-operation="countif" data-xw-prompt="Stock değeri 10'dan küçük ürünleri EĞERSAY ile say">EĞERSAY <small>COUNTIF</small></button>
-            <button data-xw-operation="countifs" data-xw-prompt="Brand APPLE ve Stock 10'dan küçük satırları ÇOKEĞERSAY ile say">ÇOKEĞERSAY <small>COUNTIFS</small></button>
-            <button data-xw-operation="counta" data-xw-prompt="Product kolonundaki dolu hücreleri BAĞ_DEĞ_DOLU_SAY ile say">BAĞ_DEĞ_DOLU_SAY <small>COUNTA</small></button>
+            <button data-xw-operation="sumif" data-xw-prompt="Use SUMIF to calculate Revenue for rows where Brand is APPLE">SUMIF</button>
+            <button data-xw-operation="sumifs" data-xw-prompt="Use SUMIFS to calculate Revenue where Brand is APPLE and Category is Telefon">SUMIFS</button>
+            <button data-xw-operation="countif" data-xw-prompt="Use COUNTIF to count products where Stock is below 10">COUNTIF</button>
+            <button data-xw-operation="countifs" data-xw-prompt="Use COUNTIFS to count rows where Brand is APPLE and Stock is below 10">COUNTIFS</button>
+            <button data-xw-operation="counta" data-xw-prompt="Use COUNTA to count non-empty cells in the Product column">COUNTA</button>
           </div>
         </article>
         <article class="xw-capability-group">
           <header><span class="violet">⌕</span><div><strong>Arama ve referans</strong><small>11–16</small></div></header>
           <div class="xw-capability-list">
-            <button data-xw-operation="vlookup" data-xw-prompt="SKU üzerinden fiyat tablosundan Price değerini DÜŞEYARA ile getir">DÜŞEYARA <small>VLOOKUP</small></button>
-            <button data-xw-operation="hlookup" data-xw-prompt="Ay başlıklarına göre hedef değerlerini YATAYARA ile getir">YATAYARA <small>HLOOKUP</small></button>
-            <button data-xw-operation="index" data-xw-prompt="SKU üzerinden Revenue değerini İNDİS + KAÇINCI ile getir">İNDİS <small>INDEX</small></button>
-            <button data-xw-operation="match" data-xw-prompt="APPLE değerinin Brand kolonundaki konumunu KAÇINCI ile bul">KAÇINCI <small>MATCH</small></button>
-            <button data-xw-operation="lookup" data-xw-prompt="SKU değerine karşılık gelen ürün adını ARA ile getir">ARA <small>LOOKUP</small></button>
-            <button data-xw-operation="xlookup" data-xw-prompt="SKU üzerinden güncel fiyatı XLOOKUP ile getir, bulunamazsa Bulunamadı yaz">YENİDEN ARA <small>XLOOKUP</small></button>
+            <button data-xw-operation="vlookup" data-xw-prompt="Use VLOOKUP to return Price from the pricing table by SKU">VLOOKUP</button>
+            <button data-xw-operation="hlookup" data-xw-prompt="Use HLOOKUP to return target values by month headers">HLOOKUP</button>
+            <button data-xw-operation="index" data-xw-prompt="Use INDEX with MATCH to return Revenue by SKU">INDEX</button>
+            <button data-xw-operation="match" data-xw-prompt="Use MATCH to find the position of APPLE in the Brand column">MATCH</button>
+            <button data-xw-operation="lookup" data-xw-prompt="Use LOOKUP to return the product name for each SKU">LOOKUP</button>
+            <button data-xw-operation="xlookup" data-xw-prompt="Use XLOOKUP to return the current price by SKU and show Not Found when missing">XLOOKUP</button>
           </div>
         </article>
         <article class="xw-capability-group">
           <header><span class="green">Aa</span><div><strong>Metin işlemleri</strong><small>17–21</small></div></header>
           <div class="xw-capability-list">
-            <button data-xw-operation="concat" data-xw-prompt="Brand ve Product kolonlarını araya tire koyarak METİNBİRLEŞTİR ile birleştir">BİRLEŞTİR / METİNBİRLEŞTİR <small>CONCAT · TEXTJOIN</small></button>
-            <button data-xw-operation="text-slice" data-xw-prompt="SKU kolonunun soldan ilk 3, sağdan son 4 ve ortadaki 5 karakterini ayrı kolonlara çıkar">SOLDAN / SAĞDAN / PARÇAAL <small>LEFT · RIGHT · MID</small></button>
-            <button data-xw-operation="case" data-xw-prompt="Brand kolonunu BÜYÜK HARF, Product kolonunu küçük harf yap">BÜYÜK_HARF / KÜÇÜK_HARF <small>UPPER · LOWER</small></button>
-            <button data-xw-operation="substitute-find" data-xw-prompt="Product kolonundaki eski ifadesini yeni ile değiştir ve aranan ifadenin konumunu bul">METNİDÜZENLE / BUL <small>SUBSTITUTE · FIND</small></button>
-            <button data-xw-operation="len" data-xw-prompt="SKU metinlerinin UZUNLUĞUNU yeni bir kolonda hesapla">UZUNLUK <small>LEN</small></button>
+            <button data-xw-operation="concat" data-xw-prompt="Combine the Brand and Product columns with a hyphen using CONCAT or TEXTJOIN">CONCAT / TEXTJOIN</button>
+            <button data-xw-operation="text-slice" data-xw-prompt="Use LEFT, RIGHT and MID to extract parts of the SKU into separate columns">LEFT / RIGHT / MID</button>
+            <button data-xw-operation="case" data-xw-prompt="Apply UPPER to Brand and LOWER to Product">UPPER / LOWER</button>
+            <button data-xw-operation="substitute-find" data-xw-prompt="Use SUBSTITUTE to replace text in Product and FIND to return its position">SUBSTITUTE / FIND</button>
+            <button data-xw-operation="len" data-xw-prompt="Use LEN to calculate the character length of each SKU in a new column">LEN</button>
           </div>
         </article>
         <article class="xw-capability-group">
           <header><span class="cyan">◷</span><div><strong>Tarih ve zaman</strong><small>22–24</small></div></header>
           <div class="xw-capability-list">
-            <button data-xw-operation="today-now" data-xw-prompt="Bugünün tarihini ve şu anki zamanı iki yeni sütun olarak ekle">BUGÜN / ŞİMDİ <small>TODAY · NOW</small></button>
-            <button data-xw-operation="date" data-xw-prompt="Year, Month ve Day kolonlarından geçerli bir TARİH kolonu oluştur">TARİH <small>DATE</small></button>
-            <button data-xw-operation="date-parts" data-xw-prompt="Order Date kolonundan GÜN, AY ve YIL değerlerini ayrı kolonlara çıkar">GÜN / AY / YIL <small>DAY · MONTH · YEAR</small></button>
+            <button data-xw-operation="today-now" data-xw-prompt="Add TODAY and NOW as two new columns">TODAY / NOW</button>
+            <button data-xw-operation="date" data-xw-prompt="Use DATE to create a valid date column from Year, Month and Day columns">DATE</button>
+            <button data-xw-operation="date-parts" data-xw-prompt="Use DAY, MONTH and YEAR to split Order Date into separate columns">DAY / MONTH / YEAR</button>
           </div>
         </article>
         <article class="xw-capability-group">
           <header><span class="rose">▦</span><div><strong>Veri ve sunum</strong><small>25–30</small></div></header>
           <div class="xw-capability-list">
-            <button data-xw-operation="conditional-formatting" data-xw-prompt="Revenue ortalamanın üzerindeyse yeşil, altındaysa kırmızı koşullu biçimlendirme uygula">Koşullu Biçimlendirme</button>
-            <button data-xw-operation="filter-sort" data-xw-prompt="Brand APPLE olanları filtrele ve Revenue değerine göre büyükten küçüğe sırala">Filtre / Sırala</button>
-            <button data-xw-operation="pivot" data-xw-prompt="Brand satırlarda, Category sütunlarda ve Revenue toplamı değerlerde olacak şekilde Pivot Tablo oluştur">Pivot Tablo</button>
-            <button data-xw-operation="validation" data-xw-prompt="Status kolonu için Active, Passive ve Pending seçenekli Veri Doğrulama listesi oluştur">Veri Doğrulama</button>
-            <button data-xw-operation="text-to-columns" data-xw-prompt="Birleşik Product Info kolonunu tire ayıracına göre ayrı sütunlara dönüştür">Metni Sütunlara Dönüştür</button>
-            <button data-xw-operation="chart" data-xw-prompt="Brand bazında Revenue değerlerini gösteren profesyonel bir sütun grafik oluştur">Grafik Oluşturma</button>
+            <button data-xw-operation="conditional-formatting" data-xw-prompt="Apply Conditional Formatting: green above average Revenue and red below average">Conditional Formatting</button>
+            <button data-xw-operation="filter-sort" data-xw-prompt="Filter Brand for APPLE and sort Revenue from highest to lowest">Filter / Sort</button>
+            <button data-xw-operation="pivot" data-xw-prompt="Create a Pivot Table with Brand in rows, Category in columns and SUM of Revenue in values">Pivot Table</button>
+            <button data-xw-operation="validation" data-xw-prompt="Add Data Validation to Status with Active, Passive and Pending options">Data Validation</button>
+            <button data-xw-operation="text-to-columns" data-xw-prompt="Convert Product Info into separate columns using the hyphen delimiter">Text to Columns</button>
+            <button data-xw-operation="chart" data-xw-prompt="Create a professional column chart showing Revenue by Brand">Create Chart</button>
           </div>
         </article>
       </div>

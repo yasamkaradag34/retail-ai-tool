@@ -42,45 +42,45 @@ PREVIEW_ROWS = 100
 
 
 CAPABILITIES = [
-    {"id": "sum", "label": "TOPLA (SUM)", "group": "calculation"},
-    {"id": "average", "label": "ORTALAMA (AVERAGE)", "group": "calculation"},
-    {"id": "if", "label": "EĞER (IF)", "group": "formula"},
-    {"id": "ifs", "label": "ÇOKEĞER (IFS)", "group": "formula"},
-    {"id": "sumproduct", "label": "TOPLA.ÇARPIM (SUMPRODUCT)", "group": "calculation"},
-    {"id": "sumif", "label": "ETOPLA (SUMIF)", "group": "calculation"},
-    {"id": "sumifs", "label": "ÇOKETOPLA (SUMIFS)", "group": "calculation"},
-    {"id": "countif", "label": "EĞERSAY (COUNTIF)", "group": "calculation"},
-    {"id": "countifs", "label": "ÇOKEĞERSAY (COUNTIFS)", "group": "calculation"},
-    {"id": "counta", "label": "BAĞ_DEĞ_DOLU_SAY (COUNTA)", "group": "calculation"},
-    {"id": "vlookup", "label": "DÜŞEYARA (VLOOKUP)", "group": "lookup"},
-    {"id": "hlookup", "label": "YATAYARA (HLOOKUP)", "group": "lookup"},
-    {"id": "index_match", "label": "İNDİS + KAÇINCI (INDEX + MATCH)", "group": "lookup"},
-    {"id": "lookup", "label": "ARA (LOOKUP)", "group": "lookup"},
+    {"id": "sum", "label": "SUM", "group": "calculation"},
+    {"id": "average", "label": "AVERAGE", "group": "calculation"},
+    {"id": "if", "label": "IF", "group": "formula"},
+    {"id": "ifs", "label": "IFS", "group": "formula"},
+    {"id": "sumproduct", "label": "SUMPRODUCT", "group": "calculation"},
+    {"id": "sumif", "label": "SUMIF", "group": "calculation"},
+    {"id": "sumifs", "label": "SUMIFS", "group": "calculation"},
+    {"id": "countif", "label": "COUNTIF", "group": "calculation"},
+    {"id": "countifs", "label": "COUNTIFS", "group": "calculation"},
+    {"id": "counta", "label": "COUNTA", "group": "calculation"},
+    {"id": "vlookup", "label": "VLOOKUP", "group": "lookup"},
+    {"id": "hlookup", "label": "HLOOKUP", "group": "lookup"},
+    {"id": "index_match", "label": "INDEX + MATCH", "group": "lookup"},
+    {"id": "lookup", "label": "LOOKUP", "group": "lookup"},
     {"id": "xlookup", "label": "XLOOKUP", "group": "lookup"},
-    {"id": "concat", "label": "BİRLEŞTİR (CONCAT)", "group": "text"},
-    {"id": "textjoin", "label": "METİNBİRLEŞTİR (TEXTJOIN)", "group": "text"},
-    {"id": "left", "label": "SOLDAN (LEFT)", "group": "text"},
-    {"id": "right", "label": "SAĞDAN (RIGHT)", "group": "text"},
-    {"id": "mid", "label": "PARÇAAL (MID)", "group": "text"},
-    {"id": "upper", "label": "BÜYÜK_HARF (UPPER)", "group": "text"},
-    {"id": "lower", "label": "KÜÇÜK_HARF (LOWER)", "group": "text"},
-    {"id": "substitute", "label": "METNİDÜZENLE (SUBSTITUTE)", "group": "text"},
-    {"id": "find", "label": "BUL (FIND)", "group": "text"},
-    {"id": "len", "label": "UZUNLUK (LEN)", "group": "text"},
-    {"id": "today", "label": "BUGÜN (TODAY)", "group": "date"},
-    {"id": "now", "label": "ŞİMDİ (NOW)", "group": "date"},
-    {"id": "date", "label": "TARİH (DATE)", "group": "date"},
-    {"id": "day", "label": "GÜN (DAY)", "group": "date"},
-    {"id": "month", "label": "AY (MONTH)", "group": "date"},
-    {"id": "year", "label": "YIL (YEAR)", "group": "date"},
-    {"id": "conditional_format", "label": "Koşullu Biçimlendirme", "group": "format"},
-    {"id": "filter", "label": "Filtre", "group": "data"},
-    {"id": "sort", "label": "Sırala", "group": "data"},
-    {"id": "pivot", "label": "Pivot Tablo", "group": "analysis"},
-    {"id": "data_validation", "label": "Veri Doğrulama", "group": "data"},
-    {"id": "text_to_columns", "label": "Metni Sütunlara Dönüştür", "group": "data"},
-    {"id": "chart", "label": "Grafik Oluşturma", "group": "visual"},
-    {"id": "commerce_analysis", "label": "E-ticaret Performans Analizi", "group": "analysis"},
+    {"id": "concat", "label": "CONCAT", "group": "text"},
+    {"id": "textjoin", "label": "TEXTJOIN", "group": "text"},
+    {"id": "left", "label": "LEFT", "group": "text"},
+    {"id": "right", "label": "RIGHT", "group": "text"},
+    {"id": "mid", "label": "MID", "group": "text"},
+    {"id": "upper", "label": "UPPER", "group": "text"},
+    {"id": "lower", "label": "LOWER", "group": "text"},
+    {"id": "substitute", "label": "SUBSTITUTE", "group": "text"},
+    {"id": "find", "label": "FIND", "group": "text"},
+    {"id": "len", "label": "LEN", "group": "text"},
+    {"id": "today", "label": "TODAY", "group": "date"},
+    {"id": "now", "label": "NOW", "group": "date"},
+    {"id": "date", "label": "DATE", "group": "date"},
+    {"id": "day", "label": "DAY", "group": "date"},
+    {"id": "month", "label": "MONTH", "group": "date"},
+    {"id": "year", "label": "YEAR", "group": "date"},
+    {"id": "conditional_format", "label": "Conditional Formatting", "group": "format"},
+    {"id": "filter", "label": "Filter", "group": "data"},
+    {"id": "sort", "label": "Sort", "group": "data"},
+    {"id": "pivot", "label": "Pivot Table", "group": "analysis"},
+    {"id": "data_validation", "label": "Data Validation", "group": "data"},
+    {"id": "text_to_columns", "label": "Text to Columns", "group": "data"},
+    {"id": "chart", "label": "Create Chart", "group": "visual"},
+    {"id": "commerce_analysis", "label": "E-commerce Performance Analysis", "group": "analysis"},
 ]
 CAPABILITY_IDS = {item["id"] for item in CAPABILITIES}
 
@@ -558,16 +558,16 @@ def _numeric_criterion(column: str, command: str) -> Optional[dict[str, Any]]:
     value = float(number.group(1).replace(",", "."))
     if value.is_integer():
         value = int(value)
-    tail = segment[number.end():number.end() + 45]
-    if re.search(r"en\s+az|ve\s+uzeri|ve\s+ustu|greater\s+than\s+or\s+equal", tail):
+    context = segment[max(0, number.start() - 45):number.end() + 45]
+    if re.search(r"en\s+az|ve\s+uzeri|ve\s+ustu|greater\s+than\s+or\s+equal", context):
         operator = ">="
-    elif re.search(r"en\s+fazla|ve\s+alti|less\s+than\s+or\s+equal", tail):
+    elif re.search(r"en\s+fazla|ve\s+alti|less\s+than\s+or\s+equal", context):
         operator = "<="
-    elif re.search(r"kucuk|az|alt|less|below", tail):
+    elif re.search(r"kucuk|az|alt|less|below", context):
         operator = "<"
-    elif re.search(r"buyuk|fazla|ust|greater|above", tail):
+    elif re.search(r"buyuk|fazla|ust|greater|above", context):
         operator = ">"
-    elif re.search(r"esit|equal", tail):
+    elif re.search(r"esit|equal", context):
         operator = "="
     else:
         return None
@@ -684,6 +684,8 @@ def _enrich_operation(operation: dict[str, Any], command: str, record: WorkbookS
     elif operation_id == "data_validation" and mentioned:
         operation["column"] = mentioned[0]
         value_match = re.search(r"(?:için|icin|for)\s+(.+?)\s+(?:seçenekli|secenekli|options?|değerli|degerli)", command, flags=re.IGNORECASE)
+        if not value_match:
+            value_match = re.search(r"(?:with|allowing)\s+(.+?)\s+(?:options?|values?)", command, flags=re.IGNORECASE)
         if value_match:
             operation["values"] = [part.strip(" .") for part in re.split(r"\s+(?:ve|and)\s+|,", value_match.group(1)) if part.strip(" .")]
     elif operation_id == "text_to_columns" and mentioned:
