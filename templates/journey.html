@@ -1038,8 +1038,8 @@
   <link rel="stylesheet" href="/static/funnel-analysis.css?v=1">
   <link rel="stylesheet" href="/static/heatmap-analysis.css?v=1">
   <script src="/static/funnel-analysis.js?v=1" defer></script>
-  <link rel="stylesheet" href="/static/excel-wizard.css?v=1">
-  <script src="/static/excel-wizard.js?v=1" defer></script>
+  <link rel="stylesheet" href="/static/excel-wizard.css?v=2">
+  <script src="/static/excel-wizard.js?v=2" defer></script>
 </head>
 <body data-account-mode="{% if is_test_account %}test{% else %}customer{% endif %}" data-pivot-brand="{{ pivot_brand|e }}">
   <!-- Google Tag Manager (noscript) -->
@@ -2494,10 +2494,10 @@
               <div class="cmd-card-header">
                 <div id="activeFileBadge" class="cmd-dataset-badge">
                   <span id="activeFileIcon" style="color: #94a3b8; font-weight: 800;">📁</span>
-                  <span>Active Dataset: <strong id="activeFileName" style="color: #0f172a;">There is no uploaded file</strong> <span id="activeFileMeta" style="color: #64748b; font-weight: 400;"></span></span>
+                  <span>Aktif dosya: <strong id="activeFileName" style="color: #0f172a;">Henüz dosya yüklenmedi</strong> <span id="activeFileMeta" style="color: #64748b; font-weight: 400;"></span></span>
                 </div>
                 <label class="cmd-upload-btn">
-                  <span>📎 Drag &amp; Drop Excel or Click to Upload</span>
+                  <span>📎 Excel/CSV yükle</span>
                   <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleExcelFileUpload(this.files[0])" />
                 </label>
               </div>
@@ -2540,8 +2540,8 @@
               <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 20px;">📈</span>
                 <div>
-                  <h3 id="resultHeaderTitle" style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 20px; font-weight: 800; color: var(--text-900);">Analytical Output</h3>
-                  <p id="resultHeaderSub" style="font-size: 12px; color: var(--text-500);">Executive summary and data table outputs are displayed here.</p>
+              <h3 id="resultHeaderTitle" style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 20px; font-weight: 800; color: var(--text-900);">İşlem sonucu</h3>
+                  <p id="resultHeaderSub" style="font-size: 12px; color: var(--text-500);">Özet, kullanılan kolonlar ve isteğe bağlı önizleme.</p>
                 </div>
               </div>
               <button class="ghost-btn" onclick="clearResult()" id="clearBtnLabel" style="font-size: 12.5px;">Clear</button>
@@ -5282,7 +5282,8 @@
     function autoExpandPrompt(textarea) {
       if (!textarea) return;
       textarea.style.height = 'auto';
-      const newHeight = Math.min(420, Math.max(220, textarea.scrollHeight));
+      const compactExcelMode = document.body.classList.contains("excel-wizard-active");
+      const newHeight = Math.min(compactExcelMode ? 180 : 420, Math.max(compactExcelMode ? 86 : 220, textarea.scrollHeight));
       textarea.style.height = newHeight + 'px';
     }
 
@@ -5440,7 +5441,7 @@
         }, false);
       }
 
-      // Auto-restore active Excel state from server disk storage on page load
+      // Restore only the opaque workbook id kept in this browser tab.
       fetchActiveExcelState();
 
       // Auto-launch onboarding tour for first-time visitors
@@ -5458,15 +5459,16 @@
     let activePreviewTab = 'original';
 
     async function fetchActiveExcelState() {
+      const workbookId = window.ExcelWizardUI?.getWorkbookId();
+      if (!workbookId) return;
       try {
-        const res = await fetch("/active-excel-state");
+        const res = await fetch(`/api/excel-wizard/state?workbook_id=${encodeURIComponent(workbookId)}`);
         const data = await res.json();
-          if (data.status === "success") {
-          originalSpreadsheetData = data.original_rows || [];
-          processedSpreadsheetData = data.processed_rows || [];
-          currentSpreadsheetData = (data.is_modified && processedSpreadsheetData.length > 0)
-            ? processedSpreadsheetData
-            : originalSpreadsheetData;
+        if (data.status === "success") {
+          const previewRows = data.preview?.rows || [];
+          originalSpreadsheetData = previewRows;
+          processedSpreadsheetData = data.is_modified ? previewRows : [];
+          currentSpreadsheetData = previewRows;
 
           const activeFileName = document.getElementById("activeFileName");
           const activeFileMeta = document.getElementById("activeFileMeta");
@@ -5476,19 +5478,25 @@
             activeFileIcon.textContent = "✓";
             activeFileIcon.style.color = "#10b981";
           }
-          const metaText = `(${data.total_rows} rows, ${data.total_columns} cols) ✓ Excel active & ready for commands`;
+          const totalRows = data.preview?.total_rows || data.profile?.total_rows || previewRows.length;
+          const totalColumns = data.preview?.columns?.length || data.profile?.total_columns || 0;
+          const metaText = `(${totalRows} satır, ${totalColumns} sütun) ✓ Bu oturumda hazır`;
           if (activeFileMeta) activeFileMeta.textContent = metaText;
 
           const modBadge = document.getElementById("previewModifiedBadge");
           if (modBadge) {
             modBadge.style.display = data.is_modified ? "inline-flex" : "none";
           }
-            if (data.is_modified) {
-              activePreviewTab = "processed";
-            }
+          if (data.is_modified) activePreviewTab = "processed";
+          if (window.ExcelWizardUI) window.ExcelWizardUI.renderFileState(data);
 
-            if (window.ExcelWizardUI) window.ExcelWizardUI.renderFileState(data);
-
+          updateRunButtonState();
+        } else if (res.status === 404 || res.status === 410) {
+          window.ExcelWizardUI?.clearWorkbookId();
+          originalSpreadsheetData = [];
+          processedSpreadsheetData = [];
+          currentSpreadsheetData = [];
+          window.ExcelWizardUI?.renderFileState({ profile: {}, preview: { columns: [], rows: [], total_rows: 0 } });
           updateRunButtonState();
         }
       } catch (err) {
@@ -5516,17 +5524,23 @@
 
       const formData = new FormData();
       formData.append("file", file);
+      const previousWorkbookId = window.ExcelWizardUI?.getWorkbookId();
 
-      fetch("/upload-excel", {
+      fetch("/api/excel-wizard/upload", {
         method: "POST",
         body: formData
       })
       .then(res => res.json())
       .then(data => {
         if (data.status === "success") {
-          originalSpreadsheetData = data.original_rows || data.rows;
-          processedSpreadsheetData = data.processed_rows || data.rows;
-          currentSpreadsheetData = processedSpreadsheetData;
+          window.ExcelWizardUI?.setWorkbookId(data.workbook_id);
+          if (previousWorkbookId && previousWorkbookId !== data.workbook_id) {
+            fetch(`/api/excel-wizard/workbook/${encodeURIComponent(previousWorkbookId)}`, { method: "DELETE" }).catch(() => {});
+          }
+          const previewRows = data.preview?.rows || [];
+          originalSpreadsheetData = previewRows;
+          processedSpreadsheetData = [];
+          currentSpreadsheetData = previewRows;
           activePreviewTab = "original";
 
           const modBadge = document.getElementById("previewModifiedBadge");
@@ -5536,32 +5550,26 @@
             activeFileIcon.textContent = "✓";
             activeFileIcon.style.color = "#10b981";
           }
-          const metaText = `(${data.total_rows} rows, ${data.total_columns} cols) ✓ Excel active & ready for commands`;
+          const totalRows = data.preview?.total_rows || data.profile?.total_rows || previewRows.length;
+          const totalColumns = data.preview?.columns?.length || data.profile?.total_columns || 0;
+          const metaText = `(${totalRows} satır, ${totalColumns} sütun) ✓ Bu oturumda hazır`;
           if (activeFileMeta) activeFileMeta.textContent = metaText;
-
-          try {
-            sessionStorage.setItem("activeExcelFileName", file.name);
-            sessionStorage.setItem("activeExcelFileMeta", metaText);
-          } catch (err) {
-            console.warn("sessionStorage notice:", err);
-          }
 
           const questionInput = document.getElementById("questionInput");
           if (questionInput) {
             questionInput.value = "";
-            questionInput.placeholder = (currentLang === 'en')
-              ? `Type your command or use Voice AI to process '${file.name}'...`
-              : `'${file.name}' üzerinde yapmak istediğiniz işlemi yazın veya sesle söyleyin...`;
+            window.ExcelWizardUI?.clearOperationHint();
+            window.ExcelWizardUI?.setMode(window.ExcelWizardUI.getMode());
             updateRunButtonState();
           }
           if (window.ExcelWizardUI) window.ExcelWizardUI.renderFileState(data);
         } else {
-          alert("Excel Yükleme Hatası: " + (data.error || "Unknown error"));
+          window.ExcelWizardUI?.renderError(data.error || data.detail || "Dosya yüklenemedi.");
         }
       })
       .catch(err => {
         console.error("Upload error:", err);
-        alert("Excel sunucuya yüklenirken hata oluştu: " + err.message);
+        window.ExcelWizardUI?.renderError("Excel sunucuya yüklenirken hata oluştu: " + err.message);
       });
     }
 
@@ -5605,11 +5613,16 @@
     }
 
     async function resetDataset() {
+      const workbookId = window.ExcelWizardUI?.getWorkbookId();
       try {
-        await fetch('/reset-dataset', { method: 'POST' });
+        if (workbookId) {
+          await fetch(`/api/excel-wizard/workbook/${encodeURIComponent(workbookId)}`, { method: "DELETE" });
+        }
       } catch (error) {
         console.warn('Dataset reset sync notice:', error);
       }
+      window.ExcelWizardUI?.clearWorkbookId();
+      window.ExcelWizardUI?.clearOperationHint();
       currentSpreadsheetData = [];
       originalSpreadsheetData = [];
       processedSpreadsheetData = [];
@@ -5619,15 +5632,13 @@
       const resultSection = document.getElementById("resultSection");
       const resultBox = document.getElementById("resultBox");
 
-      if (activeFileName) activeFileName.textContent = "There is no uploaded file";
+      if (activeFileName) activeFileName.textContent = "Henüz dosya yüklenmedi";
       if (activeFileMeta) activeFileMeta.textContent = "";
       if (activeFileBadge) activeFileBadge.className = "cmd-dataset-badge";
       if (resultSection) resultSection.style.display = "none";
       if (resultBox) {
         resultBox.className = "result-box placeholder";
-        resultBox.textContent = (currentLang === 'en')
-          ? "Select a module on the left and start the analysis using voice or text."
-          : "Soldaki modüllerden birini seç ve sesle veya yazıyla sorunu sorup analizi başlat.";
+        resultBox.textContent = "Dosyanızı yükleyip Excel işlemini veya e-ticaret sorunuzu yazın.";
       }
       if (window.ExcelWizardUI) window.ExcelWizardUI.renderFileState({ total_rows: 0, total_columns: 0, filename: '', profile: {} });
       updateRunButtonState();
@@ -6190,36 +6201,68 @@
       return escapeExcelHtml(value).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     }
 
-    async function runModule() {
+    async function runModule(executionOptions = {}) {
       if (currentModule === "app_benchmark") return;
       const questionInput = document.getElementById("questionInput");
       const resultBox = document.getElementById("resultBox");
       if (!questionInput || !resultBox) return;
-      let question = questionInput.value.trim();
+      let question = executionOptions.command || questionInput.value.trim();
       if (!question) {
         question = (currentLang === 'en')
           ? "Calculate dataset metrics across active spreadsheet rows"
           : "Aktif veri seti için ortalama fiyat, stok ve ciro değerlerini hesapla";
       }
 
-      const resultSection = document.getElementById("resultSection");
-      if (resultSection) resultSection.style.display = "block";
-      resultBox.classList.remove("placeholder");
-      resultBox.classList.add("loading");
-      resultBox.innerHTML = (currentLang === 'en') ? "⚡ Executing Excel calculation on active dataset..." : "⚡ Aktif Excel verisi üzerinde hesaplama yapılıyor...";
+      const workbookId = window.ExcelWizardUI?.getWorkbookId();
+      if (!workbookId) {
+        window.ExcelWizardUI?.renderError("Önce bu oturumda kullanacağınız Excel veya CSV dosyasını yükleyin.");
+        return;
+      }
+      window.ExcelWizardUI?.setLoading(
+        window.ExcelWizardUI.getMode() === "commerce"
+          ? "E-ticaret sorunuz gerçek kolonlar üzerinden analiz ediliyor…"
+          : "Excel işlemi çalışma kitabına uygulanıyor…"
+      );
 
       try {
-        const response = await fetch("/process-excel", {
+        const response = await fetch("/api/excel-wizard/execute", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            workbook_id: workbookId,
             command: question,
-            mode: window.ExcelWizardUI ? window.ExcelWizardUI.getMode() : 'transform'
+            mode: window.ExcelWizardUI ? window.ExcelWizardUI.getMode() : "operations",
+            operation_hint: executionOptions.operation_hint || window.ExcelWizardUI?.getOperationHint() || undefined,
+            clarification_answers: executionOptions.clarification_answers || undefined
           })
         });
         const data = await response.json();
 
         resultBox.classList.remove("loading");
+        if (window.ExcelWizardUI) {
+          if (data.status === "success") {
+            const result = data.result || {};
+            const previewRows = result.preview_rows || data.preview?.rows || [];
+            const isMutation = result.is_mutation === true;
+            if (previewRows.length) {
+              if (isMutation) {
+                processedSpreadsheetData = previewRows;
+                currentSpreadsheetData = processedSpreadsheetData;
+                activePreviewTab = "processed";
+              } else if (!currentSpreadsheetData.length) {
+                currentSpreadsheetData = previewRows;
+              }
+            }
+            const modBadge = document.getElementById("previewModifiedBadge");
+            if (modBadge) modBadge.style.display = isMutation ? "inline-flex" : "none";
+            const fileMeta = document.getElementById("activeFileMeta");
+            if (fileMeta) {
+              fileMeta.innerHTML = `<span style="color:#059669;font-weight:700;"> ✓ ${isMutation ? "Çalışma kitabı güncellendi" : "Analiz tamamlandı"}</span>`;
+            }
+          }
+          window.ExcelWizardUI.renderExecuteResponse(data, { command: question, responseStatus: response.status });
+          return;
+        }
         
         if (data.status === "success") {
           const actionNote = data.action_note;
@@ -6305,7 +6348,8 @@
       } catch(err) {
         console.error("Process error:", err);
         resultBox.classList.remove("loading");
-        resultBox.innerHTML = `<div style="color: #ef4444; font-weight: 700; padding: 16px;">⚠️ Bağlantı hatası: ${err.message}</div>`;
+        if (window.ExcelWizardUI) window.ExcelWizardUI.renderError("Bağlantı hatası: " + err.message);
+        else resultBox.innerHTML = `<div style="color: #ef4444; font-weight: 700; padding: 16px;">⚠️ Bağlantı hatası: ${err.message}</div>`;
       }
     }
 
@@ -6424,26 +6468,23 @@
     }
 
     function downloadExcel() {
-      let csvContent = "SKU,Product Name,Category,Price (TL),Competitor Price (TL),Stock,Revenue (TL),Status\\n";
-      currentSpreadsheetData.forEach(r => {
-        csvContent += `"${r.SKU}","${r.Name}","${r.Category}",${r.Price},${r.CompPrice},${r.Stock},${r.Revenue},"${r.Status}"\\n`;
-      });
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `Retail_AI_Excel_Export_${Date.now()}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const workbookId = window.ExcelWizardUI?.getWorkbookId();
+      if (!workbookId) {
+        window.ExcelWizardUI?.renderError("İndirilecek aktif bir çalışma kitabı bulunmuyor.");
+        return;
+      }
+      const workbookUrl = window.ExcelWizardUI?.getDownloadUrl() || `/api/excel-wizard/download/${encodeURIComponent(workbookId)}`;
+      const workbookLink = document.createElement("a");
+      workbookLink.setAttribute("href", workbookUrl);
+      workbookLink.setAttribute("download", "DataProvido_Excel_Wizard.xlsx");
+      document.body.appendChild(workbookLink);
+      workbookLink.click();
+      document.body.removeChild(workbookLink);
     }
 
     function clearResult() {
       resultBox.className = "result-box placeholder";
-      resultBox.textContent = (currentLang === 'en') 
-        ? "Select a module on the left and start the analysis using voice or text." 
-        : "Soldaki modüllerden birini seç ve sesle veya yazıyla sorunu sorup analizi başlat.";
+      resultBox.textContent = "Yeni bir Excel işlemi veya e-ticaret sorusu yazarak devam edin.";
     }
 
     questionInput.addEventListener("keydown", function(e) {

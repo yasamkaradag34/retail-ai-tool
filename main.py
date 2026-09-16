@@ -94,6 +94,7 @@ import requests
 import pandas as pd
 import json
 import os
+import re
 import shutil
 from typing import List, Optional, Any
 from io import BytesIO
@@ -1998,621 +1999,155 @@ def build_excel_from_tool_result(raw_text: str) -> BytesIO:
 
 
 # ─────────────────────────────────────────────────────────────
-#  EXCEL MACHINE GLOBAL ENGINE & ENDPOINTS
+#  EXCEL WIZARD V2 — owner-bound, memory-only workbook sessions
 # ─────────────────────────────────────────────────────────────
-CURRENT_EXCEL_DF: Optional[pd.DataFrame] = None
-CURRENT_ORIGINAL_EXCEL_DF: Optional[pd.DataFrame] = None
-CURRENT_EXCEL_FILENAME: str = "Yüklü dosya yok"
-IS_DATASET_CLEARED: bool = False
-
-UPLOAD_DIR = "data/uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-ACTIVE_UPLOAD_FILE = os.path.join(UPLOAD_DIR, "active_uploaded_dataset.xlsx")
-ACTIVE_ORIGINAL_FILE = os.path.join(UPLOAD_DIR, "active_original_dataset.xlsx")
-ACTIVE_META_FILE = os.path.join(UPLOAD_DIR, "active_meta.json")
-
-def wipe_active_dataset_files():
-    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME, IS_DATASET_CLEARED
-    CURRENT_EXCEL_DF = None
-    CURRENT_ORIGINAL_EXCEL_DF = None
-    CURRENT_EXCEL_FILENAME = "Yüklü dosya yok"
-    IS_DATASET_CLEARED = True
-
-    for p in [ACTIVE_UPLOAD_FILE, ACTIVE_ORIGINAL_FILE, ACTIVE_META_FILE]:
-        if os.path.exists(p):
-            try:
-                os.remove(p)
-            except Exception as e:
-                print("Notice removing file during reset:", p, e)
-
-def load_default_excel_df() -> Optional[pd.DataFrame]:
-    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME, IS_DATASET_CLEARED
-
-    if IS_DATASET_CLEARED:
-        CURRENT_EXCEL_DF = None
-        CURRENT_ORIGINAL_EXCEL_DF = None
-        CURRENT_EXCEL_FILENAME = "Yüklü dosya yok"
-        return None
-
-    # Only load user-uploaded dataset if it exists on disk
-    if os.path.exists(ACTIVE_UPLOAD_FILE) and os.path.exists(ACTIVE_ORIGINAL_FILE):
-        try:
-            CURRENT_EXCEL_DF = pd.read_excel(ACTIVE_UPLOAD_FILE)
-            CURRENT_ORIGINAL_EXCEL_DF = pd.read_excel(ACTIVE_ORIGINAL_FILE)
-            if os.path.exists(ACTIVE_META_FILE):
-                with open(ACTIVE_META_FILE, "r", encoding="utf-8") as f:
-                    meta = json.load(f)
-                    CURRENT_EXCEL_FILENAME = meta.get("filename", "uploaded_dataset.xlsx")
-            else:
-                CURRENT_EXCEL_FILENAME = "uploaded_dataset.xlsx"
-            return CURRENT_EXCEL_DF
-        except Exception as e:
-            print("Notice loading active uploaded file from disk:", e)
-
-    # When no user file has been uploaded, default state is empty
-    CURRENT_EXCEL_DF = None
-    CURRENT_ORIGINAL_EXCEL_DF = None
-    CURRENT_EXCEL_FILENAME = "Yüklü dosya yok"
-    return None
-
-def df_to_preview_rows(df: Optional[pd.DataFrame], max_rows: int = 200) -> List[dict]:
-    if df is None or df.empty:
-        return []
-    
-    sub_df = df.head(max_rows).copy()
-    records = []
-    for idx, row in sub_df.iterrows():
-        row_dict = {}
-        for col in sub_df.columns:
-            val = row[col]
-            if pd.isna(val):
-                row_dict[col] = "-"
-            elif isinstance(val, (int, float)):
-                row_dict[col] = round(val, 2)
-            else:
-                row_dict[col] = str(val)
-        records.append(row_dict)
-    return records
+from functions.excel_wizard import (
+    CAPABILITIES as EXCEL_WIZARD_CAPABILITIES,
+    EXCEL_MIME as EXCEL_WIZARD_MIME,
+    ExcelWizardError,
+    excel_workbook_store,
+    execute_operation as execute_excel_operation,
+    execute_operations as execute_excel_operations,
+    state_payload as excel_state_payload,
+    workbook_bytes as excel_workbook_bytes,
+)
 
 
-def build_excel_profile(df: Optional[pd.DataFrame]) -> dict:
-    """Small, privacy-safe workbook profile used by the Excel Wizard UI."""
-    if df is None or df.empty:
-        return {
-            "missing_cells": 0,
-            "duplicate_rows": 0,
-            "numeric_columns": 0,
-            "text_columns": 0,
-            "date_columns": 0,
-        }
+class ExcelWizardExecuteRequest(BaseModel):
+    workbook_id: str
+    command: str = ""
+    mode: str = "operations"
+    clarification_answers: Optional[dict] = None
+    clarification_id: Optional[str] = None
+    operation_hint: Optional[str] = None
+    operation: Optional[dict] = None
+    operations: Optional[List[dict]] = None
 
-    numeric_columns = sum(pd.api.types.is_numeric_dtype(df[col]) for col in df.columns)
-    date_columns = sum(
-        pd.api.types.is_datetime64_any_dtype(df[col])
-        or any(token in str(col).lower() for token in ["date", "tarih", "time", "zaman"])
-        for col in df.columns
+
+def _excel_wizard_owner(request: Request) -> str:
+    user = require_console_user(request)
+    return str(user.get("email") or "").strip().casefold()
+
+
+def _excel_wizard_error(error: ExcelWizardError):
+    return JSONResponse(
+        status_code=error.status_code,
+        content={
+            "status": "error",
+            "error": {"code": error.code, "message": error.message},
+            "detail": error.message,
+        },
     )
-    return {
-        "missing_cells": int(df.isna().sum().sum()),
-        "duplicate_rows": int(df.duplicated().sum()),
-        "numeric_columns": int(numeric_columns),
-        "text_columns": int(max(0, len(df.columns) - numeric_columns - date_columns)),
-        "date_columns": int(date_columns),
-    }
 
 
-@app.get("/active-excel-state")
-async def get_active_excel_state():
-    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME, IS_DATASET_CLEARED
-    if not IS_DATASET_CLEARED and (CURRENT_ORIGINAL_EXCEL_DF is None or CURRENT_EXCEL_DF is None):
-        load_default_excel_df()
-
-    if IS_DATASET_CLEARED or CURRENT_EXCEL_DF is None:
-        return {
-            "status": "success",
-            "filename": "Yüklü dosya yok",
-            "total_rows": 0,
-            "total_columns": 0,
-            "is_modified": False,
-            "original_rows": [],
-            "processed_rows": [],
-            "original_column_names": [],
-            "processed_column_names": [],
-            "profile": build_excel_profile(None)
-        }
-
-    orig_rows = df_to_preview_rows(CURRENT_ORIGINAL_EXCEL_DF, max_rows=200)
-    proc_rows = df_to_preview_rows(CURRENT_EXCEL_DF, max_rows=200)
-
-    is_modified = False
-    if CURRENT_EXCEL_DF is not None and CURRENT_ORIGINAL_EXCEL_DF is not None:
-        try:
-            is_modified = (orig_rows != proc_rows) or (len(CURRENT_EXCEL_DF) != len(CURRENT_ORIGINAL_EXCEL_DF)) or (CURRENT_EXCEL_DF.columns.tolist() != CURRENT_ORIGINAL_EXCEL_DF.columns.tolist())
-        except Exception:
-            is_modified = True
-
-    return {
-        "status": "success",
-        "filename": CURRENT_EXCEL_FILENAME or "default_retail_data.xlsx",
-        "total_rows": len(CURRENT_EXCEL_DF) if CURRENT_EXCEL_DF is not None else 0,
-        "total_columns": len(CURRENT_EXCEL_DF.columns) if CURRENT_EXCEL_DF is not None else 0,
-        "is_modified": is_modified,
-        "original_rows": orig_rows,
-        "processed_rows": proc_rows,
-        "original_column_names": CURRENT_ORIGINAL_EXCEL_DF.columns.tolist() if CURRENT_ORIGINAL_EXCEL_DF is not None else [],
-        "processed_column_names": CURRENT_EXCEL_DF.columns.tolist() if CURRENT_EXCEL_DF is not None else [],
-        "profile": build_excel_profile(CURRENT_EXCEL_DF)
-    }
-
-
-@app.post("/reset-dataset")
-async def reset_dataset_endpoint():
-    wipe_active_dataset_files()
-    return {
-        "status": "success",
-        "action_note": "⚡ Aktif veri seti ve önizleme verileri tamamen sıfırlandı.",
-        "filename": "Yüklü dosya yok",
-        "total_rows": 0,
-        "total_columns": 0,
-        "original_rows": [],
-        "processed_rows": [],
-        "rows": [],
-        "profile": build_excel_profile(None)
-    }
-
-
-@app.post("/upload-excel")
-async def upload_excel(file: UploadFile = File(...)):
-    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME, IS_DATASET_CLEARED
-    try:
-        contents = await file.read()
-        filename = file.filename
-        file_ext = os.path.splitext(filename)[1].lower()
-
-        if file_ext in [".xlsx", ".xls"]:
-            df = pd.read_excel(BytesIO(contents))
-        elif file_ext == ".csv":
-            df = pd.read_csv(BytesIO(contents))
-        else:
-            from fastapi.responses import JSONResponse
-            return JSONResponse(status_code=400, content={"error": "Unsupported file format. Please upload .xlsx, .xls, or .csv"})
-
-        CURRENT_EXCEL_DF = df
-        CURRENT_ORIGINAL_EXCEL_DF = df.copy()
-        CURRENT_EXCEL_FILENAME = filename
-        IS_DATASET_CLEARED = False
-
-        # Persist to disk
-        try:
-            df.to_excel(ACTIVE_UPLOAD_FILE, index=False)
-            df.to_excel(ACTIVE_ORIGINAL_FILE, index=False)
-            with open(ACTIVE_META_FILE, "w", encoding="utf-8") as f:
-                json.dump({
-                    "filename": filename,
-                    "uploaded_at": str(pd.Timestamp.now()),
-                    "total_rows": len(df),
-                    "total_columns": len(df.columns)
-                }, f, ensure_ascii=False)
-        except Exception as save_err:
-            print("Notice persisting uploaded dataset to disk:", save_err)
-
-        orig_rows = df_to_preview_rows(CURRENT_ORIGINAL_EXCEL_DF, max_rows=200)
-        proc_rows = df_to_preview_rows(CURRENT_EXCEL_DF, max_rows=200)
-
-        return {
-            "status": "success",
-            "filename": filename,
-            "total_rows": len(df),
-            "total_columns": len(df.columns),
-            "column_names": df.columns.tolist(),
-            "original_rows": orig_rows,
-            "processed_rows": proc_rows,
-            "rows": proc_rows,
-            "profile": build_excel_profile(df)
-        }
-    except Exception as e:
-        from fastapi.responses import JSONResponse
-        return JSONResponse(status_code=500, content={"error": f"Error parsing Excel file: {str(e)}"})
-
-
-class ExcelCommandRequest(BaseModel):
-    command: str
-    mode: str = "transform"
-
-@app.post("/process-excel")
-async def process_excel(req: ExcelCommandRequest):
-    global CURRENT_EXCEL_DF, CURRENT_ORIGINAL_EXCEL_DF, CURRENT_EXCEL_FILENAME
-    if CURRENT_ORIGINAL_EXCEL_DF is None:
-        load_default_excel_df()
-
-    command = req.command.strip()
-    q = command.lower()
-    interaction_mode = "ask" if req.mode == "ask" else "transform"
-
-    # 0. RESET DATASET COMMAND CHECK
-    if any(k in q for k in ["reset", "sıfırla", "baştan başla"]):
-        wipe_active_dataset_files()
-        return {
-            "status": "success",
-            "command": command,
-            "action_note": "⚡ Aktif veri seti ve önizleme verileri tamamen sıfırlandı.",
-            "total_rows": 0,
-            "total_columns": 0,
-            "column_names": [],
-            "updated_avg_price": 0.0,
-            "updated_stock_value": 0.0,
-            "total_pdp_views": 0,
-            "original_rows": [],
-            "processed_rows": [],
-            "rows": [],
-            "profile": build_excel_profile(None),
-            "is_mutation": True
-        }
-
-    if CURRENT_ORIGINAL_EXCEL_DF is None:
-        from fastapi.responses import JSONResponse
-        return JSONResponse(status_code=400, content={"error": "Yüklü veri seti bulunamadı. Lütfen öncelikle 'Drag & Drop Excel or Click to Upload' alanından bir Excel veya CSV dosyası yükleyin."})
-
-    df = CURRENT_ORIGINAL_EXCEL_DF.copy()
-    action_note = ""
-    total_pdp_sum = 0
-    new_col_name = None
-
-    all_columns = df.columns.tolist()
-    text_cols = [c for c in all_columns if not pd.api.types.is_numeric_dtype(df[c])]
-    numeric_cols = [c for c in all_columns if pd.api.types.is_numeric_dtype(df[c])]
-
-    # Helper: Resolve column by name or alias
-    def get_col(aliases: List[str]) -> Optional[str]:
-        for alias in aliases:
-            for c in all_columns:
-                if alias == c.lower() or alias in c.lower():
-                    return c
+def _excel_wizard_planner(command, capabilities, columns):
+    """Optional intent planner. It receives schema names, never workbook rows."""
+    planner_setting = os.getenv("EXCEL_WIZARD_AI_PLANNER", "auto").strip().lower()
+    if planner_setting in {"0", "false", "no", "off"}:
         return None
+    if planner_setting not in {"1", "true", "yes", "on"} and not (
+        LLM_BACKEND == "groq" and bool(GROQ_API_KEY)
+    ):
+        return None
+    compact_capabilities = [{"id": item["id"], "label": item["label"]} for item in capabilities]
+    prompt = (
+        "Return one strict JSON object only. Select an operation from capabilities and map only exact supplied "
+        "column names. Do not calculate any value. If unsure return {}.\n"
+        + json.dumps({"command": command, "capabilities": compact_capabilities, "columns": columns}, ensure_ascii=False)
+    )
+    response = call_llm(
+        [
+            {"role": "system", "content": "You are a spreadsheet intent parser. Output valid JSON only; never infer workbook values."},
+            {"role": "user", "content": prompt},
+        ],
+        use_tools=False,
+    )
+    return (response or {}).get("message", {}).get("content", "")
 
-    # Primary column resolvers
-    price_col = get_col(["product_price", "price", "unit_price", "fiyat"])
-    stock_col = get_col(["stock_qty", "stock", "inventory", "stok"])
-    rev_col = get_col(["revenue", "ciro", "sales_amount"])
-    lost_rev_col = get_col(["estimated_lost_revenue", "lost_revenue", "kayıp_ciro"])
-    lost_sales_col = get_col(["estimated_lost_sales_qty", "lost_sales"])
-    risk_col = get_col(["stock_risk_level", "stock_risk", "availability_status", "status", "risk"])
-    pdp_col = get_col(["total_unique_pdp_views_sum", "pdp_views", "pdp", "views", "görüntüleme"])
-    a2c_col = get_col(["total_unique_add_to_carts_sum", "add_to_carts", "a2c", "sepet"])
-    trans_col = get_col(["total_transactions_sum", "transactions", "orders", "sipariş"])
-    c2d_col = get_col(["c2d_pct", "c2d"])
-    b2d_col = get_col(["b2d_pct", "b2d"])
-    br_col = get_col(["bounce_rate_pct", "bounce_rate"])
-    brand_col = get_col(["brand", "manufacturer", "marka"])
-    cat1_col = get_col(["cat1", "category", "kategori"])
-    cat2_col = get_col(["cat2", "sub_category"])
-    name_col = get_col(["product", "name", "title", "product_title", "ürün"])
 
-    # Match brand/category values from any uploaded workbook instead of relying
-    # only on a fixed retail demo vocabulary.
-    def mentioned_value(column: Optional[str]) -> Optional[str]:
-        if not column or column not in df.columns:
-            return None
-        normalized_question = q.casefold()
-        values = df[column].dropna().astype(str).str.strip().unique().tolist()
-        values.sort(key=len, reverse=True)
-        return next((value for value in values[:500] if len(value) > 1 and value.casefold() in normalized_question), None)
+@app.post("/api/excel-wizard/upload")
+async def excel_wizard_upload(request: Request, file: UploadFile = File(...)):
+    try:
+        owner = _excel_wizard_owner(request)
+        contents = await file.read()
+        record = excel_workbook_store.create(owner, file.filename or "workbook.xlsx", contents)
+        payload = excel_state_payload(record)
+        payload["capabilities"] = EXCEL_WIZARD_CAPABILITIES
+        return JSONResponse(payload)
+    except ExcelWizardError as error:
+        return _excel_wizard_error(error)
 
-    # 1. MULTI-CONDITION DYNAMIC FILTERING (Combining Brand + Availability/Risk + Category)
-    applied_filters = []
-    target_term = ""
 
-    # Filter A: Brand Match
-    brands_list = ["apple", "samsung", "sony", "dyson", "philips", "logitech", "dji", "lg", "jbl", "xiaomi", "bosch", "stanley", "onvo", "ecovacs", "roborock", "braun", "daikin", "honor"]
-    matched_brand = next((b for b in brands_list if b in q), None)
-    matched_brand = mentioned_value(brand_col) or matched_brand
-    if matched_brand and brand_col and brand_col in df.columns:
-        df_b = df[df[brand_col].astype(str).str.lower() == str(matched_brand).lower()]
-        if not df_b.empty:
-            df = df_b
-            b_name = str(matched_brand)
-            applied_filters.append(f"'{brand_col}' = '{b_name}'")
+@app.get("/api/excel-wizard/state")
+def excel_wizard_state(request: Request, workbook_id: str):
+    try:
+        record = excel_workbook_store.get(_excel_wizard_owner(request), workbook_id)
+        with record.lock:
+            return JSONResponse(excel_state_payload(record))
+    except ExcelWizardError as error:
+        return _excel_wizard_error(error)
 
-    # Filter B: Availability / Risk Match
-    status_terms = [
-        ("critical_low_stock", ["critical low stock", "critical_low_stock", "kritik düşük stok", "kritik stok", "low stock"]),
-        ("high risk", ["high risk", "yüksek risk", "yüksek stok riski"]),
-        ("oos", ["oos", "out of stock", "out_of_stock", "stok yok", "stoksuz"]),
-        ("in_stock", ["in stock", "in_stock", "stokta var"]),
-        ("overstock", ["overstock", "fazla stok"]),
-        ("healthy", ["healthy", "sağlıklı"])
-    ]
 
-    for label, aliases in status_terms:
-        if any(alias in q for alias in aliases):
-            target_col = get_col(["availability_status", "status"]) if ("critical" in label or "stock" in label or "in_" in label) else risk_col
-            if target_col and target_col in df.columns:
-                m_st = df[target_col].astype(str).str.lower().str.contains(label.replace(" ", "_"), na=False) | df[target_col].astype(str).str.lower().str.contains(label, na=False)
-                df_st = df[m_st]
-                if not df_st.empty:
-                    df = df_st
-                    target_term = label
-                    applied_filters.append(f"'{target_col}' = '{label}'")
-            break
-
-    # Filter C: Category Match
-    cat_terms = [
-        ("telefon", ["telefon", "smartphone", "mobile", "cep telefonları"]),
-        ("bilgisayar", ["bilgisayar", "laptop", "pc"]),
-        ("süpürge", ["süpürge", "süpürgeler", "ev aletleri"]),
-        ("tablet", ["tablet", "tabletler"]),
-        ("drone", ["drone"])
-    ]
-    for cat_label, cat_aliases in cat_terms:
-        if any(alias in q for alias in cat_aliases):
-            c_col = cat2_col if cat2_col and cat2_col in df.columns else cat1_col
-            if c_col and c_col in df.columns:
-                df_c = df[df[c_col].astype(str).str.lower().str.contains(cat_label, na=False) | (cat1_col and df[cat1_col].astype(str).str.lower().str.contains(cat_label, na=False))]
-                if not df_c.empty:
-                    df = df_c
-                    applied_filters.append(f"'category' = '{cat_label}'")
-            break
-
-    mentioned_category = mentioned_value(cat2_col) or mentioned_value(cat1_col)
-    if mentioned_category and not any("category" in item or "kategori" in item for item in applied_filters):
-        c_col = cat2_col if mentioned_value(cat2_col) else cat1_col
-        if c_col:
-            category_mask = df[c_col].astype(str).str.casefold() == str(mentioned_category).casefold()
-            if category_mask.any():
-                df = df[category_mask]
-                applied_filters.append(f"'{c_col}' = '{mentioned_category}'")
-
-    filter_desc = " AND ".join(applied_filters) if applied_filters else ""
-
-    # 2. DYNAMIC COLUMN CREATION & TAGGING
-    if any(k in q for k in ["kolon", "column", "sütun", "ayrı kolonda", "topla", "ekle", "tag"]):
-        tag_val = target_term.replace(" ", "_").upper() if target_term else "PROCESSED"
-        new_col_name = f"Flagged_{tag_val}_SKUs"
-        df[new_col_name] = f"YES - {tag_val}"
-
-    # Beginner-friendly data preparation commands.
-    removed_duplicates = 0
-    if any(k in q for k in ["tekrar eden", "yinelenen", "duplicate", "duplicates", "mükerrer"]):
-        before = len(df)
-        df = df.drop_duplicates().copy()
-        removed_duplicates = before - len(df)
-
-    removed_blank_rows = 0
-    if any(k in q for k in ["boş satırları sil", "empty rows", "blank rows"]):
-        before = len(df)
-        df = df.dropna(how="all").copy()
-        removed_blank_rows = before - len(df)
-
-    filled_cells = 0
-    if any(k in q for k in ["boş hücreleri", "eksik değerleri", "fill blanks", "fill missing"]):
-        filled_cells = int(df.isna().sum().sum())
-        for column in df.columns:
-            if not df[column].isna().any():
-                continue
-            if pd.api.types.is_numeric_dtype(df[column]):
-                replacement = df[column].median()
-                replacement = 0 if pd.isna(replacement) else replacement
+@app.post("/api/excel-wizard/execute")
+def excel_wizard_execute(request: Request, payload: ExcelWizardExecuteRequest):
+    try:
+        record = excel_workbook_store.get(_excel_wizard_owner(request), payload.workbook_id)
+        answers = dict(payload.clarification_answers or {})
+        if payload.clarification_id and "clarification_id" not in answers:
+            answers["clarification_id"] = payload.clarification_id
+        with record.lock:
+            if payload.operations:
+                response = execute_excel_operations(
+                    record,
+                    payload.command,
+                    payload.mode,
+                    payload.operations,
+                    clarification_answers=answers or None,
+                )
             else:
-                replacement = "Bilinmiyor" if any(ch in q for ch in "çğıöşü") else "Unknown"
-            df[column] = df[column].fillna(replacement)
+                response = execute_excel_operation(
+                    record,
+                    payload.command,
+                    payload.mode,
+                    operation=payload.operation,
+                    clarification_answers=answers or None,
+                    planner=_excel_wizard_planner,
+                    operation_hint=payload.operation_hint or "",
+                )
+        return JSONResponse(response)
+    except ExcelWizardError as error:
+        return _excel_wizard_error(error)
 
-    sort_direction = None
-    sorted_column = None
-    if any(k in q for k in ["büyükten küçüğe", "azalan", "descending", "highest first"]):
-        sort_direction = False
-    elif any(k in q for k in ["küçükten büyüğe", "artan", "ascending", "lowest first"]):
-        sort_direction = True
-    if sort_direction is not None:
-        sort_col = next((column for column in all_columns if str(column).casefold() in q.casefold()), None)
-        sort_col = sort_col or (rev_col if any(k in q for k in ["ciro", "revenue"]) else None)
-        sort_col = sort_col or (price_col if any(k in q for k in ["fiyat", "price"]) else None)
-        if sort_col and sort_col in df.columns:
-            df = df.sort_values(sort_col, ascending=sort_direction, na_position="last").copy()
-            sorted_column = sort_col
 
-    # 3. METRIC CALCULATION ACROSS ALL METRICS
-    metric_msg = ""
-    if any(k in q for k in ["pdp", "görüntüleme", "görüntülenmesi", "görüntülemeleri"]):
-        if pdp_col and pdp_col in df.columns:
-            total_pdp_sum = float(df[pdp_col].sum())
-            metric_msg = f" Toplam PDP Görüntülenmesi: {total_pdp_sum:,.0f}."
-    elif any(k in q for k in ["kayıp ciro", "lost revenue"]):
-        if lost_rev_col and lost_rev_col in df.columns:
-            tot_lost = float(df[lost_rev_col].sum())
-            metric_msg = f" Toplam Tahmini Kayıp Ciro: {tot_lost:,.0f} TL."
-    elif any(k in q for k in ["b2d", "buy to detail"]):
-        if b2d_col and b2d_col in df.columns:
-            avg_b2d = float(df[b2d_col].mean())
-            metric_msg = f" Ortalama B2D Dönüşüm Oranı: %{avg_b2d*100:.2f}."
-    elif any(k in q for k in ["c2d", "cart to detail"]):
-        if c2d_col and c2d_col in df.columns:
-            avg_c2d = float(df[c2d_col].mean())
-            metric_msg = f" Ortalama C2D Dönüşüm Oranı: %{avg_c2d*100:.2f}."
+@app.delete("/api/excel-wizard/workbook/{workbook_id}")
+def excel_wizard_delete(request: Request, workbook_id: str):
+    try:
+        excel_workbook_store.delete(_excel_wizard_owner(request), workbook_id)
+        return JSONResponse({"status": "success", "deleted": True, "workbook_id": workbook_id})
+    except ExcelWizardError as error:
+        return _excel_wizard_error(error)
 
-    # 4. EXPLICIT PRICE & STOCK ACTIONS
-    if any(k in q for k in ["fiyatı artır", "fiyatları artır", "zam yap", "fiyat indirimi", "fiyat düşür", "discount"]):
-        pct = 10
-        for p in [20, 15, 25, 30, 50, 5]:
-            if str(p) in q: pct = p; break
-        is_discount = any(k in q for k in ["düşür", "discount", "indirim"])
-        mult = (1 - pct/100) if is_discount else (1 + pct/100)
-        if price_col:
-            df[price_col] = df[price_col].apply(lambda p: round(float(p) * mult, 2) if pd.notnull(p) else p)
-            if rev_col and stock_col and rev_col in df.columns and stock_col in df.columns:
-                df[rev_col] = df[price_col] * df[stock_col]
-        action_label = f"%{pct} fiyat indirimi uygulandı" if is_discount else f"%{pct} fiyat artışı yapıldı"
-        metric_msg += f" {len(df)} üründe {action_label}."
 
-    elif any(k in q for k in ["stok ekle", "stokları artır", "replenish", "tedarik ekle", "+100 stok"]):
-        add_stock = 100
-        if stock_col:
-            df[stock_col] = df[stock_col].apply(lambda s: int(s) + add_stock if pd.notnull(s) else add_stock)
-            if rev_col and price_col and rev_col in df.columns and price_col in df.columns:
-                df[rev_col] = df[price_col] * df[stock_col]
-        metric_msg += f" {len(df)} ürüne +{add_stock} adet stok eklendi."
-
-    avg_price = float(df[price_col].dropna().mean()) if price_col and price_col in df.columns and not df[price_col].dropna().empty else 0.0
-    tot_stock_val = float(df[rev_col].dropna().sum()) if rev_col and rev_col in df.columns and not df[rev_col].dropna().empty else 0.0
-
-    # Natural-language group breakdowns power questions such as "brand by
-    # revenue" without requiring the user to know pivot tables.
-    breakdown_rows = None
-    breakdown_summary = None
-    wants_group = any(k in q for k in ["bazında", "kırılım", "breakdown", "group by", "by brand", "by category"])
-    group_col = brand_col if any(k in q for k in ["marka", "brand"]) else (cat2_col or cat1_col if any(k in q for k in ["kategori", "category"]) else None)
-    metric_col = rev_col if any(k in q for k in ["ciro", "revenue", "satış", "sales"]) else (price_col if any(k in q for k in ["fiyat", "price"]) else (stock_col if any(k in q for k in ["stok", "stock"]) else None))
-    if wants_group and group_col and metric_col and group_col in df.columns and metric_col in df.columns:
-        aggregation = "mean" if any(k in q for k in ["ortalama", "average", "mean"]) else "sum"
-        grouped = df.groupby(group_col, dropna=False)[metric_col].agg(aggregation).sort_values(ascending=False).reset_index()
-        result_name = f"{aggregation}_{metric_col}"
-        grouped.columns = [group_col, result_name]
-        breakdown_rows = df_to_preview_rows(grouped, max_rows=200)
-        leader = grouped.iloc[0] if not grouped.empty else None
-        if leader is not None:
-            breakdown_summary = f"**{group_col}** kırılımında en yüksek sonuç **{leader[group_col]}** için **{float(leader[result_name]):,.2f}** olarak hesaplandı. Toplam {len(grouped)} grup karşılaştırıldı."
-
-    top_rows = None
-    top_summary = None
-    wants_top = any(k in q for k in ["ilk 5", "ilk 10", "top 5", "top 10", "en yüksek", "highest"])
-    if wants_top and not wants_group and metric_col and metric_col in df.columns:
-        limit = 5 if any(k in q for k in ["ilk 5", "top 5"]) else 10
-        ranked = df.sort_values(metric_col, ascending=False, na_position="last").head(limit)
-        top_rows = df_to_preview_rows(ranked, max_rows=limit)
-        top_summary = f"**{metric_col}** değerine göre en yüksek **{len(ranked)}** satır listelendi. İlk sıradaki değer **{float(ranked.iloc[0][metric_col]):,.2f}**."
-
-    workbook_profile = build_excel_profile(df)
-    aov = None
-    if rev_col and trans_col and rev_col in df.columns and trans_col in df.columns:
-        transaction_total = float(pd.to_numeric(df[trans_col], errors="coerce").sum())
-        if transaction_total:
-            aov = float(pd.to_numeric(df[rev_col], errors="coerce").sum()) / transaction_total
-
-    # 5. GENERATE HUMAN-READABLE EXECUTIVE SUMMARY & DIRECT ANSWER
-    if breakdown_summary:
-        executive_summary = breakdown_summary
-    elif top_summary:
-        executive_summary = top_summary
-    elif any(k in q for k in ["önemli bulgu", "önemli 5", "dosyayı özetle", "summarize", "key finding"]):
-        executive_summary = (
-            f"Dosyada **{len(df):,} satır** ve **{len(df.columns)} sütun** var. "
-            f"**{workbook_profile['missing_cells']:,} eksik hücre** ve **{workbook_profile['duplicate_rows']:,} tekrar eden satır** tespit edildi. "
-            f"Analize uygun **{workbook_profile['numeric_columns']} sayısal sütun** bulundu."
+@app.get("/api/excel-wizard/download/{workbook_id}")
+def excel_wizard_download(request: Request, workbook_id: str):
+    try:
+        record = excel_workbook_store.get(_excel_wizard_owner(request), workbook_id)
+        with record.lock:
+            contents = excel_workbook_bytes(record)
+        stem = re.sub(r"[^A-Za-z0-9_-]+", "_", os.path.splitext(record.filename)[0]).strip("_") or "Workbook"
+        filename = f"DataProvido_{stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        return StreamingResponse(
+            BytesIO(contents),
+            media_type=EXCEL_WIZARD_MIME,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "private, no-store"},
         )
-    elif removed_duplicates or "duplicate" in q or "tekrar eden" in q:
-        executive_summary = f"**{removed_duplicates:,}** tekrar eden satır kaldırıldı. Çalışma kitabında **{len(df):,}** benzersiz satır kaldı."
-    elif removed_blank_rows or "boş satırları sil" in q or "blank rows" in q:
-        executive_summary = f"Tamamen boş olan **{removed_blank_rows:,}** satır kaldırıldı. Çalışma kitabında **{len(df):,}** satır kaldı."
-    elif filled_cells or "boş hücreleri" in q or "fill missing" in q:
-        executive_summary = f"**{filled_cells:,}** eksik hücre, sayısal sütunlarda medyan; metin sütunlarında açıklayıcı bir varsayılan değer kullanılarak dolduruldu."
-    elif any(k in q for k in ["kaç satır", "kaç tane satır", "satır sayısı", "kaç ürün", "ürün sayısı", "kaç adet ürün", "kaç tane ürün", "row count", "how many rows", "total rows"]):
-        executive_summary = f"Aktif Excel dosyasında toplam **{len(df):,}** adet satır (ürün / SKU) bulunmaktadır."
-    elif any(k in q for k in ["kaç sütun", "kaç tane sütun", "sütun sayısı", "kolon sayısı", "sütunlar", "kolonlar", "column count", "how many columns"]):
-        cols_preview = ", ".join(df.columns[:8])
-        executive_summary = f"Aktif Excel dosyasında toplam **{len(df.columns)}** adet sütun bulunmaktadır: *{cols_preview}...*"
-    elif any(k in q for k in ["ortalama fiyat", "average price", "fiyat ortalaması"]):
-        executive_summary = f"Seçili **{len(df)}** adet üründe ortalama fiyat **₺{avg_price:,.2f}** olarak hesaplanmıştır."
-    elif any(k in q for k in ["toplam stok", "total stock", "stok miktarı"]):
-        tot_stock_qty = int(df[stock_col].sum()) if stock_col and stock_col in df.columns else 0
-        executive_summary = f"Seçili **{len(df)}** adet üründe toplam stok miktarı **{tot_stock_qty:,} adet** olarak hesaplanmıştır."
-    elif any(k in q for k in ["toplam ciro", "total revenue", "gmv", "toplam ciro nedir"]):
-        aov_text = f" Ortalama sipariş değeri **₺{aov:,.2f}**." if aov is not None and any(k in q for k in ["sipariş değeri", "order value", "aov"]) else ""
-        executive_summary = f"Seçili **{len(df)}** adet üründe toplam ciro **₺{tot_stock_val:,.2f}** olarak hesaplanmıştır.{aov_text}"
-    elif aov is not None and any(k in q for k in ["sipariş değeri", "order value", "aov"]):
-        executive_summary = f"Toplam ciro, toplam işlem sayısına bölünerek ortalama sipariş değeri **₺{aov:,.2f}** olarak hesaplandı."
-    elif any(k in q for k in ["zam", "fiyatı artır", "fiyat indirimi", "fiyat düşür", "stok ekle"]):
-        executive_summary = f"Excel verisi üzerinde yapılan işlem ile **{len(df)}** adet üründe {metric_msg.strip()} gerçekleşmiştir."
-    elif filter_desc:
-        executive_summary = f"**{filter_desc}** filtreleme kriterlerine uyan toplam **{len(df)}** adet ürün filtrelenmiş ve listelenmiştir."
-    else:
-        executive_summary = f"Sorgulanan veride toplam **{len(df):,}** adet satır (ürün / SKU) ve **{len(df.columns)}** adet sütun analiz edilmiştir."
-
-    col_msg = f" Excel dosyasına '{new_col_name}' adında yeni sütun eklendi." if new_col_name else ""
-    filter_msg = f" {filter_desc} şartlarına uyan" if filter_desc else ""
-    operation_notes = []
-    if filter_desc:
-        operation_notes.append(f"{filter_desc} filtresi uygulandı; {len(df)} satır eşleşti")
-    if removed_duplicates or any(k in q for k in ["tekrar eden", "duplicate", "mükerrer"]):
-        operation_notes.append(f"{removed_duplicates} tekrar eden satır kaldırıldı")
-    if removed_blank_rows or any(k in q for k in ["boş satırları sil", "blank rows"]):
-        operation_notes.append(f"{removed_blank_rows} boş satır kaldırıldı")
-    if filled_cells or any(k in q for k in ["boş hücreleri", "fill missing"]):
-        operation_notes.append(f"{filled_cells} eksik hücre dolduruldu")
-    if sorted_column:
-        direction_label = "artan" if sort_direction else "azalan"
-        operation_notes.append(f"{sorted_column} sütunu {direction_label} sıralandı")
-    if breakdown_rows:
-        operation_notes.append(f"{group_col} bazında {metric_col} kırılımı hesaplandı")
-    if top_rows:
-        operation_notes.append(f"{metric_col} değerine göre en yüksek {len(top_rows)} satır listelendi")
-    if metric_msg.strip():
-        operation_notes.append(metric_msg.strip())
-    if new_col_name:
-        operation_notes.append(f"{new_col_name} sütunu eklendi")
-    if not operation_notes:
-        operation_notes.append(f"{len(df)} satır ve {len(df.columns)} sütun analiz edildi")
-    action_note = "⚡ " + "; ".join(operation_notes) + "."
-
-    is_mutation = interaction_mode == "transform"
-    if is_mutation:
-        CURRENT_EXCEL_DF = df
-        try:
-            df.to_excel(ACTIVE_UPLOAD_FILE, index=False)
-        except Exception as save_err:
-            print("Notice persisting modified dataset to disk:", save_err)
-
-    orig_rows = df_to_preview_rows(CURRENT_ORIGINAL_EXCEL_DF, max_rows=200)
-    proc_rows = breakdown_rows or top_rows or df_to_preview_rows(df, max_rows=200)
-
-    return {
-        "status": "success",
-        "command": command,
-        "filename": CURRENT_EXCEL_FILENAME,
-        "executive_summary": executive_summary,
-        "action_note": action_note,
-        "total_rows": len(df),
-        "total_columns": len(df.columns),
-        "column_names": df.columns.tolist(),
-        "updated_avg_price": round(avg_price, 2),
-        "updated_stock_value": round(tot_stock_val, 2),
-        "total_pdp_views": round(total_pdp_sum, 0),
-        "original_rows": orig_rows,
-        "processed_rows": proc_rows,
-        "rows": proc_rows,
-        "profile": build_excel_profile(df),
-        "is_mutation": is_mutation,
-        "interaction_mode": interaction_mode
-    }
+    except ExcelWizardError as error:
+        return _excel_wizard_error(error)
 
 
-@app.get("/download-result")
-def download_result():
-    global CURRENT_EXCEL_DF, CURRENT_EXCEL_FILENAME
-    if CURRENT_EXCEL_DF is None:
-        load_default_excel_df()
-
-    df = CURRENT_EXCEL_DF.copy()
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, sheet_name="Processed_Data", index=False)
-        worksheet = writer.sheets["Processed_Data"]
-        worksheet.freeze_panes = "A2"
-        header_fill = PatternFill("solid", fgColor="1F4E78")
-        header_font = Font(color="FFFFFF", bold=True)
-        for cell in worksheet[1]:
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-        for idx, col in enumerate(df.columns, start=1):
-            values = df[col].head(100).fillna("").astype(str).tolist()
-            max_len = max([len(str(col))] + [len(v) for v in values])
-            worksheet.column_dimensions[get_column_letter(idx)].width = min(max_len + 2, 45)
-
-    output.seek(0)
-    export_filename = f"DataProvido_Excel_Export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-    headers = {
-        "Content-Disposition": f'attachment; filename="{export_filename}"'
-    }
-    return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers=headers)
+# Removed legacy /upload-excel, /process-excel and /download-result handlers.
+# They stored a cross-user workbook on disk. The V2 routes above are the only
+# supported Excel Wizard data path and keep every workbook owner-bound in RAM.
 
 
 @app.get("/api/templates/category-product")
@@ -2980,7 +2515,7 @@ async def persist_refreshed_google_session(request: Request, call_next):
     refreshed = getattr(request.state, "google_cookie_update", None)
     if refreshed is not None and not any(header.lower() == b"set-cookie" and value.startswith(b"gauth=") for header, value in response.raw_headers):
         _set_auth_cookie(response, request, refreshed)
-    if request.url.path.startswith(("/api/ga4/", "/api/merchant/", "/api/auth/", "/api/google/")) or request.url.path == "/journey":
+    if request.url.path.startswith(("/api/ga4/", "/api/merchant/", "/api/auth/", "/api/google/", "/api/excel-wizard/")) or request.url.path == "/journey":
         response.headers["Cache-Control"] = "private, no-store"
     return response
 
