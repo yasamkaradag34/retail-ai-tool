@@ -46,14 +46,17 @@
     .button { width:100%; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px; border:0; border-radius:12px; padding:12px 16px; color:#fff; background:var(--orange); font:700 13px Inter,sans-serif; text-decoration:none; cursor:pointer; box-shadow:0 7px 18px rgba(242,111,38,.22); }
     .button:hover { background:var(--orange-dark); }
     .button.secondary { color:#1d4ed8; background:#eff6ff; box-shadow:none; border:1px solid #bfdbfe; }
+    .button.danger { color:#b91c1c; background:#fff1f2; box-shadow:none; border:1px solid #fecaca; }
+    .button.danger:hover { color:#991b1b; background:#ffe4e6; }
     .select-wrap { display:block; margin-top:12px; }
     .select-wrap span { display:block; margin-bottom:7px; color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
     select { width:100%; min-height:44px; padding:10px 12px; border:1px solid #cbd5e1; border-radius:11px; background:#fff; color:var(--navy); font:600 12px Inter,sans-serif; }
     .footer-panel { margin-top:22px; display:flex; justify-content:space-between; align-items:center; gap:20px; padding:20px 22px; background:#fff; border:1px solid var(--line); border-radius:18px; }
     .footer-panel p { color:var(--slate); font-size:12px; line-height:1.6; }
+    .footer-actions { display:flex; align-items:center; gap:10px; }
     .continue { min-width:220px; }
     .continue:disabled { cursor:not-allowed; opacity:.45; box-shadow:none; }
-    @media(max-width:900px) { .hero{grid-template-columns:1fr;gap:24px}.connections{grid-template-columns:1fr}.card{min-height:0}.footer-panel{align-items:stretch;flex-direction:column}.continue{width:100%}.shell{padding-top:34px} }
+    @media(max-width:900px) { .hero{grid-template-columns:1fr;gap:24px}.connections{grid-template-columns:1fr}.card{min-height:0}.footer-panel,.footer-actions{align-items:stretch;flex-direction:column}.continue{width:100%}.shell{padding-top:34px} }
   </style>
 </head>
 <body>
@@ -120,7 +123,12 @@
 
       <div class="footer-panel">
         <p><strong>Your data stays under your control.</strong><br>Review <a href="/google-data">Google Data Use</a>, <a href="/privacy">Privacy</a> and <a href="/terms">Terms</a>.</p>
-        <button id="continueButton" class="button continue" type="submit" {% if not analytics_connected %}disabled{% endif %}>Open My Workspace →</button>
+        <div class="footer-actions">
+          {% if analytics_connected %}
+          <button class="button danger" type="submit" formaction="/api/auth/google/disconnect" formmethod="post" formnovalidate onclick="return window.confirm('Disconnect Google and remove the local DataProvido session?');">Disconnect Google</button>
+          {% endif %}
+          <button id="continueButton" class="button continue" type="submit" {% if not analytics_connected %}disabled{% endif %}>Open My Workspace →</button>
+        </div>
       </div>
     </form>
   </main>

@@ -139,3 +139,6 @@ body.heatmap-analysis-active #moduleDesc { font-size: 1rem !important; }
   #heatmapWorkspaceContainer .hm-subtabs-grid { grid-template-columns: 1fr; }
   #hmTabSection_canvas > div:first-child { grid-template-columns: 1fr !important; }
 }
+/* Compact pagination shared by the high-cardinality heatmap tables. */
+.hm-table-pagination{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:13px;margin-top:4px;border-top:1px solid #e2e8f0;color:#64748b;font-size:11px;font-weight:700}.hm-table-pagination>div{display:flex;align-items:center;gap:10px}.hm-table-pagination button{border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:9px;padding:7px 11px;font-size:11px;font-weight:750;cursor:pointer}.hm-table-pagination button:hover:not(:disabled){border-color:#94a3b8;background:#f8fafc}.hm-table-pagination button:disabled{cursor:not-allowed;opacity:.42}
+@media(max-width:640px){.hm-table-pagination{align-items:flex-start;flex-direction:column}}

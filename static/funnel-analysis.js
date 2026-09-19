@@ -3,7 +3,8 @@
   const $ = id => document.getElementById(id);
   const testMode = document.body.dataset.accountMode === 'test';
   const pivotBrand = document.body.dataset.pivotBrand || 'Injector Marketing';
-  const state = {initialized:false,demo:false,report:null,properties:[],request:0,activeTab:'event',pathStep:1};
+  const state = {initialized:false,demo:false,report:null,properties:[],request:0,activeTab:'event',pathStep:1,landingPage:0};
+  const landingPageSize = 10;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const numeric = value => typeof value === 'number' && Number.isFinite(value);
   const fmtInt = value => numeric(value) ? Math.round(value).toLocaleString('en-US') : '—';
@@ -55,7 +56,7 @@
     const params=new URLSearchParams({...range,preset:$('faPreset').value,breakdown:$('faBreakdown').value,open_funnel:$('faType').value==='open'?'true':'false',...(state.demo?{sample:'true'}:{property_id:property})});
     try{
       const report=await api('/api/ga4/funnel-report?'+params);if(request!==state.request)return;
-      state.report=report;state.pathStep=report.steps?.[0]?.step||1;$('faReport').hidden=false;$('faWelcome').hidden=true;
+      state.report=report;state.pathStep=report.steps?.[0]?.step||1;state.landingPage=0;$('faReport').hidden=false;$('faWelcome').hidden=true;
       $('faSource').textContent=state.demo?'SAMPLE DATA':'GA4 DATA';$('faSource').className='fa-badge '+(state.demo?'sample':'live');
       status(state.demo?`${pivotBrand} test workspace — figures are illustrative and clearly separated from live customer data.`:report.steps?.some(step=>step.users)?'Funnel report updated from the selected Analytics property.':'No users completed this sequence in the selected range. Try an open funnel or another journey.',state.demo?'sample':'');
       render();
@@ -102,7 +103,14 @@
     $('faPathFlow').innerHTML=`<div class="fa-origin-node"><span>${esc(step.event)}</span><strong>${esc(step.name)}</strong><em>${fmtInt(step.users)} active users reached this step</em></div><div class="fa-flow-line" aria-hidden="true"></div><div class="fa-path-nodes">${nodes}</div>`;
   }
   function renderLanding(){
-    $('faLandingBody').innerHTML=(state.report.landing_pages||[]).map(row=>`<tr><td title="${esc(row.path)}">${esc(row.path)}</td><td>${fmtInt(row.sessions)}</td><td>${fmtInt(row.activeUsers)}</td><td>${fmtPct(row.engagementRate)}</td><td>${fmtPct(row.bounceRate)}</td><td>${fmtSeconds(row.averageSessionDuration)}</td><td>${fmtInt(row.keyEvents)}</td></tr>`).join('')||'<tr><td colspan="7">Landing-page metrics are unavailable for this property.</td></tr>';
+    const rows=state.report.landing_pages||[],pages=Math.max(1,Math.ceil(rows.length/landingPageSize));
+    state.landingPage=Math.max(0,Math.min(state.landingPage,pages-1));
+    const start=state.landingPage*landingPageSize,subset=rows.slice(start,start+landingPageSize);
+    $('faLandingBody').innerHTML=subset.map(row=>`<tr><td title="${esc(row.path)}">${esc(row.path)}</td><td>${fmtInt(row.sessions)}</td><td>${fmtInt(row.activeUsers)}</td><td>${fmtPct(row.engagementRate)}</td><td>${fmtPct(row.bounceRate)}</td><td>${fmtSeconds(row.averageSessionDuration)}</td><td>${fmtInt(row.keyEvents)}</td></tr>`).join('')||'<tr><td colspan="7">Landing-page metrics are unavailable for this property.</td></tr>';
+    $('faLandingRange').textContent=rows.length?`${start+1}–${Math.min(start+landingPageSize,rows.length)} of ${rows.length} landing pages`:'0 landing pages';
+    $('faLandingPage').textContent=`${state.landingPage+1} / ${pages}`;
+    $('faLandingPrevious').disabled=state.landingPage===0;
+    $('faLandingNext').disabled=state.landingPage+1>=pages;
   }
   function renderUsers(){
     const rows=state.report.user_segments||[];
@@ -136,6 +144,8 @@
     $('faProperty').addEventListener('change',load);['faPreset','faBreakdown','faType'].forEach(id=>$(id).addEventListener('change',load));
     $('faPeriod').addEventListener('change',()=>{$('faCustomDates').hidden=$('faPeriod').value!=='custom';if($('faPeriod').value!=='custom')load();});
     $('faStart').addEventListener('change',()=>{if($('faEnd').value)load();});$('faEnd').addEventListener('change',()=>{if($('faStart').value)load();});
+    $('faLandingPrevious').addEventListener('click',()=>{state.landingPage--;renderLanding();});
+    $('faLandingNext').addEventListener('click',()=>{state.landingPage++;renderLanding();});
     document.querySelectorAll('.fa-tabbar button').forEach(button=>button.addEventListener('click',()=>switchTab(button.dataset.tab)));
     connect();
   }

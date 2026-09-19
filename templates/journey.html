@@ -1035,9 +1035,9 @@
   <script src="/static/category-analysis.js?v=3" defer></script>
   <link rel="stylesheet" href="/static/stock-price-analysis.css?v=1">
   <script src="/static/stock-price-analysis.js?v=1" defer></script>
-  <link rel="stylesheet" href="/static/funnel-analysis.css?v=1">
-  <link rel="stylesheet" href="/static/heatmap-analysis.css?v=1">
-  <script src="/static/funnel-analysis.js?v=1" defer></script>
+  <link rel="stylesheet" href="/static/funnel-analysis.css?v=2">
+  <link rel="stylesheet" href="/static/heatmap-analysis.css?v=2">
+  <script src="/static/funnel-analysis.js?v=2" defer></script>
   <link rel="stylesheet" href="/static/excel-wizard.css?v=2">
   <script src="/static/excel-wizard.js?v=2" defer></script>
 </head>
@@ -1139,6 +1139,12 @@
               </a>
             </div>
           </div>
+
+          <form action="/api/auth/google/disconnect" method="post" onsubmit="return window.confirm('Disconnect Google and remove the local DataProvido session?');" style="margin: 0;">
+            <button type="submit" id="disconnectGoogleBtn" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.28); color: #ffffff; padding: 9px 14px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(255,255,255,0.24)'" onmouseout="this.style.background='rgba(255,255,255,0.14)'">
+              <span aria-hidden="true">⛓</span><span>Disconnect Google</span>
+            </button>
+          </form>
 
           <!-- PROMINENT DEDICATED EXIT / ÇIKIŞ BUTTON IN SIDEBAR -->
           <a href="/logout" id="sidebarLogoutBtn" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: rgba(239, 68, 68, 0.18); border: 1.5px solid rgba(239, 68, 68, 0.40); color: #fee2e2; padding: 10px 14px; border-radius: 14px; font-size: 12.5px; font-weight: 700; text-decoration: none; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" onmouseover="this.style.background='rgba(239,68,68,0.35)'; this.style.color='#ffffff'; this.style.borderColor='rgba(239,68,68,0.6)';" onmouseout="this.style.background='rgba(239,68,68,0.18)'; this.style.color='#fee2e2'; this.style.borderColor='rgba(239,68,68,0.40)';">
@@ -2192,6 +2198,10 @@
                     </tbody>
                   </table>
                 </div>
+                <div class="hm-table-pagination" aria-label="Element table pagination">
+                  <span id="hmElementsRange">0 elements</span>
+                  <div><button id="hmElementsPrevious" type="button" onclick="changeHeatmapElementsPage(-1)">← Previous</button><span id="hmElementsPage">1 / 1</span><button id="hmElementsNext" type="button" onclick="changeHeatmapElementsPage(1)">Next →</button></div>
+                </div>
               </div>
 
             </div>
@@ -2474,6 +2484,10 @@
                     </tbody>
                   </table>
                 </div>
+                <div class="hm-table-pagination" aria-label="Form friction table pagination">
+                  <span id="hmFormsRange">0 form fields</span>
+                  <div><button id="hmFormsPrevious" type="button" onclick="changeHeatmapFormsPage(-1)">← Previous</button><span id="hmFormsPage">1 / 1</span><button id="hmFormsNext" type="button" onclick="changeHeatmapFormsPage(1)">Next →</button></div>
+                </div>
               </div>
             </div>
 
@@ -2588,8 +2602,13 @@
       </div>
 
       <!-- Modal Footer -->
-      <div style="padding: 16px 28px; border-top: 1px solid var(--border); background: var(--bg-2); display: flex; justify-content: space-between; align-items: center;">
+      <div style="padding: 16px 28px; border-top: 1px solid var(--border); background: var(--bg-2); display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
         <span style="font-size: 12px; color: #10b981; font-weight: 700;" id="modalStatusText">✓ Excel data is loaded and ready for AI analysis.</span>
+        <div id="excelPreviewPagination" style="display: flex; align-items: center; gap: 10px; color: #64748b; font-size: 12px; font-weight: 700;">
+          <button id="excelPreviewPrevious" onclick="changeExcelPreviewPage(-1)" type="button" style="background:#fff;border:1px solid #cbd5e1;color:#334155;padding:7px 12px;border-radius:9px;font-weight:700;cursor:pointer;">← Previous</button>
+          <span id="excelPreviewPage">1 / 1</span>
+          <button id="excelPreviewNext" onclick="changeExcelPreviewPage(1)" type="button" style="background:#fff;border:1px solid #cbd5e1;color:#334155;padding:7px 12px;border-radius:9px;font-weight:700;cursor:pointer;">Next →</button>
+        </div>
         <button onclick="closeExcelPreview()" class="primary-btn" style="padding: 8px 20px; font-size: 13px;" id="modalCloseBtn">Close</button>
       </div>
   <!-- USER PROFILE & BILLING DETAILS MODAL -->
@@ -4300,6 +4319,11 @@
     let hmReplaysCache = [];
     let hmAbTestsCache = [];
     let hmFormsCache = [];
+    let hmElementsViewCache = [];
+    let hmElementsPage = 0;
+    let hmFormsPage = 0;
+    const HM_ELEMENTS_PAGE_SIZE = 10;
+    const HM_FORMS_PAGE_SIZE = 10;
     let activeReplaySession = null;
     let replayTimerInterval = null;
     let replayProgressPct = 25;
@@ -4365,7 +4389,7 @@
         hmScrollLevelsCache = data.scroll_levels || [];
 
         renderHeatmapVisualCanvas(hmHotspotsCache, hmScrollLevelsCache);
-        renderHeatmapElementsTable(hmElementsCache);
+        renderHeatmapElementsTable(hmElementsCache, true);
         setHeatmapFilterStatus('ready', 'View updated');
       } catch (e) {
         console.error('Failed to load heatmap data:', e);
@@ -4694,12 +4718,27 @@
       renderHeatmapVisualCanvas(hmHotspotsCache, hmScrollLevelsCache);
     }
 
-    function renderHeatmapElementsTable(elements) {
+    function renderHeatmapElementsTable(elements, resetPage = true) {
       const tbody = document.getElementById('hmElementsTbody');
       if (!tbody) return;
 
-      const items = elements || hmElementsCache;
-      if (!items || items.length === 0) {
+      hmElementsViewCache = Array.isArray(elements) ? elements : hmElementsCache;
+      if (resetPage) hmElementsPage = 0;
+      const total = hmElementsViewCache.length;
+      const pages = Math.max(1, Math.ceil(total / HM_ELEMENTS_PAGE_SIZE));
+      hmElementsPage = Math.max(0, Math.min(hmElementsPage, pages - 1));
+      const start = hmElementsPage * HM_ELEMENTS_PAGE_SIZE;
+      const items = hmElementsViewCache.slice(start, start + HM_ELEMENTS_PAGE_SIZE);
+      const range = document.getElementById('hmElementsRange');
+      const page = document.getElementById('hmElementsPage');
+      const previous = document.getElementById('hmElementsPrevious');
+      const next = document.getElementById('hmElementsNext');
+      if (range) range.textContent = total ? `${start + 1}–${Math.min(start + HM_ELEMENTS_PAGE_SIZE, total)} of ${total} elements` : '0 elements';
+      if (page) page.textContent = `${hmElementsPage + 1} / ${pages}`;
+      if (previous) previous.disabled = hmElementsPage === 0;
+      if (next) next.disabled = hmElementsPage + 1 >= pages;
+
+      if (!items.length) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 24px; color: #94a3b8;">Kayıt bulunamadı.</td></tr>';
         return;
       }
@@ -4741,10 +4780,15 @@
       }).join('');
     }
 
+    function changeHeatmapElementsPage(delta) {
+      hmElementsPage += Number(delta) || 0;
+      renderHeatmapElementsTable(hmElementsViewCache, false);
+    }
+
     function filterHeatmapElements() {
       const search = (document.getElementById('hmElementSearch') ? document.getElementById('hmElementSearch').value : '').toLowerCase().trim();
       if (!search) {
-        renderHeatmapElementsTable(hmElementsCache);
+        renderHeatmapElementsTable(hmElementsCache, true);
         return;
       }
       const filtered = hmElementsCache.filter(e => 
@@ -4752,7 +4796,7 @@
         (e.selector && e.selector.toLowerCase().includes(search)) ||
         (e.type && e.type.toLowerCase().includes(search))
       );
-      renderHeatmapElementsTable(filtered);
+      renderHeatmapElementsTable(filtered, true);
     }
 
     /* ── TAB 2: SESSION REPLAYS ENGINE (rrweb) ── */
@@ -5170,10 +5214,35 @@
         const resp = await fetch('/api/heatmap/form-analytics');
         const data = await resp.json();
         hmFormsCache = data.fields || [];
-        const tbody = document.getElementById('hmFormsTbody');
-        if (!tbody || hmFormsCache.length === 0) return;
+        hmFormsPage = 0;
+        renderHeatmapFormsTable();
+      } catch (e) {
+        console.error('Failed to load form analytics data:', e);
+      }
+    }
 
-        tbody.innerHTML = hmFormsCache.map(f => {
+    function renderHeatmapFormsTable() {
+        const tbody = document.getElementById('hmFormsTbody');
+        if (!tbody) return;
+        const total = hmFormsCache.length;
+        const pages = Math.max(1, Math.ceil(total / HM_FORMS_PAGE_SIZE));
+        hmFormsPage = Math.max(0, Math.min(hmFormsPage, pages - 1));
+        const start = hmFormsPage * HM_FORMS_PAGE_SIZE;
+        const items = hmFormsCache.slice(start, start + HM_FORMS_PAGE_SIZE);
+        const range = document.getElementById('hmFormsRange');
+        const page = document.getElementById('hmFormsPage');
+        const previous = document.getElementById('hmFormsPrevious');
+        const next = document.getElementById('hmFormsNext');
+        if (range) range.textContent = total ? `${start + 1}–${Math.min(start + HM_FORMS_PAGE_SIZE, total)} of ${total} form fields` : '0 form fields';
+        if (page) page.textContent = `${hmFormsPage + 1} / ${pages}`;
+        if (previous) previous.disabled = hmFormsPage === 0;
+        if (next) next.disabled = hmFormsPage + 1 >= pages;
+        if (!items.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8;">No form fields found.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = items.map(f => {
           const isCritical = f.status === 'critical';
           const badgeBg = isCritical ? '#fef2f2' : '#f0fdf4';
           const badgeColor = isCritical ? '#dc2626' : '#16a34a';
@@ -5207,9 +5276,11 @@
             </tr>
           `;
         }).join('');
-      } catch (e) {
-        console.error('Failed to load form analytics data:', e);
-      }
+    }
+
+    function changeHeatmapFormsPage(delta) {
+      hmFormsPage += Number(delta) || 0;
+      renderHeatmapFormsTable();
     }
 
     function launchSingleAbTest(testId, title) {
@@ -5227,6 +5298,7 @@
     window.switchHmSubTab = switchHmSubTab;
     window.renderHeatmapVisualCanvas = renderHeatmapVisualCanvas;
     window.renderHeatmapElementsTable = renderHeatmapElementsTable;
+    window.changeHeatmapElementsPage = changeHeatmapElementsPage;
     window.switchHeatmapDevice = switchHeatmapDevice;
     window.switchHeatmapPage = switchHeatmapPage;
     window.queueHeatmapPathFilter = queueHeatmapPathFilter;
@@ -5237,6 +5309,7 @@
     window.filterHeatmapElements = filterHeatmapElements;
     window.loadAbTestsData = loadAbTestsData;
     window.loadFormAnalyticsData = loadFormAnalyticsData;
+    window.changeHeatmapFormsPage = changeHeatmapFormsPage;
     window.launchSingleAbTest = launchSingleAbTest;
     window.launchAllAbTestsModal = launchAllAbTestsModal;
     window.loadSessionReplays = loadSessionReplays;
@@ -5435,6 +5508,9 @@
     let originalSpreadsheetData = [];
     let processedSpreadsheetData = [];
     let activePreviewTab = 'original';
+    let excelPreviewRows = [];
+    let excelPreviewPage = 0;
+    const EXCEL_PREVIEW_PAGE_SIZE = 50;
 
     async function fetchActiveExcelState() {
       const workbookId = window.ExcelWizardUI?.getWorkbookId();
@@ -6367,7 +6443,9 @@
         }
       }
 
-      renderPreviewTable(targetDataset);
+      const search = document.getElementById("modalTableSearch");
+      if (search) search.value = '';
+      renderPreviewTable(targetDataset, true);
     }
 
     function openExcelPreview() {
@@ -6381,13 +6459,28 @@
       if (modal) modal.style.display = "none";
     }
 
-    function renderPreviewTable(dataList) {
+    function renderPreviewTable(dataList, resetPage = true) {
       const container = document.getElementById("excelPreviewTableContainer");
       const rowCountLabel = document.getElementById("modalRowCount");
-      if (rowCountLabel) rowCountLabel.textContent = (currentLang === 'en') ? `Showing: ${(dataList || []).length} Rows` : `Gösterilen: ${(dataList || []).length} Satır`;
       if (!container) return;
 
-      if (!dataList || dataList.length === 0) {
+      excelPreviewRows = Array.isArray(dataList) ? dataList : [];
+      if (resetPage) excelPreviewPage = 0;
+      const totalRows = excelPreviewRows.length;
+      const totalPages = Math.max(1, Math.ceil(totalRows / EXCEL_PREVIEW_PAGE_SIZE));
+      excelPreviewPage = Math.max(0, Math.min(excelPreviewPage, totalPages - 1));
+      const start = excelPreviewPage * EXCEL_PREVIEW_PAGE_SIZE;
+      const pageRows = excelPreviewRows.slice(start, start + EXCEL_PREVIEW_PAGE_SIZE);
+      const rangeText = totalRows ? `${start + 1}–${Math.min(start + EXCEL_PREVIEW_PAGE_SIZE, totalRows)} / ${totalRows}` : '0';
+      if (rowCountLabel) rowCountLabel.textContent = (currentLang === 'en') ? `Showing ${rangeText} rows` : `${rangeText} satır gösteriliyor`;
+      const pageLabel = document.getElementById('excelPreviewPage');
+      const previous = document.getElementById('excelPreviewPrevious');
+      const next = document.getElementById('excelPreviewNext');
+      if (pageLabel) pageLabel.textContent = `${excelPreviewPage + 1} / ${totalPages}`;
+      if (previous) previous.disabled = excelPreviewPage === 0;
+      if (next) next.disabled = excelPreviewPage + 1 >= totalPages;
+
+      if (!pageRows.length) {
         container.innerHTML = `
           <div style="text-align: center; color: #64748b; padding: 50px 20px; background: #f8fafc; border-radius: 16px; border: 1.5px dashed #cbd5e1;">
             <div style="font-size: 38px; margin-bottom: 10px;">📁</div>
@@ -6398,30 +6491,30 @@
         return;
       }
 
-      const colNames = Object.keys(dataList[0]);
+      const colNames = Object.keys(pageRows[0]);
 
       let html = `<div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow-x: auto; max-height: 580px;">
         <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; white-space: nowrap;">
         <thead>
           <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 2;">
             <th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">#</th>
-            ${colNames.map(col => `<th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">${col}</th>`).join('')}
+            ${colNames.map(col => `<th style="padding: 10px 14px; font-weight: 700; color: #0f172a; background: #f8fafc;">${escapeExcelHtml(col)}</th>`).join('')}
           </tr>
         </thead>
         <tbody>`;
 
-      dataList.forEach((r, idx) => {
+      pageRows.forEach((r, idx) => {
         const bg = idx % 2 === 0 ? "#ffffff" : "#f8fafc";
         html += `<tr style="background: ${bg}; border-bottom: 1px solid #e2e8f0;">
-          <td style="padding: 9px 14px; font-size: 11px; color: #94a3b8; font-weight: 600;">${idx + 1}</td>
+          <td style="padding: 9px 14px; font-size: 11px; color: #94a3b8; font-weight: 600;">${start + idx + 1}</td>
           ${colNames.map(col => {
             let val = r[col];
             let valStr = (val === null || val === undefined) ? "-" : val.toString();
             let isFlag = col.toLowerCase().includes("flag") || col.toLowerCase().includes("group");
             if (isFlag) {
-              return `<td style="padding: 9px 14px;"><span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${valStr}</span></td>`;
+              return `<td style="padding: 9px 14px;"><span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 999px; font-weight: 700; font-size: 11px;">${escapeExcelHtml(valStr)}</span></td>`;
             }
-            return `<td style="padding: 9px 14px; color: #1e293b;">${valStr}</td>`;
+            return `<td style="padding: 9px 14px; color: #1e293b;">${escapeExcelHtml(valStr)}</td>`;
           }).join('')}
         </tr>`;
       });
@@ -6430,19 +6523,26 @@
       container.innerHTML = html;
     }
 
+    function changeExcelPreviewPage(delta) {
+      excelPreviewPage += Number(delta) || 0;
+      renderPreviewTable(excelPreviewRows, false);
+      const container = document.getElementById('excelPreviewTableContainer');
+      if (container) container.scrollTop = 0;
+    }
+
     function filterPreviewTable(query) {
       const dataset = (activePreviewTab === 'original')
         ? originalSpreadsheetData
         : (processedSpreadsheetData && processedSpreadsheetData.length > 0 ? processedSpreadsheetData : originalSpreadsheetData);
       const q = query.toLowerCase().trim();
       if (!q) {
-        renderPreviewTable(dataset);
+        renderPreviewTable(dataset, true);
         return;
       }
       const filtered = dataset.filter(r => 
         Object.values(r).some(v => v !== null && v !== undefined && v.toString().toLowerCase().includes(q))
       );
-      renderPreviewTable(filtered);
+      renderPreviewTable(filtered, true);
     }
 
     function downloadExcel() {
