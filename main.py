@@ -4293,6 +4293,10 @@ def journey(request: Request, activated: str = None, plan: str = None, demo: str
         from fastapi.responses import RedirectResponse
         return RedirectResponse(url="/connect-data", status_code=303)
 
+    google_session = _get_google_tokens(request) or user_data
+    google_scopes = set(str(google_session.get("scope") or "").split())
+    has_google_token = bool(google_session.get("access_token"))
+
     return templates.TemplateResponse("journey.html", {
         "request": request,
         "activated": activated or "true",
@@ -4301,6 +4305,8 @@ def journey(request: Request, activated: str = None, plan: str = None, demo: str
         "user": user_data,
         "is_test_account": is_test_account,
         "pivot_brand": TEST_GA4_BRAND if is_test_account else "",
+        "analytics_connected": has_google_token and "https://www.googleapis.com/auth/analytics.readonly" in google_scopes,
+        "merchant_connected": has_google_token and MERCHANT_SCOPE in google_scopes,
     })
 
 
@@ -4308,9 +4314,6 @@ def journey(request: Request, activated: str = None, plan: str = None, demo: str
 def connect_data_page(request: Request, connected: str = "", plan: str = "", error: str = ""):
     session = _get_google_tokens(request) or _session_payload(request) or {}
     email = str(session.get("email") or "").strip().lower()
-    if _is_test_account(email):
-        from fastapi.responses import RedirectResponse
-        return RedirectResponse(url="/journey?activated=true", status_code=303)
 
     scopes = set(str(session.get("scope") or "").split())
     has_token = bool(session.get("access_token"))
@@ -4330,8 +4333,6 @@ async def complete_connect_data(request: Request):
     from fastapi.responses import RedirectResponse
     user = require_console_user(request)
     tokens = _get_google_tokens(request) or {}
-    if _is_test_account(user.get("email", "")):
-        return RedirectResponse(url="/journey?activated=true", status_code=303)
     scopes = set(str(tokens.get("scope") or "").split())
     if not tokens.get("access_token") or "https://www.googleapis.com/auth/analytics.readonly" not in scopes:
         return RedirectResponse(url="/connect-data?error=analytics_required", status_code=303)

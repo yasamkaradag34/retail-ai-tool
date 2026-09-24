@@ -206,11 +206,21 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertTrue(session['onboarding_complete'])
         self.assertEqual(session['selected_ga4'],'123')
 
-    def test_test_account_skips_customer_data_setup(self):
+    def test_test_account_can_manage_data_connections(self):
         self.sign_in()
         response=self.client.get('/connect-data',follow_redirects=False)
-        self.assertEqual(response.status_code,303)
-        self.assertIn('/journey',response.headers['location'])
+        self.assertEqual(response.status_code,200)
+        self.assertIn('Add Merchant Center',response.text)
+
+    def test_test_workspace_surfaces_merchant_connection_entry(self):
+        self.sign_in(
+            access_token='google-access', expires_at=time.time()+3600,
+            scope='https://www.googleapis.com/auth/analytics.readonly',
+        )
+        response=self.client.get('/journey?module=stock_price_comp')
+        self.assertEqual(response.status_code,200)
+        self.assertIn('Data Connections',response.text)
+        self.assertIn('Connect Merchant Center',response.text)
 
     @patch.object(main,'has_paid_subscription')
     def test_unverified_email_cannot_claim_paid_access(self,paid):

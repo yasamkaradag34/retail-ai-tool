@@ -1116,11 +1116,11 @@
             </div>
             <span style="font-size: 12px; opacity: 0.9;">●</span>
           </div>
-          {% else %}
-          <a href="/connect-data" style="width: 100%; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.14); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; color: #ffffff; text-align: left; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-decoration:none;">
-            <div style="display: flex; align-items: center; gap: 10px;"><span style="font-size:16px;">◎</span><div><strong style="display:block;font-size:12px;color:#fff;font-weight:700;">Data Sources</strong><span style="font-size:10.5px;color:rgba(255,255,255,.80);">Review connected sources ↗</span></div></div><span style="font-size:12px;opacity:.85;">⚙️</span>
-          </a>
           {% endif %}
+
+          <a href="/connect-data" style="width: 100%; border: 1px solid rgba(255,255,255,0.28); background: rgba(255,255,255,0.14); border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; color: #ffffff; text-align: left; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-decoration:none;">
+            <div style="display: flex; align-items: center; gap: 10px;"><span style="font-size:16px;">◎</span><div><strong style="display:block;font-size:12px;color:#fff;font-weight:700;">Data Connections</strong><span style="font-size:10.5px;color:rgba(255,255,255,.80);">{% if merchant_connected %}GA4 + Merchant connected{% elif analytics_connected %}Connect Merchant Center ↗{% else %}Connect Analytics &amp; Merchant ↗{% endif %}</span></div></div><span style="font-size:12px;opacity:.85;">⚙️</span>
+          </a>
 
           <!-- SINGLE CLEAN UNIFIED USER PROFILE & GOOGLE PROPERTY CARD -->
           <div id="userProfileCard" style="background: rgba(0,0,0,0.20); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.28); border-radius: 16px; padding: 11px 14px; display: flex; align-items: center; justify-content: space-between; transition: all 0.22s ease; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
@@ -1133,7 +1133,7 @@
             </div>
             
             <div style="display: flex; align-items: center; gap: 6px;">
-              {% if not is_test_account %}<a href="/connect-data" title="Review connected data sources" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30); color: #ffffff; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; display: grid; place-items: center; flex-shrink: 0; text-decoration:none;">⚙️</a>{% endif %}
+              <a href="/connect-data" title="Review connected data sources" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30); color: #ffffff; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; display: grid; place-items: center; flex-shrink: 0; text-decoration:none;">⚙️</a>
               <a href="/logout" onclick="event.stopPropagation();" title="Çıkış Yap / Sign Out" style="background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.45); color: #fee2e2; width: 32px; height: 32px; border-radius: 9px; font-size: 14px; display: grid; place-items: center; flex-shrink: 0; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.45)'" onmouseout="this.style.background='rgba(239,68,68,0.25)'">
                 🚪
               </a>
