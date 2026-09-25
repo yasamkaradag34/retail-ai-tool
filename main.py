@@ -2599,6 +2599,35 @@ def google_auth_callback(request: Request, code: str = None, error: str = None, 
         for selection in ("selected_ga4", "selected_merchant", "onboarding_complete"):
             if prior.get(selection):
                 cookie_data[selection] = prior[selection]
+    if integration == "merchant":
+        # A scope string alone does not prove that Google will accept this token
+        # for Merchant API calls. Validate the grant before replacing a working
+        # Analytics session or telling the user the connection succeeded.
+        try:
+            merchant_accounts = GoogleMerchant(tokens["access_token"]).accounts()
+        except HTTPException as exc:
+            detail = exc.detail if isinstance(exc.detail, dict) else {}
+            reason = str(detail.get("code") or "merchant_connection_failed")
+            response = RedirectResponse(
+                "/connect-data?error=" + urllib.parse.quote(reason),
+                status_code=303,
+            )
+            if same_account and prior:
+                _set_auth_cookie(response, request, prior)
+            response.delete_cookie("google_oauth_state", path="/api/auth/google/callback")
+            return response
+        if not merchant_accounts:
+            response = RedirectResponse(
+                "/connect-data?error=merchant_no_accounts",
+                status_code=303,
+            )
+            if same_account and prior:
+                _set_auth_cookie(response, request, prior)
+            response.delete_cookie("google_oauth_state", path="/api/auth/google/callback")
+            return response
+        accessible_ids = {item["id"] for item in merchant_accounts}
+        if cookie_data.get("selected_merchant") not in accessible_ids:
+            cookie_data["selected_merchant"] = merchant_accounts[0]["id"] if len(merchant_accounts) == 1 else ""
     if _is_test_account(email) and integration == "analytics":
         try:
             properties = GoogleAnalytics(tokens["access_token"]).properties()
@@ -2703,6 +2732,8 @@ async def google_get_accounts(request: Request):
     
     ga4_properties = []
     merchant_accounts = []
+    ga4_error = None
+    merchant_error = None
     
     if is_authenticated:
         access_token = tokens["access_token"]
@@ -2710,15 +2741,25 @@ async def google_get_accounts(request: Request):
         # Real accessible properties only; no synthetic choices for connected users.
         try:
             ga4_properties = GoogleAnalytics(access_token).properties()
-        except HTTPException:
+        except HTTPException as exc:
             ga4_properties = []
+            detail = exc.detail if isinstance(exc.detail, dict) else {}
+            ga4_error = {
+                "code": str(detail.get("code") or "analytics_lookup_failed"),
+                "message": str(detail.get("message") or "Google Analytics properties could not be loaded. Reconnect Analytics and try again."),
+            }
 
-        # 2. Merchant API accounts. Permission or consent failures stay empty;
-        # the Merchant workspace explains how to reconnect with the right scope.
+        # Keep provider errors separate from a valid empty account list so the
+        # setup screen can give the user a useful recovery action.
         try:
             merchant_accounts = GoogleMerchant(access_token).accounts()
-        except HTTPException:
+        except HTTPException as exc:
             merchant_accounts = []
+            detail = exc.detail if isinstance(exc.detail, dict) else {}
+            merchant_error = {
+                "code": str(detail.get("code") or "merchant_lookup_failed"),
+                "message": str(detail.get("message") or "Merchant Center accounts could not be loaded. Reconnect Merchant Center and try again."),
+            }
 
     selected_merchant = str(tokens.get("selected_merchant") or "")
     if selected_merchant not in {account["id"] for account in merchant_accounts}:
@@ -2738,6 +2779,8 @@ async def google_get_accounts(request: Request):
         "selected_merchant": selected_merchant,
         "ga4_properties": ga4_properties,
         "merchant_accounts": merchant_accounts,
+        "ga4_error": ga4_error,
+        "merchant_error": merchant_error,
         "google_ads_accounts": []
     })
 
@@ -4317,12 +4360,24 @@ def connect_data_page(request: Request, connected: str = "", plan: str = "", err
 
     scopes = set(str(session.get("scope") or "").split())
     has_token = bool(session.get("access_token"))
+    error_messages = {
+        "analytics_required": "Connect Google Analytics before opening your workspace.",
+        "ga4_property_required": "Select an accessible Google Analytics property before continuing.",
+        "merchant_permission": "Merchant Center permission is missing. Reconnect Merchant Center and approve Google Shopping access.",
+        "merchant_scope_required": "Merchant Center permission was not granted. Reconnect Merchant Center and approve Google Shopping access.",
+        "google_reconnect": "Google rejected the Merchant authorization. Reconnect Merchant Center with the Google account that can open the store.",
+        "merchant_no_accounts": "Google accepted the connection, but returned no Merchant Center account for this Google user.",
+        "merchant_developer_registration": "DataProvido's Merchant API registration still needs to be completed in Google Cloud.",
+        "merchant_api_disabled": "The Merchant API must be enabled in DataProvido's Google Cloud project.",
+        "merchant_connection_failed": "Merchant Center could not be verified. Reconnect it and try again.",
+    }
     return templates.TemplateResponse("connect_data.html", {
         "request": request,
         "user": session,
         "plan": plan,
         "connected": connected,
         "error": error,
+        "error_message": error_messages.get(error, "Setup needs attention. Review the connection below and try again.") if error else "",
         "analytics_connected": has_token and "https://www.googleapis.com/auth/analytics.readonly" in scopes,
         "merchant_connected": has_token and MERCHANT_SCOPE in scopes,
     })

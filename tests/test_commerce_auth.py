@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlparse
 from http.cookies import SimpleCookie
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 import main
 from functions import account_access
@@ -304,10 +305,11 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertIn('HttpOnly',response.headers['set-cookie'])
         self.assertEqual(self.client.get('/journey',follow_redirects=False).status_code,303)
 
+    @patch.object(main,'GoogleMerchant')
     @patch.object(main,'has_paid_subscription',return_value=True)
     @patch.object(main.requests,'get')
     @patch.object(main.requests,'post')
-    def test_merchant_oauth_callback_returns_to_data_setup(self,post,get,paid):
+    def test_merchant_oauth_callback_returns_to_data_setup(self,post,get,paid,merchant):
         self.sign_in(
             email='customer@example.com',
             google_verified=True,
@@ -317,6 +319,7 @@ class CommerceAuthTests(unittest.TestCase):
         self.client.cookies.set('google_oauth_state',main._encrypt_token(json.dumps(state)))
         post.return_value=Mock(status_code=200,json=lambda:{'access_token':'new','refresh_token':'refresh','expires_in':3600,'scope':'https://www.googleapis.com/auth/content'})
         get.return_value=Mock(status_code=200,json=lambda:{'email':'customer@example.com','verified_email':True,'name':'Customer'})
+        merchant.return_value.accounts.return_value=[{'id':'5833911610','name':'Store'}]
         response=self.client.get('/api/auth/google/callback?code=code&state=merchant-state',follow_redirects=False)
         self.assertIn('/connect-data?connected=merchant',response.headers['location'])
         set_cookie=next(value for value in response.headers.get_list('set-cookie') if value.startswith('gauth='))
@@ -324,6 +327,65 @@ class CommerceAuthTests(unittest.TestCase):
         scopes=json.loads(main._decrypt_token(response_cookie))['scope']
         self.assertIn('/auth/content',scopes)
         self.assertIn('analytics.readonly',scopes)
+        self.assertEqual(json.loads(main._decrypt_token(response_cookie))['selected_merchant'],'5833911610')
+
+    @patch.object(main,'GoogleMerchant')
+    @patch.object(main,'has_paid_subscription',return_value=True)
+    @patch.object(main.requests,'get')
+    @patch.object(main.requests,'post')
+    def test_rejected_merchant_grant_preserves_working_analytics_session(self,post,get,paid,merchant):
+        self.sign_in(
+            email='customer@example.com',
+            google_verified=True,
+            access_token='analytics-access',
+            refresh_token='analytics-refresh',
+            expires_at=time.time()+3600,
+            scope='https://www.googleapis.com/auth/analytics.readonly',
+            selected_ga4='123',
+        )
+        state={'nonce':'merchant-state','integration':'merchant','flow':'connect_data','expires_at':time.time()+600}
+        self.client.cookies.set('google_oauth_state',main._encrypt_token(json.dumps(state)))
+        post.return_value=Mock(status_code=200,json=lambda:{
+            'access_token':'rejected-merchant-token',
+            'refresh_token':'new-refresh',
+            'expires_in':3600,
+            'scope':'https://www.googleapis.com/auth/content',
+        })
+        get.return_value=Mock(status_code=200,json=lambda:{
+            'email':'customer@example.com','verified_email':True,'name':'Customer'
+        })
+        merchant.return_value.accounts.side_effect=HTTPException(
+            401,{'code':'google_reconnect','message':'Reconnect Merchant Center.'}
+        )
+
+        response=self.client.get('/api/auth/google/callback?code=code&state=merchant-state',follow_redirects=False)
+
+        self.assertEqual(response.headers['location'],'/connect-data?error=google_reconnect')
+        set_cookie=next(value for value in response.headers.get_list('set-cookie') if value.startswith('gauth='))
+        session=json.loads(main._decrypt_token(SimpleCookie(set_cookie)['gauth'].value))
+        self.assertEqual(session['access_token'],'analytics-access')
+        self.assertEqual(session['selected_ga4'],'123')
+
+    @patch.object(main,'GoogleMerchant')
+    @patch.object(main,'GoogleAnalytics')
+    def test_account_lookup_exposes_merchant_provider_error(self,analytics,merchant):
+        self.sign_in(
+            access_token='google-access',
+            expires_at=time.time()+3600,
+            scope='https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/content',
+        )
+        analytics.return_value.properties.return_value=[{'id':'123','name':'Store'}]
+        merchant.return_value.accounts.side_effect=HTTPException(
+            401,{'code':'google_reconnect','message':'Reconnect Merchant Center.'}
+        )
+
+        response=self.client.get('/api/google/accounts')
+
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.json()['ga4_properties'],[{'id':'123','name':'Store'}])
+        self.assertEqual(response.json()['merchant_accounts'],[])
+        self.assertEqual(response.json()['merchant_error']['code'],'google_reconnect')
+        self.assertEqual(response.json()['merchant_error']['message'],'Reconnect Merchant Center.')
 
     @patch.object(main,'GoogleAnalytics')
     @patch.object(main.requests,'get')

@@ -39,6 +39,7 @@
     .icon { width:46px; height:46px; display:grid; place-items:center; border-radius:14px; font-size:22px; background:#fff4ed; }
     .status { border-radius:999px; padding:5px 9px; background:#f1f5f9; color:var(--muted); font-size:10px; font-weight:800; letter-spacing:.06em; }
     .status.live { background:#ecfdf5; color:#047857; }
+    .status.error { background:#fff1f2; color:#b91c1c; }
     .card h2 { font-size:19px; letter-spacing:-.02em; margin-bottom:9px; }
     .card p { color:var(--slate); font-size:13px; line-height:1.65; margin-bottom:18px; }
     .card small { color:var(--muted); font-size:11px; line-height:1.55; }
@@ -46,6 +47,8 @@
     .button { width:100%; min-height:46px; display:flex; align-items:center; justify-content:center; gap:8px; border:0; border-radius:12px; padding:12px 16px; color:#fff; background:var(--orange); font:700 13px Inter,sans-serif; text-decoration:none; cursor:pointer; box-shadow:0 7px 18px rgba(242,111,38,.22); }
     .button:hover { background:var(--orange-dark); }
     .button.secondary { color:#1d4ed8; background:#eff6ff; box-shadow:none; border:1px solid #bfdbfe; }
+    .button[hidden] { display:none; }
+    .connection-help.error { display:block; margin-top:9px; color:#b91c1c; font-weight:700; }
     .button.danger { color:#b91c1c; background:#fff1f2; box-shadow:none; border:1px solid #fecaca; }
     .button.danger:hover { color:#991b1b; background:#ffe4e6; }
     .select-wrap { display:block; margin-top:12px; }
@@ -79,7 +82,7 @@
       </aside>
     </section>
 
-    {% if error %}<div class="notice">Setup needs attention. Please connect Analytics and select an accessible GA4 property before continuing.</div>{% endif %}
+    {% if error %}<div class="notice">{{ error_message }}</div>{% endif %}
     {% if connected %}<div class="notice success-notice">Connection updated. Review the source below, then continue when your workspace is ready.</div>{% endif %}
 
     <form id="dataSetupForm" method="post" action="/connect-data/complete">
@@ -98,14 +101,15 @@
           </div>
         </article>
 
-        <article class="card {% if merchant_connected %}connected{% endif %}">
-          <div class="card-top"><span class="icon">🛒</span><span class="status {% if merchant_connected %}live{% endif %}">{% if merchant_connected %}CONNECTED{% else %}OPTIONAL{% endif %}</span></div>
+        <article id="merchantCard" class="card {% if merchant_connected %}connected{% endif %}">
+          <div class="card-top"><span class="icon">🛒</span><span id="merchantStatus" class="status {% if merchant_connected %}live{% endif %}">{% if merchant_connected %}CONNECTED{% else %}OPTIONAL{% endif %}</span></div>
           <h2>Catalog &amp; market context</h2>
           <p>Add Merchant Center catalog, availability, Shopping performance and eligible market-price reports.</p>
-          <small>You can continue without Merchant Center and add it later from this setup page.</small>
+          <small id="merchantHelp" class="connection-help">You can continue without Merchant Center and add it later from this setup page.</small>
           <div class="card-action">
             {% if merchant_connected %}
             <label class="select-wrap"><span>Merchant account</span><select id="merchantAccount" name="merchant_account_id"><option value="">Loading accounts…</option></select></label>
+            <a id="merchantReconnect" class="button secondary" hidden href="/api/auth/google?integration=merchant&amp;flow=connect_data">Reconnect Merchant Center <span>→</span></a>
             {% else %}
             <a class="button secondary" href="/api/auth/google?integration=merchant&amp;flow=connect_data">Add Merchant Center <span>→</span></a>
             {% endif %}
@@ -148,8 +152,27 @@
         ga4.value=data.selected_ga4||((ga4Rows.length===1&&ga4Rows[0].id)||'');
         if(merchant){
           const merchantRows=data.merchant_accounts||[];
-          merchant.innerHTML='<option value="">Continue without Merchant Center</option>'+merchantRows.map(item=>`<option value="${esc(item.id)}">${esc(item.name)} · ${esc(item.id)}</option>`).join('');
-          merchant.value=data.selected_merchant||((merchantRows.length===1&&merchantRows[0].id)||'');
+          const merchantError=data.merchant_error;
+          const merchantHelp=document.getElementById('merchantHelp');
+          const merchantStatus=document.getElementById('merchantStatus');
+          const merchantReconnect=document.getElementById('merchantReconnect');
+          if(merchantError){
+            merchant.innerHTML='<option value="">Merchant authorization needs attention</option>';
+            merchant.disabled=true;
+            merchantHelp.textContent=merchantError.message||'Merchant Center could not be loaded. Reconnect and try again.';
+            merchantHelp.classList.add('error');
+            merchantStatus.textContent='RECONNECT';
+            merchantStatus.classList.remove('live');
+            merchantStatus.classList.add('error');
+            merchantReconnect.hidden=false;
+          } else {
+            merchant.innerHTML='<option value="">Continue without Merchant Center</option>'+merchantRows.map(item=>`<option value="${esc(item.id)}">${esc(item.name)} · ${esc(item.id)}</option>`).join('');
+            merchant.value=data.selected_merchant||((merchantRows.length===1&&merchantRows[0].id)||'');
+            if(!merchantRows.length){
+              merchantHelp.textContent='No accessible Merchant Center account was returned for this Google user.';
+              merchantReconnect.hidden=false;
+            }
+          }
         }
         const update=()=>{button.disabled=!ga4.value;};
         ga4.addEventListener('change',update); update();
