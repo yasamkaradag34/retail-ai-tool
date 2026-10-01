@@ -5,18 +5,18 @@
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
       'event': 'consent_default',
-      'consent_default_ad_storage': 'denied',
-      'consent_default_analytics': 'denied'
+      'consent_default_ad_storage': 'granted',
+      'consent_default_analytics': 'granted'
     });
 
     function gtag(){dataLayer.push(arguments);}
     gtag('consent', 'default', {
-      'ad_storage': 'denied',
-      'ad_user_data': 'denied',
-      'ad_personalization': 'denied',
-      'analytics_storage': 'denied',
-      'functionality_storage': 'denied',
-      'personalization_storage': 'denied',
+      'ad_storage': 'granted',
+      'ad_user_data': 'granted',
+      'ad_personalization': 'granted',
+      'analytics_storage': 'granted',
+      'functionality_storage': 'granted',
+      'personalization_storage': 'granted',
       'security_storage': 'granted',
       'wait_for_update': 1000
     });
