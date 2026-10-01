@@ -5352,7 +5352,7 @@ def checkout_success(plan: str = "standard", session_id: str = ""):
       'consent_default_analytics': 'granted'
     }});
 
-    function gtag(){{dataLayer.push(arguments);}}
+    function gtag(){{window.dataLayer.push(arguments);}}
     gtag('consent', 'default', {{
       'ad_storage': 'granted',
       'ad_user_data': 'granted',
