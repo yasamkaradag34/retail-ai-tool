@@ -525,6 +525,16 @@ class CommerceAuthTests(unittest.TestCase):
         self.assertIn('/auth/content',disclosure.text)
         self.assertIn('Disconnect Google',disclosure.text)
         self.assertIn('Google API Data Use',privacy.text)
+        for phrase in (
+            'Data protection mechanisms for sensitive Google data',
+            'Encryption in transit and at rest',
+            'Access controls and tenant isolation',
+            'Data minimization',
+            'Retention, deletion and revocation',
+        ):
+            self.assertIn(phrase,disclosure.text)
+        self.assertIn('Data Protection Mechanisms for Sensitive Google Data',privacy.text)
+        self.assertIn('Secure, HttpOnly, SameSite cookie',privacy.text)
 
     @patch.object(main,'GoogleAnalytics')
     def test_save_rechecks_property_access_and_origin(self,provider):
