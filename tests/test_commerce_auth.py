@@ -535,6 +535,15 @@ class CommerceAuthTests(unittest.TestCase):
             self.assertIn(phrase,disclosure.text)
         self.assertIn('Data Protection Mechanisms for Sensitive Google Data',privacy.text)
         self.assertIn('Secure, HttpOnly, SameSite cookie',privacy.text)
+        self.assertIn('notify affected account holders',privacy.text)
+        self.assertIn('not transferred to third parties for their own purposes',privacy.text)
+        self.assertIn('generalized or non-personalized AI or machine-learning models',privacy.text)
+        self.sign_in()
+        journey=self.client.get('/journey')
+        self.assertIn('Google Data Use',journey.text)
+        login=self.client.get('/login')
+        self.assertIn('Privacy Policy',login.text)
+        self.assertIn('Google Data Use',login.text)
 
     @patch.object(main,'GoogleAnalytics')
     def test_save_rechecks_property_access_and_origin(self,provider):

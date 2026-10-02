@@ -4447,7 +4447,7 @@ def google_data_use():
     return simple_page(
         "How DataProvido Uses Google Data",
         """
-        <p class="page-subhead"><strong>Last updated: 2 October 2026.</strong> This notice explains the Google account information and business data DataProvido requests, why it is needed, how sensitive Google data is protected, and the controls available to you.</p>
+        <p class="page-subhead"><strong>Last updated: 2 October 2026.</strong> This notice explains the Google account information and business data DataProvido requests, why it is needed, how sensitive Google data is protected, and the controls available to you. We will update the date on this page and notify affected account holders in the product or by email before a material change to our use of Google user data takes effect.</p>
 
         <h2 style="font-size: 22px; margin: 28px 0 12px;">Access is optional and requested in context</h2>
         <p style="margin-bottom: 14px;">You choose whether to connect Google Analytics 4 or Google Merchant Center. Each connector starts its own Google authorization flow and requests only the permission needed for that workspace.</p>
@@ -4471,7 +4471,9 @@ def google_data_use():
           <li><strong>Access controls and tenant isolation:</strong> connected reports require an authenticated DataProvido session and eligible subscription. Each request uses the connected user's authorization and selected Google property or Merchant account; one customer cannot use the product to access another customer's connected data.</li>
           <li><strong>Least privilege:</strong> Analytics uses the read-only scope. Google exposes Merchant Center through the <code>content</code> scope, but DataProvido implements list, read and report operations only and does not create, update or delete listings.</li>
           <li><strong>Data minimization:</strong> DataProvido requests only the accounts, properties, report dimensions and metrics needed for the dashboard selected by the user. Google report responses are processed on demand and are not retained as a permanent cross-customer report database.</li>
-          <li><strong>Limited disclosure:</strong> connected Google data is not sold, used for targeted advertising, or used to train general-purpose AI or machine-learning models. It is disclosed to infrastructure providers only when necessary to deliver the requested feature, or when legally required.</li>
+          <li><strong>Restricted use:</strong> connected Google data is used only to provide or improve the user-facing features requested by the connected user. It is not used for targeted, personalized, retargeted or interest-based advertising; sold to data brokers or information resellers; used for creditworthiness or lending; used to create an independent data profile or database; or used to develop, improve or train generalized or non-personalized AI or machine-learning models.</li>
+          <li><strong>Limited disclosure:</strong> connected Google data is not transferred to third parties for their own purposes. It is disclosed to infrastructure providers only when necessary to deliver the requested feature, or when legally required.</li>
+          <li><strong>Separation from marketing systems:</strong> connected Google API report data is not used as input to DataProvido's website analytics, Google Ads, Google Tag Manager or Meta advertising systems. Those public-site measurement activities are separate from customer-authorized Google API connections.</li>
           <li><strong>Safe error handling:</strong> application responses do not expose OAuth credentials or Google's raw provider-error payloads to dashboard users.</li>
           <li><strong>Retention, deletion and revocation:</strong> the encrypted Google session expires after 30 days at the latest. Disconnect Google revokes the Google grant and deletes the local session sooner. Access can also be revoked from Google Account permissions.</li>
           <li><strong>Incident response:</strong> suspected unauthorized access may result in session invalidation, token revocation, investigation and notification to affected users or authorities where required by law.</li>
@@ -4534,7 +4536,7 @@ def privacy():
         "Privacy & Cookie Documentation",
         """
         <p class="page-subhead">
-          <strong>Last updated: 2 October 2026.</strong> How DataProvido handles account information, optional Google API connections, customer-provided data, service providers, retention and cookie preferences.
+          <strong>Last updated: 2 October 2026.</strong> How DataProvido handles account information, optional Google API connections, customer-provided data, service providers, retention and cookie preferences. We will update this date and notify affected account holders in the product or by email before a material change to our use of Google user data takes effect.
         </p>
 
         <!-- SUMMARY BADGES -->
@@ -4699,7 +4701,9 @@ def privacy():
             <li><strong>Access controls and tenant isolation:</strong> connected reports require an authenticated DataProvido session and eligible subscription. Each request is limited to the connected user's authorization and selected Google property or Merchant account.</li>
             <li><strong>Least privilege:</strong> Google Analytics uses the read-only scope. Although Google exposes Merchant Center through the <code>content</code> scope, DataProvido's current integration implements list, read and report operations only and does not create, update or delete listings.</li>
             <li><strong>Data minimization:</strong> we request only the accounts, properties, dimensions and metrics required for the user-selected dashboard. Report responses are processed on demand and are not retained as a permanent cross-customer report database.</li>
-            <li><strong>Restricted use and disclosure:</strong> connected Google data is not sold, used for targeted advertising, or used to train general-purpose AI or machine-learning models. It is disclosed to infrastructure providers only as needed to provide the requested feature, or when legally required.</li>
+            <li><strong>Restricted use:</strong> connected Google data is used only to provide or improve user-facing features requested by the connected user. It is not used for targeted, personalized, retargeted or interest-based advertising; sold to data brokers or information resellers; used for creditworthiness or lending; used to create an independent data profile or database; or used to develop, improve or train generalized or non-personalized AI or machine-learning models.</li>
+            <li><strong>Limited disclosure:</strong> connected Google data is not transferred to third parties for their own purposes. It is disclosed to infrastructure providers only as needed to provide the requested feature, or when legally required.</li>
+            <li><strong>Separation from marketing systems:</strong> connected Google API report data is not used as input to DataProvido's website analytics, Google Ads, Google Tag Manager or Meta advertising systems. Those public-site measurement activities are separate from customer-authorized Google API connections.</li>
             <li><strong>Safe error handling:</strong> application responses do not expose OAuth credentials or Google's raw provider-error payloads to dashboard users.</li>
             <li><strong>Retention, deletion and revocation:</strong> Google authorization sessions expire after 30 days at the latest. Disconnect Google revokes the Google grant and deletes the local encrypted session sooner. Users can also revoke access from Google Account permissions.</li>
             <li><strong>Incident response:</strong> suspected unauthorized access may result in session invalidation, token revocation, investigation and notification to affected users or authorities where required by law.</li>
@@ -4714,7 +4718,7 @@ def privacy():
           <p style="margin-bottom: 14px;">Google access is optional and requested when a user selects a connected workspace. Analytics read-only data is used for category, product and funnel reporting. Merchant data is used for catalog availability, Shopping performance and price comparison reporting. DataProvido's current Merchant implementation performs read operations only.</p>
           <ul style="list-style-type: disc; padding-left: 24px; margin-bottom: 16px; line-height: 1.7;">
             <li>Google user data is used only to provide or improve user-facing features initiated by the user.</li>
-            <li>Google user data is not sold, used for targeted advertising, or used to train general-purpose AI or machine-learning models.</li>
+            <li>Google user data is not used for advertising, sold to data brokers or information resellers, used to create an independent data profile or database, or used to develop, improve or train generalized or non-personalized AI or machine-learning models.</li>
             <li>OAuth tokens are encrypted before storage in a Secure, HttpOnly session cookie and transmitted only over HTTPS in production.</li>
             <li>Data is disclosed to infrastructure providers only when necessary to operate the requested feature, or when legally required.</li>
             <li>Users can choose <strong>Disconnect Google</strong> to revoke the authorization and remove the DataProvido session, or revoke access from Google Account permissions.</li>
