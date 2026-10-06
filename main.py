@@ -138,6 +138,7 @@ from functions.reports import (
     get_low_stock_report, get_stock_turnover
 )
 from functions.voice import transcribe_audio
+from functions.purchase_tracking import get_verified_purchase
 from schemas.tools import TOOLS
 
 app = FastAPI()
@@ -5101,14 +5102,14 @@ def checkout(plan: str = "standard"):
     price_cents = "299.00" if is_pro else "199.00"
     amount_cents = 29900 if is_pro else 19900
 
-    # 1. Check for Stripe Payment Link in environment variables
+    # Prefer a server-created Checkout Session so the return can be verified
+    # and attributed with DataProvido metadata. Payment Links are a fallback.
+    stripe_secret = os.getenv("STRIPE_SECRET_KEY")
     stripe_link = os.getenv("STRIPE_PRO_PAYMENT_LINK") if is_pro else os.getenv("STRIPE_STANDARD_PAYMENT_LINK")
-    if stripe_link:
+    if stripe_link and not stripe_secret:
         from fastapi.responses import RedirectResponse
         return RedirectResponse(url=stripe_link, status_code=303)
 
-    # 2. Check for Stripe Secret Key in environment variables
-    stripe_secret = os.getenv("STRIPE_SECRET_KEY")
     if stripe_secret:
         try:
             import stripe
@@ -5363,8 +5364,45 @@ def checkout(plan: str = "standard"):
 
 @app.get("/checkout/success", response_class=HTMLResponse)
 def checkout_success(plan: str = "standard", session_id: str = ""):
-    is_pro = plan.lower() == "pro"
+    purchase = get_verified_purchase(session_id)
+    verified = bool(purchase)
+    verified_plan = purchase["plan"] if purchase else ("pro" if plan.lower() == "pro" else "standard")
+    is_pro = verified_plan == "pro"
     plan_title = "DataProvido Pro (+ 1.5h Weekly Support)" if is_pro else "DataProvido Standard"
+    page_title = "Payment confirmed" if verified else "Payment confirmation pending"
+    page_heading = "Purchase confirmed" if verified else "We could not confirm this payment yet"
+    page_badge = "✓" if verified else "…"
+    page_copy = (
+        "Your verified subscription is ready. Continue to the guided setup and connect the business data you want DataProvido to analyse."
+        if verified else
+        "No verified Stripe payment was found for this return. Refresh after payment completes, or return to pricing and contact support if the charge succeeded."
+    )
+    license_status = "Stripe payment verified" if verified else "Not verified"
+    session_status = "Purchase recorded" if verified else "No purchase event sent"
+    action_url = f"/connect-data?plan={verified_plan}" if verified else "/pricing"
+    action_label = "Connect Your Data" if verified else "Return to Pricing"
+    purchase_script = ""
+    if purchase:
+        ecommerce_json = json.dumps(purchase["ecommerce"], ensure_ascii=True, separators=(",", ":"))
+        transaction_json = json.dumps(purchase["ecommerce"]["transaction_id"])
+        purchase_script = """
+    (function() {
+      var storageKey = "dataprovido_ga4_purchase_" + %s;
+      var ecommercePayload = %s;
+      var alreadySent = false;
+      try { alreadySent = window.localStorage.getItem(storageKey) === "1"; } catch (error) {}
+      if (!alreadySent) {
+        window.dataLayer.push({ ecommerce: null });
+        window.dataLayer.push({ ecommerce: ecommercePayload });
+        var sendPurchase = function() {
+          gtag("event", "purchase", ecommercePayload);
+          try { window.localStorage.setItem(storageKey, "1"); } catch (error) {}
+        };
+        if (document.readyState === "complete") sendPurchase();
+        else window.addEventListener("load", sendPurchase, { once: true });
+      }
+    })();
+        """ % (transaction_json, ecommerce_json)
     
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -5388,6 +5426,7 @@ def checkout_success(plan: str = "standard", session_id: str = ""):
       'security_storage': 'granted',
       'wait_for_update': 1000
     }});
+    {purchase_script}
   </script>
   <!-- Google Tag Manager -->
   <script>(function(w,d,s,l,i){{w[l]=w[l]||[];w[l].push({{'gtm.start':
@@ -5398,7 +5437,7 @@ def checkout_success(plan: str = "standard", session_id: str = ""):
   <!-- End Google Tag Manager -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Payment Successful – DataProvido</title>
+  <title>{page_title} – DataProvido</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after {{ margin: 0; padding: 0; box-sizing: border-box; }}
@@ -5495,9 +5534,9 @@ def checkout_success(plan: str = "standard", session_id: str = ""):
   height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- End Google Tag Manager (noscript) -->
   <div class="success-card">
-    <div class="success-badge">✓</div>
-    <h1>Your workspace is ready</h1>
-    <p>Use the guided setup to connect the business data you want DataProvido to analyse. Your subscription is verified with the Google email used at checkout.</p>
+    <div class="success-badge">{page_badge}</div>
+    <h1>{page_heading}</h1>
+    <p>{page_copy}</p>
 
     <div class="plan-box">
       <div class="plan-row">
@@ -5506,19 +5545,19 @@ def checkout_success(plan: str = "standard", session_id: str = ""):
       </div>
       <div class="plan-row">
         <span style="color: #64748b;">License Status:</span>
-        <strong style="color: #10b981;">Verified after Google sign-in</strong>
+        <strong style="color: {'#10b981' if verified else '#b45309'};">{license_status}</strong>
       </div>
       <div class="plan-row">
         <span style="color: #64748b;">Session Reference:</span>
-        <span style="font-family: monospace; color: #64748b;">{'Complete Google sign-in to verify'}</span>
+        <span style="font-family: monospace; color: #64748b;">{session_status}</span>
       </div>
     </div>
 
-    {"<div class='support-box'><div><strong>📅 Weekly 1.5h Support Included:</strong><div style='font-size: 12px; color: #9a3412;'>Book your dedicated weekly 1-on-1 strategy &amp; technical consultation.</div></div><a href='mailto:info@dataprovido.com?subject=Schedule%20Weekly%201.5h%20Live%20Support%20Session' style='background: #f26f26; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 12px; white-space: nowrap;'>Book Session →</a></div><br>" if is_pro else ""}
+    {"<div class='support-box'><div><strong>📅 Weekly 1.5h Support Included:</strong><div style='font-size: 12px; color: #9a3412;'>Book your dedicated weekly 1-on-1 strategy &amp; technical consultation.</div></div><a href='mailto:info@dataprovido.com?subject=Schedule%20Weekly%201.5h%20Live%20Support%20Session' style='background: #f26f26; color: #fff; text-decoration: none; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 12px; white-space: nowrap;'>Book Session →</a></div><br>" if verified and is_pro else ""}
 
     <div style="margin-top: 16px;">
-      <a href="/connect-data?plan={'pro' if is_pro else 'standard'}" class="btn-launch">
-        Connect Your Data &nbsp;→
+      <a href="{action_url}" class="btn-launch">
+        {action_label} &nbsp;→
       </a>
     </div>
   </div>

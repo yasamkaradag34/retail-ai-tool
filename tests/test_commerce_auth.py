@@ -558,9 +558,30 @@ class CommerceAuthTests(unittest.TestCase):
 
     def test_checkout_return_does_not_claim_payment_verification(self):
         response=self.client.get('/checkout/success?plan=pro&session_id=anything')
-        self.assertNotIn('Payment Successful!',response.text)
-        self.assertIn('Connect Your Data',response.text)
+        self.assertIn('We could not confirm this payment yet',response.text)
+        self.assertIn('No purchase event sent',response.text)
+        self.assertNotIn('gtag("event", "purchase"',response.text)
         self.assertNotIn('anything',response.text)
+
+    @patch.object(main,'get_verified_purchase')
+    def test_verified_checkout_emits_one_pii_free_purchase_payload(self,verified_purchase):
+        verified_purchase.return_value={
+            'plan':'pro',
+            'ecommerce':{
+                'transaction_id':'cs_test_1234567890','affiliation':'DataProvido',
+                'value':299.0,'tax':0.0,'shipping':0.0,'currency':'EUR',
+                'items':[{'item_id':'dataprovido_pro','item_name':'DataProvido Pro','price':299.0,'quantity':1}],
+            },
+        }
+        response=self.client.get('/checkout/success?plan=standard&session_id=cs_test_1234567890')
+        self.assertIn('Purchase confirmed',response.text)
+        self.assertIn('Stripe payment verified',response.text)
+        self.assertIn('gtag("event", "purchase", ecommercePayload)',response.text)
+        self.assertIn('"transaction_id":"cs_test_1234567890"',response.text)
+        self.assertIn('"value":299.0',response.text)
+        self.assertIn('dataprovido_ga4_purchase_',response.text)
+        self.assertNotIn('customer_email',response.text)
+        verified_purchase.assert_called_once_with('cs_test_1234567890')
 
     def test_landing_uses_generic_connection_message_and_crm_card(self):
         response=self.client.get('/')
