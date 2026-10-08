@@ -5,6 +5,7 @@ import unittest
 import base64
 import hashlib
 import hmac
+import secrets
 from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlparse
 from http.cookies import SimpleCookie
@@ -58,6 +59,62 @@ class CommerceAuthTests(unittest.TestCase):
         request = post.call_args
         self.assertIn('grant_type=password', request.args[0])
         self.assertEqual(request.kwargs['json']['password'], 'provider-verified-value')
+
+    @patch.object(main, 'SUPABASE_ANON_KEY', 'anon-key')
+    @patch.object(main.requests, 'post')
+    def test_invited_test_user_is_allowed_into_test_workspace(self, post):
+        email = 'muhammet@yumidigital.com'
+        post.return_value = Mock(status_code=200, json=lambda: {
+            'access_token': 'provider-session-token',
+            'user': {'email': email, 'user_metadata': {'full_name': 'Muhammet'}},
+        })
+
+        response = self.client.post('/api/auth/login', data={
+            'email': email, 'password': 'provider-verified-value'
+        }, follow_redirects=False)
+
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(response.headers['location'], '/journey?activated=true')
+        self.assertTrue(main._is_test_account(email))
+        self.assertIn(email, main.ALLOWED_LOGIN_EMAILS)
+
+    @patch.object(main.requests, 'post', side_effect=RuntimeError('Supabase should not be called'))
+    def test_invited_test_user_can_use_hashed_fallback_when_supabase_is_unavailable(self, post):
+        email = 'muhammet@yumidigital.com'
+        password = 'test-password-value'
+        salt = secrets.token_bytes(16)
+        rounds = 260_000
+        digest = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, rounds)
+        encoded = f'pbkdf2_sha256${rounds}${salt.hex()}${digest.hex()}'
+
+        with patch.object(main, 'SUPABASE_ANON_KEY', ''), patch.dict(os.environ, {
+            'DATAPROVIDO_TEST_PASSWORD_HASHES': json.dumps({email: encoded})
+        }):
+            response = self.client.post('/api/auth/login', data={
+                'email': email, 'password': password
+            }, follow_redirects=False)
+
+        self.assertEqual(response.status_code, 303)
+        self.assertEqual(response.headers['location'], '/journey?activated=true')
+        self.assertIn('gauth=', response.headers['set-cookie'])
+        post.assert_not_called()
+
+    def test_invited_test_user_rejects_wrong_hashed_password(self):
+        email = 'muhammet@yumidigital.com'
+        salt = secrets.token_bytes(16)
+        rounds = 260_000
+        digest = hashlib.pbkdf2_hmac('sha256', b'correct-password', salt, rounds)
+        encoded = f'pbkdf2_sha256${rounds}${salt.hex()}${digest.hex()}'
+
+        with patch.object(main, 'SUPABASE_ANON_KEY', ''), patch.dict(os.environ, {
+            'DATAPROVIDO_TEST_PASSWORD_HASHES': json.dumps({email: encoded})
+        }):
+            response = self.client.post('/api/auth/login', data={
+                'email': email, 'password': 'wrong-password'
+            }, follow_redirects=False)
+
+        self.assertIn('invalid_credentials', response.headers['location'])
+        self.assertNotIn('gauth=', response.headers.get('set-cookie', ''))
 
     @patch.object(main, 'SUPABASE_ANON_KEY', 'anon-key')
     @patch.object(main.requests, 'post')

@@ -2437,17 +2437,38 @@ GOOGLE_SCOPES = [
 ]
 MERCHANT_SCOPE = "https://www.googleapis.com/auth/content"
 
-ALLOWED_LOGIN_EMAILS = {"dataprovido@gmail.com", "myasamkaradag@gmail.com"}
-TEST_ACCOUNT_EMAILS = {
+BUILTIN_TEST_ACCOUNT_EMAILS = {
+    "dataprovido@gmail.com",
+    "muhammet@yumidigital.com",
+}
+TEST_ACCOUNT_EMAILS = BUILTIN_TEST_ACCOUNT_EMAILS | {
     email.strip().lower()
-    for email in os.getenv("DATAPROVIDO_TEST_EMAILS", "dataprovido@gmail.com").split(",")
+    for email in os.getenv("DATAPROVIDO_TEST_EMAILS", "").split(",")
     if email.strip()
 }
+ALLOWED_LOGIN_EMAILS = {"myasamkaradag@gmail.com"} | TEST_ACCOUNT_EMAILS
 TEST_GA4_BRAND = os.getenv("DATAPROVIDO_TEST_GA4_BRAND", "Injector Marketing").strip()
 
 
 def _is_test_account(email: str) -> bool:
     return str(email or "").strip().lower() in TEST_ACCOUNT_EMAILS
+
+
+def _verify_test_account_password(email: str, password: str) -> bool:
+    """Verify invited test users against salted PBKDF2 hashes from Railway."""
+    try:
+        configured = json.loads(os.getenv("DATAPROVIDO_TEST_PASSWORD_HASHES", "{}"))
+        encoded = configured.get(str(email or "").strip().lower(), "")
+        algorithm, iterations, salt_hex, expected_hex = encoded.split("$", 3)
+        rounds = int(iterations)
+        if algorithm != "pbkdf2_sha256" or not 100_000 <= rounds <= 1_000_000:
+            return False
+        salt = bytes.fromhex(salt_hex)
+        expected = bytes.fromhex(expected_hex)
+        actual = hashlib.pbkdf2_hmac("sha256", str(password or "").encode(), salt, rounds)
+        return bool(expected) and hmac.compare_digest(actual, expected)
+    except (AttributeError, TypeError, ValueError, json.JSONDecodeError):
+        return False
 
 
 def _preferred_ga4_property(properties, selected="", email=""):
@@ -4799,26 +4820,33 @@ async def email_password_login(request: Request):
 
     from fastapi.responses import RedirectResponse
 
-    if not SUPABASE_URL or not SUPABASE_ANON_KEY or not email or not password:
+    if not email or not password:
         return RedirectResponse(url="/login?error=invalid_credentials", status_code=303)
 
-    try:
-        auth_response = requests.post(
-            f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
-            headers={
-                "apikey": SUPABASE_ANON_KEY,
-                "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={"email": email, "password": password},
-            timeout=(5, 15),
-        )
-        auth_payload = auth_response.json() if auth_response.status_code == 200 else {}
-        authenticated_email = str((auth_payload.get("user") or {}).get("email") or "").strip().lower()
-        authenticated = bool(auth_payload.get("access_token"))
-    except (requests.RequestException, ValueError, TypeError):
-        authenticated_email = ""
-        authenticated = False
+    auth_payload = {}
+    authenticated_email = ""
+    authenticated = False
+    if _is_test_account(email) and _verify_test_account_password(email, password):
+        auth_payload = {"user": {"email": email, "user_metadata": {"full_name": email.split("@", 1)[0]}}}
+        authenticated_email = email
+        authenticated = True
+    elif SUPABASE_URL and SUPABASE_ANON_KEY:
+        try:
+            auth_response = requests.post(
+                f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
+                headers={
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={"email": email, "password": password},
+                timeout=(5, 15),
+            )
+            auth_payload = auth_response.json() if auth_response.status_code == 200 else {}
+            authenticated_email = str((auth_payload.get("user") or {}).get("email") or "").strip().lower()
+            authenticated = bool(auth_payload.get("access_token"))
+        except (requests.RequestException, ValueError, TypeError):
+            pass
 
     if not authenticated or not authenticated_email or not hmac.compare_digest(authenticated_email, email):
         return RedirectResponse(url="/login?error=invalid_credentials", status_code=303)
